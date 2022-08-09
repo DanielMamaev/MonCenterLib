@@ -1,16 +1,33 @@
+import argparse
 from typing import List
 from pprint import pprint
 import os
-from pathlib import Path
+import sys
 
 
 class Rnx2Pos:
+    '''
+    Rnx2Pos inputs the standard RINEX observation data and navigation message files (GPS, GLONASS, Galileo, QZSS,
+    BeiDou and SBAS) and can computers the positioning solutions by various positioning modes including
+    Single‐point, DGPS/DGNSS, Kinematic, Static, PPP‐Kinematic and PPP‐Static.
+    The module can accept one or more files.The module can accept one or more files. 
+    Thanks to this functionality, it becomes possible to process a large number of files with the same settings.
+    '''
+
     def __init__(self) -> None:
-        self.match_list = dict()
-        self.pos_paths = []
+        '''
+        It is not recommended to change these variables directly.
+        match_list - This list contains paths to files that have been filtered by date.
+        pos_paths - List of paths to generated .pos files
+        '''
+        self._match_list = dict()
+        self._pos_paths = []
         self.__kol_inputs = 0
 
     def read_dirs(self, input_rover: str, input_base: str = '', input_nav: str = '', input_sp3_clk: str = '', input_sbas_ionex_fcb: str = '') -> dict:
+        '''
+        This method reads files from the specified directories and creates a match_list dictionary
+        '''
         if not type(input_rover) is str:
             raise TypeError(
                 "The type of the 'input_rover' variable should be 'str'")
@@ -28,18 +45,21 @@ class Rnx2Pos:
                 "The type of the 'input_sbas_ionex_fcb' variable should be 'str'")
 
         rover_files = list(map(lambda x: os.path.join(input_rover, x), os.listdir(
-            input_rover))) if not input_rover == '' else []
+            input_rover))) if input_rover != '' else []
         base_files = list(map(lambda x: os.path.join(input_base, x), os.listdir(
-            input_base))) if not input_base == '' else []
+            input_base))) if input_base != '' else []
         nav_files = list(map(lambda x: os.path.join(input_nav, x), os.listdir(
-            input_nav))) if not input_nav == '' else []
+            input_nav))) if input_nav != '' else []
         sp3_clk_files = list(map(lambda x: os.path.join(input_sp3_clk, x), os.listdir(
-            input_sp3_clk))) if not input_sp3_clk == '' else []
+            input_sp3_clk))) if input_sp3_clk != '' else []
         sbas_ionex_fcb_files = list(map(lambda x: os.path.join(input_sbas_ionex_fcb, x), os.listdir(
-            input_sbas_ionex_fcb))) if not input_sbas_ionex_fcb == '' else []
+            input_sbas_ionex_fcb))) if input_sbas_ionex_fcb != '' else []
         return self.read_list(rover_files, base_files, nav_files, sp3_clk_files, sbas_ionex_fcb_files)
 
     def read_list(self, input_rover: List[str], input_base: List[str] = [], input_nav: List[str] = [], input_sp3_clk: List[str] = [], input_sbas_ionex_fcb: List[str] = []) -> dict:
+        '''
+        This method reads lists containing paths to files and forms a match_list dictionary from them.
+        '''
         if not type(input_rover) is list:
             raise TypeError(
                 "The type of the 'input_rover' variable should be 'list'")
@@ -74,10 +94,10 @@ class Rnx2Pos:
                 for n, line in enumerate(f, 1):
                     if 'TIME OF FIRST OBS' in line:
                         date = '/'.join(line.split()[:3])
-                        if date in self.match_list:
-                            self.match_list[date] += [file]
+                        if date in self._match_list:
+                            self._match_list[date] += [file]
                         else:
-                            self.match_list[date] = [file]
+                            self._match_list[date] = [file]
                         break
                     elif 'END OF HEADER' in line:
                         break
@@ -93,18 +113,21 @@ class Rnx2Pos:
                         date[0] = '20' + \
                             date[0] if not len(date[0]) == 4 else date[0]
                         date = '/'.join(date)
-                        if date in self.match_list:
-                            self.match_list[date] += [file]
+                        if date in self._match_list:
+                            self._match_list[date] += [file]
                         else:
-                            self.match_list[date] = [file]
+                            self._match_list[date] = [file]
                         break
         # sbas
         #
         # sbas
 
-        return self.match_list
+        return self._match_list
 
-    def start(self, path_rtklib: str, rtklib_conf: str, output_dir: str, start_time: str = '', end_time: str = '', timeint: str = ''):
+    def start(self, path_rtklib: str, rtklib_conf: str, output_dir: str, timeint: str = ''):
+        '''
+        This method starts the post-processing process. The output generates a list with paths to the generated .pos files.
+        '''
         if not type(path_rtklib) is str:
             raise TypeError(
                 "The type of the 'path_rtklib' variable should be 'str'")
@@ -114,45 +137,90 @@ class Rnx2Pos:
         elif not type(output_dir) is str:
             raise TypeError(
                 "The type of the 'output_dir' variable should be 'str'")
-        elif not type(start_time) is str:
-            raise TypeError(
-                "The type of the 'start_time' variable should be 'str'")
-        elif not type(end_time) is str:
-            raise TypeError(
-                "The type of the 'end_time' variable should be 'str'")
         elif not type(timeint) is str:
             raise TypeError(
                 "The type of the 'timeint' variable should be 'str'")
 
         error_list = {}
-        for key, value in self.match_list.items():
+        for key, value in self._match_list.items():
             if len(value) == self.__kol_inputs:
                 command = f'{path_rtklib} '
-                command += f'-ts {start_time} ' if not start_time == '' else ''
-                command += f'-te {end_time} ' if not end_time == '' else ''
-                command += f'-ti {timeint} '
+                command += f'-ti {timeint} ' if timeint != '' else ''
                 command += f"-k {rtklib_conf} "
                 for path_file in value:
                     command += path_file + ' '
                 command += f"-o {output_dir}/{os.path.basename(value[0])}.pos"
-                self.pos_paths.append(
+                self._pos_paths.append(
                     f"{output_dir}/{os.path.basename(value[0])}.pos")
                 # print(command)
                 os.system(command)
             else:
                 error_list[key] = [value, "Not enough files"]
-        return self.pos_paths, error_list
+        return self._pos_paths, error_list
 
 
 if __name__ == "__main__":
-    input_rover = ['/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/novm0010.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/novm0020.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/novm0030.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/novm0040.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/novm0050.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/novm0060.22o',
-                   '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/novm0070.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/novm0080.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/novm0090.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/novm0100.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/novm0110.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/novm0120.22o']
-    input_base = ['/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10020.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10030.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10040.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10050.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10060.22o',
-                  '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10070.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10080.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10090.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10110.22o', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10120.22o']
-    input_nav = ['/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10020.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10030.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10040.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10050.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10060.22n',
-                 '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10070.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10080.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10090.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10110.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10120.22n']
-    a = Rnx2Pos()
-    pprint(a.read_dirs('/home/danisimo/Desktop/MonCenterWeb/MonCenterLib/test/NOVM', '/home/danisimo/Desktop/MonCenterWeb/MonCenterLib/test/NSK1'))
+    des = '''
+    Rnx2Pos inputs the standard RINEX observation data and navigation message files (GPS, GLONASS, Galileo, QZSS,
+    BeiDou and SBAS) and can computers the positioning solutions by various positioning modes including
+    Single‐point, DGPS/DGNSS, Kinematic, Static, PPP‐Kinematic and PPP‐Static.
+    The module can accept one or more files.The module can accept one or more files. 
+    Thanks to this functionality, it becomes possible to process a large number of files with the same settings.
+    '''
+    parser = argparse.ArgumentParser(description=des)
+    parser.add_argument('-r', '--rtklib', type=str,
+                        help='Specify the path to the rnx2rtkp executable.')
+    parser.add_argument('-c', '--conf', type=str,
+                        help='Specify the path to rnx2rtkp config.')
+    parser.add_argument('-o', '--output', type=str,
+                        help='Specify the path to the output folder.')
+    parser.add_argument('-pr', '--prover', type=str,
+                        help='Specify the path to the folder with the rover files. Types: .*obs, .*O, .*D')
+    parser.add_argument('-pb', '--pbase', type=str,
+                        help='Specify the path to the folder with the base files. Types: .*obs, .*O, .*D')
+    parser.add_argument('-pn', '--pnav', type=str,
+                        help='Specify the path to the folder with the ephemeris files. Types: .*nav, .*N, .*P, .*G, .*H, .*Q')
+    parser.add_argument('-pa1', '--pa1', type=str,
+                        help='Specify the path to the folder with the Precise ephemeris or Clock files. Types: .sp3, .clk*, .eph*')
+    parser.add_argument('-pa2', '--pa2', type=str,
+                        help='Specify the path to the folder with the FCB, IONEX or SBAS files. Types: .fcb, .*i, .ionex, .sbs, .ems')
+    parser.add_argument('-t', '--timeint', type=str, help='Interval (s)')
+    parser.add_argument('-ml', '--matchlist',
+                        action='store_true', help='Show match list')
+    parser.add_argument('-p', '--poslist', action='store_true',
+                        help='Show paths to generated .pos files')
+    arg = parser.parse_args()
 
-    # pprint(a.start('/home/danisimo/Desktop/MonCenterWeb/RTKLIB_2.4.3_b34/app/consapp/rnx2rtkp/gcc/rnx2rtkp',
-    #      '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/rnx2rtkp.conf', str(Path.cwd())))
+    if arg.rtklib is None:
+        print('Error. Specify the path to rnx2rtkp.')
+        sys.exit()
+    if arg.conf is None:
+        print('Error. Specify the path to rnx2rtkp config.')
+        sys.exit()
+    if arg.output is None:
+        print('Error. Specify the path to the output folder.')
+        sys.exit()
+    if arg.prover is None:
+        print('Error. Specify the path to the folder with the rover files.')
+        sys.exit()
+
+    rnx2pos = Rnx2Pos()
+    input_rover = arg.prover if not arg.prover is None else ''
+    input_base = arg.pbase if not arg.pbase is None else ''
+    input_nav = arg.pnav if not arg.pnav is None else ''
+    input_sp3_clk = arg.pa1 if not arg.pa1 is None else ''
+    input_sbas_ionex_fcb = arg.pa2 if not arg.pa2 is None else ''
+
+    match_list = rnx2pos.read_dirs(
+        input_rover, input_base, input_nav, input_sp3_clk, input_sbas_ionex_fcb)
+    if arg.matchlist:
+        pprint('# Match list start #')
+        pprint(match_list)
+        pprint('# Match list end #')
+
+    timeint = arg.timeint if not arg.timeint is None else ''
+    pos_paths = rnx2pos.start(arg.rtklib, arg.conf, arg.output, timeint)
+    if arg.poslist:
+        pprint('# Pos list start #')
+        pprint(pos_paths)
+        pprint('# Pos list end #')
