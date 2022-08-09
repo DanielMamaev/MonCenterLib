@@ -124,7 +124,7 @@ class Rnx2Pos:
 
         return self._match_list
 
-    def start(self, path_rtklib: str, rtklib_conf: str, output_dir: str, timeint: str = ''):
+    def start(self, path_rtklib: str, rtklib_conf: str, output_dir: str, timeint: int = ''):
         '''
         This method starts the post-processing process. The output generates a list with paths to the generated .pos files.
         '''
@@ -137,9 +137,9 @@ class Rnx2Pos:
         elif not type(output_dir) is str:
             raise TypeError(
                 "The type of the 'output_dir' variable should be 'str'")
-        elif not type(timeint) is str:
+        elif not type(timeint) is int:
             raise TypeError(
-                "The type of the 'timeint' variable should be 'str'")
+                "The type of the 'timeint' variable should be 'int'")
 
         error_list = {}
         for key, value in self._match_list.items():
@@ -148,10 +148,10 @@ class Rnx2Pos:
                 command += f'-ti {timeint} ' if timeint != '' else ''
                 command += f"-k {rtklib_conf} "
                 for path_file in value:
-                    command += path_file + ' '
-                command += f"-o {output_dir}/{os.path.basename(value[0])}.pos"
+                    command += f"'{path_file}'" + ' '
+                command += f"-o '{os.path.join(output_dir, os.path.basename(value[0]))}.pos'"
                 self._pos_paths.append(
-                    f"{output_dir}/{os.path.basename(value[0])}.pos")
+                    f"{os.path.join(output_dir, os.path.basename(value[0]))}.pos")
                 # print(command)
                 os.system(command)
             else:
@@ -218,7 +218,7 @@ if __name__ == "__main__":
         pprint(match_list)
         pprint('# Match list end #')
 
-    timeint = arg.timeint if not arg.timeint is None else ''
+    timeint = int(arg.timeint) if not arg.timeint is None else 0
     pos_paths = rnx2pos.start(arg.rtklib, arg.conf, arg.output, timeint)
     if arg.poslist:
         pprint('# Pos list start #')
