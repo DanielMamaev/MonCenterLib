@@ -26,10 +26,18 @@ class Rnx2Pos:
         elif not type(input_sbas_ionex_fcb) is str:
             raise TypeError(
                 "The type of the 'input_sbas_ionex_fcb' variable should be 'str'")
-        
-        rover_files = os.listdir(input_rover)
-        rover_files = list(map(lambda x: os.path.join(input_rover, x) , rover_files))
-        pprint(rover_files)
+
+        rover_files = list(map(lambda x: os.path.join(input_rover, x), os.listdir(
+            input_rover))) if not input_rover == '' else []
+        base_files = list(map(lambda x: os.path.join(input_base, x), os.listdir(
+            input_base))) if not input_base == '' else []
+        nav_files = list(map(lambda x: os.path.join(input_nav, x), os.listdir(
+            input_nav))) if not input_nav == '' else []
+        sp3_clk_files = list(map(lambda x: os.path.join(input_sp3_clk, x), os.listdir(
+            input_sp3_clk))) if not input_sp3_clk == '' else []
+        sbas_ionex_fcb_files = list(map(lambda x: os.path.join(input_sbas_ionex_fcb, x), os.listdir(
+            input_sbas_ionex_fcb))) if not input_sbas_ionex_fcb == '' else []
+        return self.read_list(rover_files, base_files, nav_files, sp3_clk_files, sbas_ionex_fcb_files)
 
     def read_list(self, input_rover: List[str], input_base: List[str] = [], input_nav: List[str] = [], input_sp3_clk: List[str] = [], input_sbas_ionex_fcb: List[str] = []) -> dict:
         if not type(input_rover) is list:
@@ -144,8 +152,7 @@ if __name__ == "__main__":
     input_nav = ['/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10020.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10030.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10040.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10050.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10060.22n',
                  '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10070.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10080.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10090.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10110.22n', '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/postprocessing/nsk10120.22n']
     a = Rnx2Pos()
-    #a.read_list(input_rover, input_base, input_nav)
-    a.read_dirs('/home/danisimo/Desktop/MonCenterWeb/MonCenterLib/test/NOVM')
-    
-    #pprint(a.start('/home/danisimo/Desktop/MonCenterWeb/RTKLIB_2.4.3_b34/app/consapp/rnx2rtkp/gcc/rnx2rtkp',
-     #      '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/rnx2rtkp.conf', str(Path.cwd())))
+    pprint(a.read_dirs('/home/danisimo/Desktop/MonCenterWeb/MonCenterLib/test/NOVM', '/home/danisimo/Desktop/MonCenterWeb/MonCenterLib/test/NSK1'))
+
+    # pprint(a.start('/home/danisimo/Desktop/MonCenterWeb/RTKLIB_2.4.3_b34/app/consapp/rnx2rtkp/gcc/rnx2rtkp',
+    #      '/home/danisimo/Desktop/MonCenterWeb/FilesUsers/danisimo/rnx2rtkp.conf', str(Path.cwd())))
