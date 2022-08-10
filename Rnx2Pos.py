@@ -15,13 +15,6 @@ class Rnx2Pos:
     '''
 
     def __init__(self) -> None:
-        '''
-        It is not recommended to change these variables directly.
-        match_list - This list contains paths to files that have been filtered by date.
-        pos_paths - List of paths to generated .pos files
-        '''
-        self._match_list = dict()
-        self._pos_paths = []
         self.__kol_inputs = 0
 
     def read_dirs(self, input_rover: str, input_base: str = '', input_nav: str = '', input_sp3_clk: str = '', input_sbas_ionex_fcb: str = '') -> dict:
@@ -54,6 +47,7 @@ class Rnx2Pos:
             input_sp3_clk))) if input_sp3_clk != '' else []
         sbas_ionex_fcb_files = list(map(lambda x: os.path.join(input_sbas_ionex_fcb, x), os.listdir(
             input_sbas_ionex_fcb))) if input_sbas_ionex_fcb != '' else []
+        
         return self.read_list(rover_files, base_files, nav_files, sp3_clk_files, sbas_ionex_fcb_files)
 
     def read_list(self, input_rover: List[str], input_base: List[str] = [], input_nav: List[str] = [], input_sp3_clk: List[str] = [], input_sbas_ionex_fcb: List[str] = []) -> dict:
@@ -89,15 +83,17 @@ class Rnx2Pos:
         if not input_sbas_ionex_fcb == []:
             self.__kol_inputs += 1
 
+        match_list = dict()
+
         for file in input_rover + input_base:
             with open(file, 'r') as f:
                 for n, line in enumerate(f, 1):
                     if 'TIME OF FIRST OBS' in line:
                         date = '/'.join(line.split()[:3])
-                        if date in self._match_list:
-                            self._match_list[date] += [file]
+                        if date in match_list:
+                            match_list[date] += [file]
                         else:
-                            self._match_list[date] = [file]
+                            match_list[date] = [file]
                         break
                     elif 'END OF HEADER' in line:
                         break
@@ -113,18 +109,18 @@ class Rnx2Pos:
                         date[0] = '20' + \
                             date[0] if not len(date[0]) == 4 else date[0]
                         date = '/'.join(date)
-                        if date in self._match_list:
-                            self._match_list[date] += [file]
+                        if date in match_list:
+                            match_list[date] += [file]
                         else:
-                            self._match_list[date] = [file]
+                            match_list[date] = [file]
                         break
         # sbas
         #
         # sbas
 
-        return self._match_list
+        return match_list
 
-    def start(self, path_rtklib: str, rtklib_conf: str, output_dir: str, timeint: int = ''):
+    def start(self, match_list: dict, path_rtklib: str, rtklib_conf: str, output_dir: str, timeint: int = ''):
         '''
         This method starts the post-processing process. The output generates a list with paths to the generated .pos files.
         '''
@@ -140,9 +136,13 @@ class Rnx2Pos:
         elif not type(timeint) is int:
             raise TypeError(
                 "The type of the 'timeint' variable should be 'int'")
+        elif not type(match_list) is dict:
+            raise TypeError(
+                "The type of the 'match_list' variable should be 'dict'")
 
         error_list = {}
-        for key, value in self._match_list.items():
+        pos_paths = []
+        for key, value in match_list.items():
             if len(value) == self.__kol_inputs:
                 command = f'{path_rtklib} '
                 command += f'-ti {timeint} ' if timeint != '' else ''
@@ -150,13 +150,13 @@ class Rnx2Pos:
                 for path_file in value:
                     command += f"'{path_file}'" + ' '
                 command += f"-o '{os.path.join(output_dir, os.path.basename(value[0]))}.pos'"
-                self._pos_paths.append(
+                pos_paths.append(
                     f"{os.path.join(output_dir, os.path.basename(value[0]))}.pos")
                 # print(command)
                 os.system(command)
             else:
                 error_list[key] = [value, "Not enough files"]
-        return self._pos_paths, error_list
+        return pos_paths, error_list
 
 
 if __name__ == "__main__":
@@ -219,7 +219,7 @@ if __name__ == "__main__":
         pprint('# Match list end #')
 
     timeint = int(arg.timeint) if not arg.timeint is None else 0
-    pos_paths = rnx2pos.start(arg.rtklib, arg.conf, arg.output, timeint)
+    pos_paths = rnx2pos.start(match_list, arg.rtklib, arg.conf, arg.output, timeint)
     if arg.poslist:
         pprint('# Pos list start #')
         pprint(pos_paths)
