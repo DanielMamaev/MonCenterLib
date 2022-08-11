@@ -47,7 +47,7 @@ class Rnx2Pos:
             input_sp3_clk))) if input_sp3_clk != '' else []
         sbas_ionex_fcb_files = list(map(lambda x: os.path.join(input_sbas_ionex_fcb, x), os.listdir(
             input_sbas_ionex_fcb))) if input_sbas_ionex_fcb != '' else []
-        
+
         return self.read_list(rover_files, base_files, nav_files, sp3_clk_files, sbas_ionex_fcb_files)
 
     def read_list(self, input_rover: List[str], input_base: List[str] = [], input_nav: List[str] = [], input_sp3_clk: List[str] = [], input_sbas_ionex_fcb: List[str] = []) -> dict:
@@ -219,7 +219,8 @@ if __name__ == "__main__":
         pprint('# Match list end #')
 
     timeint = int(arg.timeint) if not arg.timeint is None else 0
-    pos_paths = rnx2pos.start(match_list, arg.rtklib, arg.conf, arg.output, timeint)
+    pos_paths = rnx2pos.start(match_list, arg.rtklib,
+                              arg.conf, arg.output, timeint)
     if arg.poslist:
         pprint('# Pos list start #')
         pprint(pos_paths)

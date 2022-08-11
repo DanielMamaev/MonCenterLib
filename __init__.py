@@ -1,2 +1,2 @@
-from Raw2Rnx import Raw2Rnx
-from Rnx2Pos import Rnx2Pos
+from .raw2rnx import Raw2Rnx
+from .rnx2pos import Rnx2Pos
