@@ -12,6 +12,7 @@ class Rnx2Pos:
     Single‐point, DGPS/DGNSS, Kinematic, Static, PPP‐Kinematic and PPP‐Static.
     The module can accept one or more files.The module can accept one or more files. 
     Thanks to this functionality, it becomes possible to process a large number of files with the same settings.
+
     '''
 
     def __init__(self) -> None:
