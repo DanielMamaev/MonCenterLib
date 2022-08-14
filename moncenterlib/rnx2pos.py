@@ -196,7 +196,7 @@ class Rnx2Pos:
 
         return match_list
 
-    def start(self, match_list: dict, path_rtklib: str, rtklib_conf: str,
+    def start(self, match_list: dict, path_rnx2rtkp: str, rnx2rtkp_conf: str,
               output_dir: str, timeint: int = ''):
         """
         This method starts the post-processing process.
@@ -204,8 +204,8 @@ class Rnx2Pos:
 
         Args:
             match_list: The dictionary is formed from the read_dirs or read_list method.
-            path_rtklib: The path to the rnx2rtkp executable.
-            rtklib_conf: The path to rnx2rtkp config.
+            path_rnx2rtkp: The path to the rnx2rtkp executable.
+            rnx2rtkp_conf: The path to rnx2rtkp config.
             output_dir: The path to the output folder.
             timeint:  Time interval (seconds). Defaults to ''.
 
@@ -230,12 +230,12 @@ class Rnx2Pos:
             )
         """
 
-        if not type(path_rtklib) is str:
+        if not type(path_rnx2rtkp) is str:
             raise TypeError(
-                "The type of the 'path_rtklib' variable should be 'str'")
-        elif not type(rtklib_conf) is str:
+                "The type of the 'path_rnx2rtkp' variable should be 'str'")
+        elif not type(rnx2rtkp_conf) is str:
             raise TypeError(
-                "The type of the 'rtklib_conf' variable should be 'str'")
+                "The type of the 'rnx2rtkp_conf' variable should be 'str'")
         elif not type(output_dir) is str:
             raise TypeError(
                 "The type of the 'output_dir' variable should be 'str'")
@@ -250,9 +250,9 @@ class Rnx2Pos:
         pos_paths = []
         for key, value in match_list.items():
             if len(value) == self.__kol_inputs:
-                command = f'{path_rtklib} '
+                command = f'{path_rnx2rtkp} '
                 command += f'-ti {timeint} ' if timeint != '' else ''
-                command += f"-k {rtklib_conf} "
+                command += f"-k {rnx2rtkp_conf} "
                 for path_file in value:
                     command += f"'{path_file}'" + ' '
                 command += f"-o '{os.path.join(output_dir, os.path.basename(value[0]))}.pos'"
@@ -278,7 +278,7 @@ if __name__ == "__main__":
     number of files with the same settings.
     '''
     parser = argparse.ArgumentParser(description=des)
-    parser.add_argument('-r', '--rtklib', type=str,
+    parser.add_argument('-e', '--rnx2rtkp', type=str,
                         help='Specify the path to the rnx2rtkp executable.')
     parser.add_argument('-c', '--conf', type=str,
                         help='Specify the path to rnx2rtkp config.')
@@ -301,7 +301,7 @@ if __name__ == "__main__":
                         help='Show paths to generated .pos files')
     arg = parser.parse_args()
 
-    if arg.rtklib is None:
+    if arg.rnx2rtkp is None:
         print('Error. Specify the path to rnx2rtkp.')
         sys.exit()
     if arg.conf is None:
@@ -334,7 +334,7 @@ if __name__ == "__main__":
         pprint('# Match list end #')
 
     timeint = int(arg.timeint) if arg.timeint is not None else 0
-    pos_paths = rnx2pos.start(match_list, arg.rtklib,
+    pos_paths = rnx2pos.start(match_list, arg.rnx2rtkp,
                               arg.conf, arg.output, timeint)
     if arg.poslist:
         pprint('# Pos list start #')
