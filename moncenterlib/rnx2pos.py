@@ -22,24 +22,27 @@ class Rnx2Pos:
         self.__kol_inputs = 0
 
     def read_dirs(self, input_rover: str, input_base: str = '',
-                  input_nav: str = '', input_sp3_clk: str = '',
-                  input_sbas_ionex_fcb: str = '') -> dict:
+                  input_nav: str = '', input_sp3: str = '',
+                  input_clk: str = '', input_ionex: str = '') -> dict:
         '''
         This method reads files from the specified folders and creates
         dictionary. The dictionary in which the files were filtered by dates
         is returned.
+        Input SBAS and FCB are in development.
 
         Args:
             input_rover: The path to the folder with the files of the
                 rover station.
             input_base (optional): The path to the folder with the files
                 of the base station. Defaults to ''
-            input_nav (optional): The path to the folder with ephemeris files. 
+            input_nav (optional): The path to the folder with ephemeris files.
                 Defaults to ''
-            input_sp3_clk (optional): The path to the folder with the Precise
+            input_sp3 (optional): The path to the folder with the Precise
                 ephemeris or Clock files. Defaults to ''
-            input_sbas_ionex_fcb (optional): The path to the folder with the
-                FCB, IONEX or SBAS files. Defaults to ''
+            input_clk (optional): The path to the folder with the
+                Clock files. Defaults to ''
+            input_ionex (optional): The path to the folder with the
+                IONEX files. Defaults to ''
 
         Returns:
             The dictionary in which the files were filtered by dates is returned.
@@ -65,12 +68,15 @@ class Rnx2Pos:
         elif not type(input_nav) is str:
             raise TypeError(
                 "The type of the 'input_nav' variable should be 'str'")
-        elif not type(input_sp3_clk) is str:
+        elif not type(input_sp3) is str:
             raise TypeError(
-                "The type of the 'input_sp3_clk' variable should be 'str'")
-        elif not type(input_sbas_ionex_fcb) is str:
+                "The type of the 'input_sp3' variable should be 'str'")
+        elif not type(input_clk) is str:
             raise TypeError(
-                "The type of the 'input_sbas_ionex_fcb' variable should be 'str'")
+                "The type of the 'input_clk' variable should be 'str'")
+        elif not type(input_ionex) is str:
+            raise TypeError(
+                "The type of the 'input_ionex' variable should be 'str'")
 
         rover_files = list(
             map(lambda x: os.path.join(input_rover, x),
@@ -83,23 +89,29 @@ class Rnx2Pos:
         nav_files = list(map(lambda x: os.path.join(input_nav, x), os.listdir(
             input_nav))) if input_nav != '' else []
 
-        sp3_clk_files = list(
-            map(lambda x: os.path.join(input_sp3_clk, x),
-                os.listdir(input_sp3_clk))) if input_sp3_clk != '' else []
+        sp3_files = list(
+            map(lambda x: os.path.join(input_sp3, x),
+                os.listdir(input_sp3))) if input_sp3 != '' else []
 
-        sbas_ionex_fcb_files = list(
-            map(lambda x: os.path.join(input_sbas_ionex_fcb, x),
-                os.listdir(input_sbas_ionex_fcb))) if input_sbas_ionex_fcb != '' else []
+        clk_files = list(
+            map(lambda x: os.path.join(input_clk, x),
+                os.listdir(input_clk))) if input_clk != '' else []
+
+        ionex_files = list(
+            map(lambda x: os.path.join(input_ionex, x),
+                os.listdir(input_ionex))) if input_ionex != '' else []
 
         return self.read_list(rover_files, base_files, nav_files,
-                              sp3_clk_files, sbas_ionex_fcb_files)
+                              sp3_files, clk_files, ionex_files)
 
     def read_list(self, input_rover: List[str], input_base: List[str] = [],
-                  input_nav: List[str] = [], input_sp3_clk: List[str] = [],
-                  input_sbas_ionex_fcb: List[str] = []) -> dict:
+                  input_nav: List[str] = [], input_sp3: List[str] = [],
+                  input_clk: List[str] = [],
+                  input_ionex: List[str] = []) -> dict:
         """
         This method reads lists containing paths to files and forms
-        a match_list dictionary from them.
+        a match_list dictionary from them. Input SBAS and FCB are
+        in development.
 
         Args:
             input_rover: A list containing the paths to the files
@@ -108,10 +120,12 @@ class Rnx2Pos:
                 base station. Defaults to [].
             input_nav (optional): A list containing the paths to the
                 files ephemeris. Defaults to [].
-            input_sp3_clk (optional): A list containing the paths to the files
-                precise ephemeris or Clock. Defaults to [].
+            input_sp3 (optional): A list containing the paths to the files
+                precise ephemeris. Defaults to [].
+            input_clk (optional): A list containing the paths to the files
+                Clock. Defaults to [].
             input_sbas_ionex_fcb (optional): A list containing the paths
-                to the files FCB, IONEX or SBAS files. Defaults to [].
+                to the IONEX files. Defaults to [].
 
         Raises:
             TypeError: Occurs if an incorrect data type was passed in the argument.
@@ -139,12 +153,15 @@ class Rnx2Pos:
         elif not type(input_nav) is list:
             raise TypeError(
                 "The type of the 'input_nav' variable should be 'list'")
-        elif not type(input_sp3_clk) is list:
+        elif not type(input_sp3) is list:
             raise TypeError(
-                "The type of the 'input_sp3_clk' variable should be 'list'")
-        elif not type(input_sbas_ionex_fcb) is list:
+                "The type of the 'input_sp3' variable should be 'list'")
+        elif not type(input_clk) is list:
             raise TypeError(
-                "The type of the 'input_sbas_ionex_fcb' variable should be 'list'")
+                "The type of the 'input_sp3' variable should be 'list'")
+        elif not type(input_ionex) is list:
+            raise TypeError(
+                "The type of the 'input_ionex' variable should be 'list'")
 
         # узнаем кол-во списков
         self.__kol_inputs = 0
@@ -154,9 +171,11 @@ class Rnx2Pos:
             self.__kol_inputs += 1
         if not input_nav == []:
             self.__kol_inputs += 1
-        if not input_sp3_clk == []:
+        if not input_sp3 == []:
             self.__kol_inputs += 1
-        if not input_sbas_ionex_fcb == []:
+        if not input_clk == []:
+            self.__kol_inputs += 1
+        if not input_ionex == []:
             self.__kol_inputs += 1
 
         match_list = dict()
@@ -165,7 +184,10 @@ class Rnx2Pos:
             with open(file, 'r') as f:
                 for n, line in enumerate(f, 1):
                     if 'TIME OF FIRST OBS' in line:
-                        date = '/'.join(line.split()[:3])
+                        date = line.split()[:3]
+                        date[1] = date[1].zfill(2)
+                        date[2] = date[2].zfill(2)
+                        date = '/'.join(date)
                         if date in match_list:
                             match_list[date] += [file]
                         else:
@@ -174,7 +196,7 @@ class Rnx2Pos:
                     elif 'END OF HEADER' in line:
                         break
 
-        for file in input_nav + input_sp3_clk:
+        for file in input_nav:
             flag_end = False
             with open(file, 'r') as f:
                 for n, line in enumerate(f, 1):
@@ -182,6 +204,8 @@ class Rnx2Pos:
                         flag_end = True
                     elif flag_end:
                         date = line.split()[1:4]
+                        date[1] = date[1].zfill(2)
+                        date[2] = date[2].zfill(2)
                         date[0] = '20' + \
                             date[0] if not len(date[0]) == 4 else date[0]
                         date = '/'.join(date)
@@ -190,9 +214,42 @@ class Rnx2Pos:
                         else:
                             match_list[date] = [file]
                         break
-        # sbas
-        #
-        # sbas
+
+        for file in input_sp3:
+            with open(file, 'r') as f:
+                for n, line in enumerate(f, 1):
+                    if line[0] == "*":
+                        date = line.split()[1:4]
+                        date[1] = date[1].zfill(2)
+                        date[2] = date[2].zfill(2)
+                        date[0] = '20' + \
+                            date[0] if not len(date[0]) == 4 else date[0]
+                        date = '/'.join(date)
+                        if date in match_list:
+                            match_list[date] += [file]
+                        else:
+                            match_list[date] = [file]
+                        break
+        
+        for file in input_clk:
+            flag_end = False
+            with open(file, 'r') as f:
+                for n, line in enumerate(f, 1):
+                    if 'END OF HEADER' in line:
+                        flag_end = True
+                    elif flag_end:
+                        date = line.split()[2:5]
+                        date[1] = date[1].zfill(2)
+                        date[2] = date[2].zfill(2)
+                        date[0] = '20' + \
+                            date[0] if not len(date[0]) == 4 else date[0]
+                        date = '/'.join(date)
+                        if date in match_list:
+                            match_list[date] += [file]
+                        else:
+                            match_list[date] = [file]
+                        break
+        # sbas_fcb
 
         return match_list
 
@@ -250,18 +307,17 @@ class Rnx2Pos:
         pos_paths = []
         for key, value in match_list.items():
             if len(value) == self.__kol_inputs:
-                command = f'{path_rnx2rtkp} '
+                command = f"'{path_rnx2rtkp}' "
                 command += f'-ti {timeint} ' if timeint != '' else ''
-                command += f"-k {rnx2rtkp_conf} "
+                command += f"-k '{rnx2rtkp_conf}' "
                 for path_file in value:
                     command += f"'{path_file}'" + ' '
                 command += f"-o '{os.path.join(output_dir, os.path.basename(value[0]))}.pos'"
                 pos_paths.append(
                     f"{os.path.join(output_dir, os.path.basename(value[0]))}.pos")
-                # print(command)
+                print(command)
                 os.system(command)
             else:
-                print(value)
                 error_list[key] = [value, "Not enough files"]
         return pos_paths, error_list
 
@@ -273,9 +329,10 @@ if __name__ == "__main__":
     positioning solutions by various positioning modes including Single‐point,
     DGPS/DGNSS, Kinematic, Static, PPP‐Kinematic and PPP‐Static.
     The module can accept one or more files.The module can accept one
-    or more files. 
+    or more files.
     Thanks to this functionality, it becomes possible to process a large
     number of files with the same settings.
+    Input SBAS and FCB are in development.
     '''
     parser = argparse.ArgumentParser(description=des)
     parser.add_argument('-e', '--rnx2rtkp', type=str,
@@ -290,10 +347,12 @@ if __name__ == "__main__":
                         help='Specify the path to the folder with the base files. Types: .*obs, .*O, .*D')
     parser.add_argument('-pn', '--pnav', type=str,
                         help='Specify the path to the folder with the ephemeris files. Types: .*nav, .*N, .*P, .*G, .*H, .*Q')
-    parser.add_argument('-pa1', '--pa1', type=str,
-                        help='Specify the path to the folder with the Precise ephemeris or Clock files. Types: .sp3, .clk*, .eph*')
-    parser.add_argument('-pa2', '--pa2', type=str,
-                        help='Specify the path to the folder with the FCB, IONEX or SBAS files. Types: .fcb, .*i, .ionex, .sbs, .ems')
+    parser.add_argument('-pp', '--psp3', type=str,
+                        help='Specify the path to the folder with the Precise ephemeris. Types: .sp3')
+    parser.add_argument('-pc', '--pclk', type=str,
+                        help='Specify the path to the folder with the Clock files. Types: .clk*')
+    parser.add_argument('-pi', '--pionex', type=str,
+                        help='Specify the path to the folder with the IONEX files. Types: .*i, .ionex')
     parser.add_argument('-t', '--timeint', type=str, help='Interval (s)')
     parser.add_argument('-ml', '--matchlist',
                         action='store_true', help='Show match list')
@@ -318,15 +377,17 @@ if __name__ == "__main__":
     input_rover = arg.prover if arg.prover is not None else ''
     input_base = arg.pbase if arg.pbase is not None else ''
     input_nav = arg.pnav if arg.pnav is not None else ''
-    input_sp3_clk = arg.pa1 if arg.pa1 is not None else ''
-    input_sbas_ionex_fcb = arg.pa2 if arg.pa2 is not None else ''
+    input_sp3 = arg.psp3 if arg.psp3 is not None else ''
+    input_clk = arg.pclk if arg.pclk is not None else ''
+    input_ionex = arg.pionex if arg.pionex is not None else ''
 
     match_list = rnx2pos.read_dirs(
         input_rover,
         input_base,
         input_nav,
-        input_sp3_clk,
-        input_sbas_ionex_fcb)
+        input_sp3,
+        input_clk,
+        input_ionex)
 
     if arg.matchlist:
         pprint('# Match list start #')
