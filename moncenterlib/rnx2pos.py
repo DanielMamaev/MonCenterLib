@@ -315,7 +315,7 @@ class Rnx2Pos:
                 command += f"-o '{os.path.join(output_dir, os.path.basename(value[0]))}.pos'"
                 pos_paths.append(
                     f"{os.path.join(output_dir, os.path.basename(value[0]))}.pos")
-                print(command)
+                #print(command)
                 os.system(command)
             else:
                 error_list[key] = [value, "Not enough files"]
