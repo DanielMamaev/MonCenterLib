@@ -254,7 +254,7 @@ class Rnx2Pos:
         return match_list
 
     def start(self, match_list: dict, path_rnx2rtkp: str, rnx2rtkp_conf: str,
-              output_dir: str, timeint: int = ''):
+              output_dir: str, timeint: int = 0):
         """
         This method starts the post-processing process.
         The output generates a list with paths to the generated .pos files.
