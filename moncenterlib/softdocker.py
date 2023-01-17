@@ -48,7 +48,7 @@ class SoftDocker:
                 print('Не найден образ')
             elif e.response.status_code == 409:
                 self.container = client.containers.get('moncenterlib')
-                pass
+                self.container.start()
             else:
                 print(e)
 
