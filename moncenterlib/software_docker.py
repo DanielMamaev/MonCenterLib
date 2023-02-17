@@ -49,10 +49,21 @@ class SoftwareDocker:
 
         volumes = [f"{os.path.join(Path(__file__).resolve().parent.parent, 'conf')}:/app/conf/"]
 
-        for key, value in paths.items():
-            volumes.append(f'{value}:/app/input_{name}')
-            if key == 'output':
-                volumes.append(f'{value}:/app/output_{name}')
+        for key, val in paths.items():
+            if name == 'str2str':
+                volumes.append(f'{val}:/app/output_str2str')
+            
+            elif name == 'convbin':
+                if key == 'output':
+                    volumes.append(f'{val}:/app/output_convbin')
+                else:
+                    volumes.append(f'{val}:/app/input_convbin')
+            
+            elif name == 'rnx2rtkp':
+                if key == 'output':
+                    volumes.append(f'{val}:/app/output_rnx2rtkp')
+                else:
+                    volumes.append(f'{val}:/app/input_rnx2rtkp_{key}')
 
         name_container = ''
         while True:
@@ -64,7 +75,7 @@ class SoftwareDocker:
 
         restart_policy = {}
         auto_remove = True
-        detach = True
+        detach = False
         if daemon:
             restart_policy = {'Name': 'always'}
             auto_remove = False
@@ -88,37 +99,94 @@ class SoftwareDocker:
     def _stop_container(self):
         pass
 
-    def str2str(self, output_dir: str, config_in: dict, config_out: dict,
-                todaemon: bool = False, name: str = 'str2str') -> None:
+    def str2str(self, config: dict, name: str, root_dir, todaemon: bool = False) -> None:
+        # check type
+        self.__check_type(config, dict, 'config')
+        self.__check_type(name, str, 'name')
+        self.__check_type(todaemon, bool, 'todaemon')
 
-        command = 'tcpcli://192.168.0.2:23'
-        cmd = f'/bin/bash -c "exec -a {name} ./str2str {command}"'
-        self._run_container('str2str', [output_dir, ''], command=cmd)
+        keys = ['input', 'output1', 'output2', 'output3', 'output4', 'output5', 'output6']
+        for k, v in config.items():
+            if k not in keys:
+                raise Exception(f"Неопознанный ключ '{k}'")
+            self.__check_type(v, dict, v)
+        
+        command = '-in '
+        input_stream = config['input']
+        if input_stream['type'] == 'serial':
+            pass
+        elif input_stream['type'] == 'tcpsvr':
+            pass
+        elif input_stream['type'] == 'tcpcli':
+            pass
+        elif input_stream['type'] == 'ntrip':
+            command += 'ntrip://'
+            command += f"{input_stream['user']}:"
+            command += f"{input_stream['passwd']}@"
+            command += f"{input_stream['addr']}:"
+            command += f"{input_stream['port']}/"
+            command += f"{input_stream['mntpnt']}"
+        elif input_stream['type'] == 'file':
+            pass
+        
+        for key, value in config.items():
+            if not key == 'input':
+                command += ' -out '
+                if value['type'] == 'serial':
+                    pass
+                elif value['type'] == 'tcpsvr':
+                    pass
+                elif value['type'] == 'tcpcli':
+                    pass
+                elif value['type'] == 'ntrip':
+                    command += 'ntrip://'
+                    command += f"{value['user']}:"
+                    command += f"{value['passwd']}@"
+                    command += f"{value['addr']}:"
+                    command += f"{value['port']}/"
+                    command += f"{value['mntpnt']}"
+                elif value['type'] == 'ntrips':
+                    pass
+                elif value['type'] == 'ntripc':
+                    pass
+                elif value['type'] == 'file':
+                    command += 'file://'
+                    command += f"/app/output_str2str/'{value['name']}'"
+       
+        cmd = f'ps -eF'
+        print(cmd)
+        paths = {'output': root_dir}
+        self._run_container('str2str', paths, daemon=True)
+        cont = self.client.containers.get('moncenterlib_str2str_daemon')
+        print(cont.exec_run(cmd, detach=True))
 
-    def convbin(self, in_out_dir: list, config: dict, recursion: bool = False,
+    def convbin(self, paths: dict, config: dict, recursion: bool = False,
                 todaemon: bool = False) -> dict:
 
         # check type
-        self.__check_type(in_out_dir, list, 'in_out_dir')
+        self.__check_type(paths, dict, 'paths')
         self.__check_type(config, dict, 'config')
         self.__check_type(recursion, bool, 'recursion')
         self.__check_type(todaemon, bool, 'todaemon')
 
+        keys = ['input', 'output']
+        for k, v in paths.items():
+            if k not in keys:
+                raise Exception(f"Неопознанный ключ '{k}'")
+            self.__check_type(v, str, v)
+        
+        for k, v in config.items():
+            self.__check_type(v, str, k)
+
         # составляем список файлов из папки
         input_files = []
         if recursion:
-            for root, _, files in os.walk(in_out_dir[0]):
+            for root, _, files in os.walk(paths['input']):
                 for file in files:
                     path = os.path.join(root, file)
                     input_files.append(path)
         else:
-            input_files = [os.path.join(in_out_dir[0], file) for file in os.listdir(in_out_dir[0])]
-            '''input_files = list(
-                map(lambda x: os.path.join(in_out_dir[0], x),
-                    os.listdir(in_out_dir[0]))) if in_out_dir[0] != '' else []
-            root, _, _ = os.walk(in_out_dir[0])
-            for file in root[2]:
-                input_files.append(os.path.join(root[0], file))'''
+            input_files = [os.path.join(paths['input'], file) for file in os.listdir(paths['input'])]
 
         # запуск конвертации
         output_files = []
@@ -152,47 +220,47 @@ class SoftwareDocker:
             if config['output_o'] == '1':
                 out = f"/app/output_convbin/{namef}.o"
                 command += f"-o '{out}' "
-                output_files.append(os.path.join(in_out_dir[1],
+                output_files.append(os.path.join(paths['output'],
                                     f"{namef}.o"))
             if config['output_n'] == '1':
                 out = f"/app/output_convbin/{namef}.n"
                 command += f"-n '{out}' "
-                output_files.append(os.path.join(in_out_dir[1],
+                output_files.append(os.path.join(paths['output'],
                                     f"{namef}.n"))
             if config['output_g'] == '1':
                 out = f"/app/output_convbin/{namef}.g"
                 command += f"-g '{out}' "
-                output_files.append(os.path.join(in_out_dir[1],
+                output_files.append(os.path.join(paths['output'],
                                     f"{namef}.g"))
             if config['output_h'] == '1':
                 out = f"/app/output_convbin/{namef}.h"
                 command += f"-h '{out}' "
-                output_files.append(os.path.join(in_out_dir[1],
+                output_files.append(os.path.join(paths['output'],
                                     f"{namef}.h"))
             if config['output_q'] == '1':
                 out = f"/app/output_convbin/{namef}.q"
                 command += f"-q '{out}' "
-                output_files.append(os.path.join(in_out_dir[1],
+                output_files.append(os.path.join(paths['output'],
                                     f"{namef}.q"))
             if config['output_l'] == '1':
                 out = f"/app/output_convbin/{namef}.l"
                 command += f"-l '{out}' "
-                output_files.append(os.path.join(in_out_dir[1],
+                output_files.append(os.path.join(paths['output'],
                                     f"{namef}.l"))
             if config['output_b'] == '1':
                 out = f"/app/output_convbin/{namef}.b"
                 command += f"-b '{out}' "
-                output_files.append(os.path.join(in_out_dir[1],
+                output_files.append(os.path.join(paths['output'],
                                     f"{namef}.b"))
             if config['output_i'] == '1':
                 out = f"/app/output_convbin/{namef}.i"
                 command += f"-i '{out}' "
-                output_files.append(os.path.join(in_out_dir[1],
+                output_files.append(os.path.join(paths['output'],
                                     f"{namef}.i"))
             if config['output_s'] == '1':
                 out = f"/app/output_convbin/{namef}.s"
                 command += f"-s '{out}' "
-                output_files.append(os.path.join(in_out_dir[1],
+                output_files.append(os.path.join(paths['output'],
                                     f"{namef}.s"))
 
             if config['other_od'] == '1':
@@ -220,19 +288,17 @@ class SoftwareDocker:
             command += f"-hp '{config['approx_position_x']}/{config['approx_position_y']}/{config['approx_position_z']}' "
             command += f"-hd '{config['antenna_delta_h']}/{config['antenna_delta_e']}/{config['antenna_delta_n']}' "
 
-            path_docker = file.replace(in_out_dir[0], '')
-            path_docker = '/app/input_convbin' + path_docker
+            path_docker = file.replace(paths['input'], '')
+            path_docker = '/app/input_convbin/' + path_docker
             command += f"'{path_docker}'"
 
             cmd = f'/bin/bash -c "exec -a convbin ./convbin {command}"'
-
             if not todaemon:
-                self._run_container('convbin', in_out_dir, command=cmd)
+                self._run_container('convbin', paths, command=cmd)
             else:
                 cont = self.client.containers.get('moncenterlib_convbin_daemon')
                 cont.exec_run(cmd, detach=False)
             bar.next()
-
             # переименование файлов по стандарту ринекса, впланах
 
         bar.finish()
@@ -241,11 +307,22 @@ class SoftwareDocker:
     def rnx2rtkp(self, paths: dict, config: dict,
                  timeint: int = 0, todaemon: bool = False):
 
+        # check type
+        self.__check_type(paths, dict, 'paths')
+        self.__check_type(config, dict, 'config')
+        self.__check_type(timeint, int, 'timeint')
+        self.__check_type(todaemon, bool, 'todaemon')
+
         keys = ['rover', 'base', 'nav', 'sp3', 'clk', 'output']
         for k, v in paths.items():
             if k not in keys:
                 raise Exception(f"Неопознанный ключ {k}")
+            self.__check_type(v, str, v)
+
+        for k, v in config.items():
+            self.__check_type(v, str, k)
         
+        # start match
         rover_files = []
         base_files = []
         nav_files = []
@@ -279,7 +356,7 @@ class SoftwareDocker:
                         date = '/'.join(date)
 
                         path_docker = file.replace(paths['rover'], '')
-                        path_docker = '/app/input_rnx2rtkp' + path_docker
+                        path_docker = '/app/input_rnx2rtkp_rover/' + path_docker
                         if date in match_list:
                             match_list[date] += [path_docker]
                         else:
@@ -298,7 +375,7 @@ class SoftwareDocker:
                         date = '/'.join(date)
 
                         path_docker = file.replace(paths['base'], '')
-                        path_docker = '/app/input_rnx2rtkp' + path_docker
+                        path_docker = '/app/input_rnx2rtkp_base/' + path_docker
                         if date in match_list:
                             match_list[date] += [path_docker]
                         else:
@@ -322,7 +399,7 @@ class SoftwareDocker:
                         date = '/'.join(date)
 
                         path_docker = file.replace(paths['nav'], '')
-                        path_docker = '/app/input_rnx2rtkp' + path_docker
+                        path_docker = '/app/input_rnx2rtkp_nav/' + path_docker
                         if date in match_list:
                             match_list[date] += [path_docker]
                         else:
@@ -340,7 +417,7 @@ class SoftwareDocker:
                             date[0] if not len(date[0]) == 4 else date[0]
                         date = '/'.join(date)
                         path_docker = file.replace(paths['sp3'], '')
-                        path_docker = '/app/input_rnx2rtkp' + path_docker
+                        path_docker = '/app/input_rnx2rtkp_sp3/' + path_docker
                         if date in match_list:
                             match_list[date] += [path_docker]
                         else:
@@ -362,7 +439,7 @@ class SoftwareDocker:
                         date = '/'.join(date)
 
                         path_docker = file.replace(paths['clk'], '')
-                        path_docker = '/app/input_rnx2rtkp' + path_docker
+                        path_docker = '/app/input_rnx2rtkp_clk/' + path_docker
                         if date in match_list:
                             match_list[date] += [path_docker]
                         else:
@@ -383,8 +460,8 @@ class SoftwareDocker:
 
         pos_paths = []
         bar = IncrementalBar('Progress', max=len(match_list), suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
-        for key, value in match_list.items():
-
+        
+        for _, value in match_list.items():
             command = f'-ti {timeint} ' if timeint != '' else ''
             command += f"-k '/app/conf/{os.path.basename(path_conf)}' "
             for path_file in value:
