@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>moncenterlib package &mdash; MonCenterLib  documentation</title>
+  <title>moncenterlib package &mdash; MonCenterLib 0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -42,8 +42,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">moncenterlib</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">moncenterlib package</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-moncenterlib.raw2rnx">moncenterlib.raw2rnx module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-moncenterlib.rnx2pos">moncenterlib.rnx2pos module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-moncenterlib.softdocker">moncenterlib.softdocker module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#module-moncenterlib">Module contents</a></li>
 </ul>
 </li>
@@ -81,221 +80,105 @@
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
 </section>
-<section id="module-moncenterlib.raw2rnx">
-<span id="moncenterlib-raw2rnx-module"></span><h2>moncenterlib.raw2rnx module<a class="headerlink" href="#module-moncenterlib.raw2rnx" title="Permalink to this heading"></a></h2>
+<section id="module-moncenterlib.softdocker">
+<span id="moncenterlib-softdocker-module"></span><h2>moncenterlib.softdocker module<a class="headerlink" href="#module-moncenterlib.softdocker" title="Permalink to this heading"></a></h2>
 <dl class="py class">
-<dt class="sig sig-object py" id="moncenterlib.raw2rnx.Raw2Rnx">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">moncenterlib.raw2rnx.</span></span><span class="sig-name descname"><span class="pre">Raw2Rnx</span></span><a class="headerlink" href="#moncenterlib.raw2rnx.Raw2Rnx" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="moncenterlib.softdocker.SoftDocker">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">moncenterlib.softdocker.</span></span><span class="sig-name descname"><span class="pre">SoftDocker</span></span><a class="headerlink" href="#moncenterlib.softdocker.SoftDocker" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>RINEX (Receiver Independent Exchange Format) is a standard GPS/GNSS data
-format supported by many receivers or GPS/GNSS post‐processing analysis
-software. CONVBIN translates receiver raw, RTCM and BINEX messages to
-RINEX OBS (observation data), RINEX NAV (GNSS navigation messages).
-CONVBIN can also extract SBAS messages from the receiver
-raw data and output the SBAS log file. The supported RINEX versions
-are 2.10, 2.11, 2.12, 3.00, 3.01, 3.02, 3.03, 3.04.</p>
-<p>This class allows you to convert one or more files by configuration file.</p>
+<p>This class is designed to interact with various Linux programs
+using Docker technology. Thanks to this implementation, it becomes
+possible to work with programs that were written under Linux
+the system, both in Windows OS and Linux OS. The following programs
+are currently present in the Docker image: RTKLib, CATS.</p>
 <dl class="py method">
-<dt class="sig sig-object py" id="moncenterlib.raw2rnx.Raw2Rnx.read_dir">
-<span class="sig-name descname"><span class="pre">read_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="headerlink" href="#moncenterlib.raw2rnx.Raw2Rnx.read_dir" title="Permalink to this definition"></a></dt>
-<dd><p>This method reads files from the specified folder and puts the file
-paths in the list.</p>
+<dt class="sig sig-object py" id="moncenterlib.softdocker.SoftDocker.cats">
+<span class="sig-name descname"><span class="pre">cats</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#moncenterlib.softdocker.SoftDocker.cats" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="moncenterlib.softdocker.SoftDocker.convbin">
+<span class="sig-name descname"><span class="pre">convbin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">in_out_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#moncenterlib.softdocker.SoftDocker.convbin" title="Permalink to this definition"></a></dt>
+<dd><p>_summary_</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>input_dir</strong> – The path to the folder with the raw measurement files.</p>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>TypeError</strong> – Occurs if an incorrect data type was passed in the argument.</p>
-</dd>
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Returns a list containing the paths to the files.</p>
+<dd class="field-odd"><p>_description_</p>
 </dd>
 </dl>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">raw2rnx</span> <span class="o">=</span> <span class="n">Raw2Rnx</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">raw2rnx</span><span class="o">.</span><span class="n">read_dir</span><span class="p">(</span><span class="s1">&#39;/home_dir/NSKV/&#39;</span><span class="p">))</span>
-<span class="go">[&#39;/home_dir/NSKV/nskv3610.ubx&#39;, &#39;/home_dir/NSKV/nskv3620.ubx&#39;,</span>
-<span class="go">&#39;/home_dir/NSKV/nskv3600.ubx&#39;, &#39;/home_dir/NSKV/nskv3630.ubx&#39;]</span>
-</pre></div>
-</div>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="moncenterlib.raw2rnx.Raw2Rnx.start">
-<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">list_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path_convbin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">convbin_conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#moncenterlib.raw2rnx.Raw2Rnx.start" title="Permalink to this definition"></a></dt>
-<dd><p>This method starts the converting process.
-RINEX files are generated at the output. And also the method returns a
-dictionary with the paths of the generated RINEX files.</p>
+<dt class="sig sig-object py" id="moncenterlib.softdocker.SoftDocker.rnx2rtkp">
+<span class="sig-name descname"><span class="pre">rnx2rtkp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roles</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#moncenterlib.softdocker.SoftDocker.rnx2rtkp" title="Permalink to this definition"></a></dt>
+<dd><p>_summary_</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>_description_</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="moncenterlib.softdocker.SoftDocker.run_container">
+<span class="sig-name descname"><span class="pre">run_container</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paths_str2str</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">paths_convbin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">paths_rnx2rtkp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">paths_cats</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">restart_cont</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#moncenterlib.softdocker.SoftDocker.run_container" title="Permalink to this definition"></a></dt>
+<dd><p>This method is responsible for starting the docker container.
+Don’t forget to download the original docker image. As input to this
+method, you must pass the path to the folder where the files for
+processing will be stored. Also specify the path to the folder where
+the resulting files will be placed. Such paths must be specified for
+each program with which you are going to work.
+The first time you run the method, the container will automatically
+start and will not shut down until you manually turn it off.
+If you later want to add or remove paths to programs,
+you will need to restart the container. For this,
+a special argument restart_cont is implemented in the methods.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>list_files</strong> – The list is formed from the read_dir method.</p></li>
-<li><p><strong>path_convbin</strong> – The path to the convbin executable.</p></li>
-<li><p><strong>convbin_conf</strong> – The path to convbin config.</p></li>
-<li><p><strong>output_dir</strong> – The path to the output folder.</p></li>
+<li><p><strong>paths_str2str</strong> – The list must contain 2 elements. The first element
+is the path to the folder where the source files should be.
+The second element contains the path to the folder where the
+output files will be saved. Paths for the program STR2STR.
+Defaults to [].</p></li>
+<li><p><strong>paths_convbin</strong> – The list must contain 2 elements. The first element
+is the path to the folder where the source files should be.
+The second element contains the path to the folder where the
+output files will be saved. Paths for the program CONVBIN.
+Defaults to [].</p></li>
+<li><p><strong>paths_rnx2rtkp</strong> – The list must contain 2 elements. The first element
+is the path to the folder where the source files should be.
+The second element contains the path to the folder where the
+output files will be saved. Paths for the program RNX2RTKP.
+Defaults to [].</p></li>
+<li><p><strong>paths_cats</strong> – The list must contain 2 elements. The first element
+is the path to the folder where the source files should be.
+The second element contains the path to the folder where the
+output files will be saved. Paths for the program CATS.
+Defaults to [].</p></li>
+<li><p><strong>restart_cont</strong> – This flag is responsible for restarting the docker
+container. By default, docker will restart. A reboot is
+necessary if you have added or removed paths to various
+programs. Defaults to True.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>TypeError</strong> – Occurs if an incorrect data type was passed in the argument.</p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Returns a dictionary with the paths of the generated RINEX files.</p>
-</dd>
 </dl>
+<p>Raises: pass</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">raw2rnx</span> <span class="o">=</span> <span class="n">Raw2Rnx</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">lst</span> <span class="o">=</span> <span class="n">raw2rnx</span><span class="o">.</span><span class="n">read_dir</span><span class="p">(</span><span class="s1">&#39;/home_dir/NSKV/&#39;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">raw2rnx</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">lst</span><span class="p">,</span> <span class="s1">&#39;/home_dir/convbin&#39;</span><span class="p">,</span> <span class="s1">&#39;/home_dir/convbin.conf&#39;</span><span class="p">,</span> <span class="s1">&#39;/home_dir/output&#39;</span><span class="p">))</span>
-<span class="go">{</span>
-<span class="go">    &#39;/home_dir/NSKV/nskv3600.ubx&#39;: [&#39;/home_dir/output/nskv3600.ubx.o&#39;, &#39;/home_dir/output/nskv3600.ubx.n&#39;],</span>
-<span class="go">    &#39;/home_dir/NSKV/nskv3610.ubx&#39;: [&#39;/home_dir/output/nskv3610.ubx.o&#39;, &#39;/home_dir/output/nskv3610.ubx.n&#39;],</span>
-<span class="go">    &#39;/home_dir/NSKV/nskv3620.ubx&#39;: [&#39;/home_dir/output/nskv3620.ubx.o&#39;, &#39;/home_dir/output/nskv3620.ubx.n&#39;],</span>
-<span class="go">    &#39;/home_dir/NSKV/nskv3630.ubx&#39;: [&#39;/home_dir/output/nskv3630.ubx.o&#39;, &#39;/home_dir/output/nskv3630.ubx.n&#39;]</span>
-<span class="go">}</span>
-</pre></div>
-</div>
-</dd></dl>
-
-</dd></dl>
-
-</section>
-<section id="module-moncenterlib.rnx2pos">
-<span id="moncenterlib-rnx2pos-module"></span><h2>moncenterlib.rnx2pos module<a class="headerlink" href="#module-moncenterlib.rnx2pos" title="Permalink to this heading"></a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="moncenterlib.rnx2pos.Rnx2Pos">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">moncenterlib.rnx2pos.</span></span><span class="sig-name descname"><span class="pre">Rnx2Pos</span></span><a class="headerlink" href="#moncenterlib.rnx2pos.Rnx2Pos" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Rnx2Pos inputs the standard RINEX observation data and navigation message
-files (GPS, GLONASS, Galileo, QZSS,
-BeiDou and SBAS) and can computers the positioning solutions by various
-positioning modes including
-Single‐point, DGPS/DGNSS, Kinematic, Static, PPP‐Kinematic and PPP‐Static.
-The module can accept one or more files.
-Thanks to this functionality, it becomes possible to process a large
-number of files with the same settings.</p>
-<dl class="py method">
-<dt class="sig sig-object py" id="moncenterlib.rnx2pos.Rnx2Pos.read_dirs">
-<span class="sig-name descname"><span class="pre">read_dirs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_rover</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_nav</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_sp3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_clk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_ionex</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#moncenterlib.rnx2pos.Rnx2Pos.read_dirs" title="Permalink to this definition"></a></dt>
-<dd><p>This method reads files from the specified folders and creates
-dictionary. The dictionary in which the files were filtered by dates
-is returned.
-Input SBAS and FCB are in development.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>input_rover</strong> – The path to the folder with the files of the
-rover station.</p></li>
-<li><p><strong>input_base</strong> (<em>optional</em>) – The path to the folder with the files
-of the base station. Defaults to ‘’</p></li>
-<li><p><strong>input_nav</strong> (<em>optional</em>) – The path to the folder with ephemeris files.
-Defaults to ‘’</p></li>
-<li><p><strong>input_sp3</strong> (<em>optional</em>) – The path to the folder with the Precise
-ephemeris or Clock files. Defaults to ‘’</p></li>
-<li><p><strong>input_clk</strong> (<em>optional</em>) – The path to the folder with the
-Clock files. Defaults to ‘’</p></li>
-<li><p><strong>input_ionex</strong> (<em>optional</em>) – The path to the folder with the
-IONEX files. Defaults to ‘’</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The dictionary in which the files were filtered by dates is returned.</p>
-</dd>
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><p><strong>TypeError</strong> – Occurs if an incorrect data type was passed in the argument.</p>
-</dd>
-</dl>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rnx2pos</span> <span class="o">=</span> <span class="n">Rnx2Pos</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">rnx2pos</span><span class="o">.</span><span class="n">read_dirs</span><span class="p">(</span><span class="s1">&#39;/home_dir/NOVM/&#39;</span><span class="p">,</span> <span class="n">input_nav</span><span class="o">=</span><span class="s1">&#39;/home_dir/eph/&#39;</span><span class="p">))</span>
-<span class="go">{</span>
-<span class="go">&#39;2022/1/11&#39;: [&#39;/home_dir/NOVM/novm0110.22o&#39;, &#39;/home_dir/eph/nsk10110.22n&#39;],</span>
-<span class="go">&#39;2022/1/12&#39;: [&#39;/home_dir/NOVM/novm0120.22o&#39;, &#39;/home_dir/eph/nsk10120.22n&#39;]</span>
-<span class="go">}</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">MonCenterLib.moncenterlib.softdocker</span> <span class="k">import</span> <span class="n">SoftDocker</span> <span class="k">as</span> <span class="n">SD</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sd</span> <span class="o">=</span> <span class="n">SD</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">paths_convbin</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;/home/test/raw&#39;</span><span class="p">,</span> <span class="s1">&#39;/home/test/output_rnx&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">paths_rnx2rtkp</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;/home/test/input_rnx&#39;</span><span class="p">,</span> <span class="s1">&#39;/home/test/output_pos&#39;</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sd</span><span class="o">.</span><span class="n">run_container</span><span class="p">(</span><span class="n">paths_convbin</span><span class="o">=</span><span class="n">paths_convbin</span><span class="p">,</span>
+<span class="go">                     paths_rnx2rtkp=paths_rnx2rtkp,</span>
+<span class="go">                     restart_cont=False)</span>
 </pre></div>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="moncenterlib.rnx2pos.Rnx2Pos.read_list">
-<span class="sig-name descname"><span class="pre">read_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_rover</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_nav</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_sp3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_clk</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_ionex</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#moncenterlib.rnx2pos.Rnx2Pos.read_list" title="Permalink to this definition"></a></dt>
-<dd><p>This method reads lists containing paths to files and forms
-a match_list dictionary from them. Input SBAS and FCB are
-in development.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>input_rover</strong> – A list containing the paths to the files
-rover station.</p></li>
-<li><p><strong>input_base</strong> (<em>optional</em>) – A list containing the paths to the files.
-base station. Defaults to [].</p></li>
-<li><p><strong>input_nav</strong> (<em>optional</em>) – A list containing the paths to the
-files ephemeris. Defaults to [].</p></li>
-<li><p><strong>input_sp3</strong> (<em>optional</em>) – A list containing the paths to the files
-precise ephemeris. Defaults to [].</p></li>
-<li><p><strong>input_clk</strong> (<em>optional</em>) – A list containing the paths to the files
-Clock. Defaults to [].</p></li>
-<li><p><strong>input_sbas_ionex_fcb</strong> (<em>optional</em>) – A list containing the paths
-to the IONEX files. Defaults to [].</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>TypeError</strong> – Occurs if an incorrect data type was passed in the argument.</p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The dictionary in which the files were filtered by dates is returned.</p>
-</dd>
-</dl>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rnx2pos</span> <span class="o">=</span> <span class="n">Rnx2Pos</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">rover_list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;/home_dir/NOVM/novm0110.22o&#39;</span><span class="p">,</span> <span class="s1">&#39;/home_dir/NOVM/novm0120.22o&#39;</span><span class="p">]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">nav_list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;/home_dir/eph/nsk10110.22n&#39;</span><span class="p">,</span> <span class="s1">&#39;/home_dir/eph/nsk10120.22n&#39;</span><span class="p">]</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">rnx2pos</span><span class="o">.</span><span class="n">read_list</span><span class="p">(</span><span class="n">rover_list</span><span class="p">,</span> <span class="n">input_nav</span><span class="o">=</span><span class="n">nav_list</span><span class="p">))</span>
-<span class="go">{</span>
-<span class="go">&#39;2022/1/11&#39;: [&#39;/home_dir/NOVM/novm0110.22o&#39;, &#39;/home_dir/eph/nsk10110.22n&#39;],</span>
-<span class="go">&#39;2022/1/12&#39;: [&#39;/home_dir/NOVM/novm0120.22o&#39;, &#39;/home_dir/eph/nsk10120.22n&#39;]</span>
-<span class="go">}</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="moncenterlib.rnx2pos.Rnx2Pos.start">
-<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">match_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path_rnx2rtkp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rnx2rtkp_conf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#moncenterlib.rnx2pos.Rnx2Pos.start" title="Permalink to this definition"></a></dt>
-<dd><p>This method starts the post-processing process.
-The output generates a list with paths to the generated .pos files.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>match_list</strong> – The dictionary is formed from the read_dirs or read_list method.</p></li>
-<li><p><strong>path_rnx2rtkp</strong> – The path to the rnx2rtkp executable.</p></li>
-<li><p><strong>rnx2rtkp_conf</strong> – The path to rnx2rtkp config.</p></li>
-<li><p><strong>output_dir</strong> – The path to the output folder.</p></li>
-<li><p><strong>timeint</strong> – Time interval (seconds). Defaults to ‘’.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>TypeError</strong> – Occurs if an incorrect data type was passed in the argument.</p>
-</dd>
-<dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>The tuple returns. The first element contains a list that
-specifies the paths to .pos files. The second element contains
-a dictionary in which errors are displayed.</p>
-</dd>
-</dl>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">rnx2pos</span> <span class="o">=</span> <span class="n">Rnx2Pos</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">match_list</span> <span class="o">=</span> <span class="n">rnx2pos</span><span class="o">.</span><span class="n">read_dirs</span><span class="p">(</span><span class="s1">&#39;/home_dir/NOVM/&#39;</span><span class="p">,</span> <span class="n">input_base</span><span class="o">=</span><span class="s1">&#39;/home_dir/NSK1/&#39;</span><span class="p">,</span> <span class="n">input_nav</span><span class="o">=</span><span class="s1">&#39;/home_dir/eph/&#39;</span><span class="p">))</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">rnx2pos</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">match_list</span><span class="p">,</span> <span class="s1">&#39;/home_dir/rnx2rtkp&#39;</span><span class="p">,</span> <span class="s1">&#39;/home_dir/rnx2rtkp.conf&#39;</span><span class="p">,</span> <span class="s1">&#39;/home_dir/output/&#39;</span><span class="p">,</span> <span class="n">timeint</span><span class="o">=</span><span class="mi">30</span><span class="p">))</span>
-<span class="go">(</span>
-<span class="go">    [&#39;home_dir/output/novm0040.22o.pos&#39;, &#39;home_dir/output/novm0090.22o.pos&#39;],</span>
-<span class="go">    {</span>
-<span class="go">    &#39;2022/1/1&#39;: [[&#39;/home_dir/NOVM/novm0010.22o&#39;], &#39;Not enough files&#39;],</span>
-<span class="go">    &#39;2022/1/10&#39;: [[&#39;/home_dir/NOVM/novm0100.22o&#39;], &#39;Not enough files&#39;]</span>
-<span class="go">    }</span>
-<span class="go">)</span>
-</pre></div>
-</div>
-</dd></dl>
+<dt class="sig sig-object py" id="moncenterlib.softdocker.SoftDocker.str2str">
+<span class="sig-name descname"><span class="pre">str2str</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#moncenterlib.softdocker.SoftDocker.str2str" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -315,7 +198,7 @@ a dictionary in which errors are displayed.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2022, Daniel Mamaev.</p>
+    <p>&#169; Copyright 2023, DanielMamaev.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

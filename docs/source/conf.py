@@ -2,18 +2,21 @@
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
-import os
-import sys
-sys.path.insert(0, os.path.abspath('../..'))
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'MonCenterLib'
-copyright = '2022, Daniel Mamaev'
-author = 'Daniel Mamaev'
+copyright = '2023, DanielMamaev'
+author = 'DanielMamaev'
+release = '0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../..'))
 
 extensions = ['sphinxcontrib.napoleon']
 napoleon_numpy_docstring = False

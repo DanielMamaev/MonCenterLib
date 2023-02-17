@@ -4,18 +4,10 @@ moncenterlib package
 Submodules
 ----------
 
-moncenterlib.raw2rnx module
----------------------------
+moncenterlib.softdocker module
+------------------------------
 
-.. automodule:: moncenterlib.raw2rnx
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-moncenterlib.rnx2pos module
----------------------------
-
-.. automodule:: moncenterlib.rnx2pos
+.. automodule:: moncenterlib.softdocker
    :members:
    :undoc-members:
    :show-inheritance:
