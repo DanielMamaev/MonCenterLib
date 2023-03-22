@@ -24,8 +24,23 @@ class Stream2File():
     def new_serial(self):
         pass
 
-    def new_tcp(self):
-        pass
+    def new_tcp(self, host, port, name, output):
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.settimeout(5)
+
+        try:
+            server_socket.connect((host, port))
+        except Exception as e:
+            print(f'Unable to connect socket to server at http://{host}:{port}')
+            print(f'Exception: {str(e)}')
+            return False
+        
+        self.clients[server_socket] = {'type': 'tcp',
+                                        'name': name,
+                                        'output': output,
+                                        'last_size_data': 0,
+                                        'size_data': 0}
+        self.selector.register(fileobj=server_socket, events=selectors.EVENT_READ, data=self.__read_data)
 
     def new_ntrip(self,
                   host,
@@ -108,15 +123,15 @@ class Stream2File():
                                            'output': output,
                                            'last_size_data': 0,
                                            'size_data': 0}
-            self.selector.register(fileobj=server_socket, events=selectors.EVENT_READ, data=self._read_data)
+            self.selector.register(fileobj=server_socket, events=selectors.EVENT_READ, data=self.__read_data)
 
     def disconnect(self):
         pass
 
-    def reconnect(self):
+    def __reconnect(self):
         pass
 
-    def _read_data(self, server_socket, output):
+    def __read_data(self, server_socket, output):
         data = server_socket.recv(1024)
 
         self.clients[server_socket]['last_size_data'] = len(data)
@@ -142,12 +157,6 @@ class Stream2File():
             if val['name'] == name:
                 return val
 
-    def get_names(self):
-        names = []
-        for _, val in self.clients.items():
-            names.append(val['name'])
-        return names
-
 
 if __name__ == '__main__':
     s2f = Stream2File()
@@ -158,7 +167,6 @@ if __name__ == '__main__':
     
     import time
     time.sleep(10)
-    print(s2f.get_names())
     print(s2f.get_status('task1'))
     print(s2f.get_status('task2'))
     print(s2f.get_status('task3'))

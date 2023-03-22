@@ -99,67 +99,6 @@ class SoftwareDocker:
     def _stop_container(self):
         pass
 
-    def str2str(self, config: dict, name: str, root_dir, todaemon: bool = False) -> None:
-        # check type
-        self.__check_type(config, dict, 'config')
-        self.__check_type(name, str, 'name')
-        self.__check_type(todaemon, bool, 'todaemon')
-
-        keys = ['input', 'output1', 'output2', 'output3', 'output4', 'output5', 'output6']
-        for k, v in config.items():
-            if k not in keys:
-                raise Exception(f"Неопознанный ключ '{k}'")
-            self.__check_type(v, dict, v)
-        
-        command = '-in '
-        input_stream = config['input']
-        if input_stream['type'] == 'serial':
-            pass
-        elif input_stream['type'] == 'tcpsvr':
-            pass
-        elif input_stream['type'] == 'tcpcli':
-            pass
-        elif input_stream['type'] == 'ntrip':
-            command += 'ntrip://'
-            command += f"{input_stream['user']}:"
-            command += f"{input_stream['passwd']}@"
-            command += f"{input_stream['addr']}:"
-            command += f"{input_stream['port']}/"
-            command += f"{input_stream['mntpnt']}"
-        elif input_stream['type'] == 'file':
-            pass
-        
-        for key, value in config.items():
-            if not key == 'input':
-                command += ' -out '
-                if value['type'] == 'serial':
-                    pass
-                elif value['type'] == 'tcpsvr':
-                    pass
-                elif value['type'] == 'tcpcli':
-                    pass
-                elif value['type'] == 'ntrip':
-                    command += 'ntrip://'
-                    command += f"{value['user']}:"
-                    command += f"{value['passwd']}@"
-                    command += f"{value['addr']}:"
-                    command += f"{value['port']}/"
-                    command += f"{value['mntpnt']}"
-                elif value['type'] == 'ntrips':
-                    pass
-                elif value['type'] == 'ntripc':
-                    pass
-                elif value['type'] == 'file':
-                    command += 'file://'
-                    command += f"/app/output_str2str/'{value['name']}'"
-       
-        cmd = f'ps -eF'
-        print(cmd)
-        paths = {'output': root_dir}
-        self._run_container('str2str', paths, daemon=True)
-        cont = self.client.containers.get('moncenterlib_str2str_daemon')
-        print(cont.exec_run(cmd, detach=True))
-
     def convbin(self, paths: dict, config: dict, recursion: bool = False,
                 todaemon: bool = False) -> dict:
 
