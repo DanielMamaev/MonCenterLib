@@ -84,7 +84,7 @@ class CDDISClient:
         return os.path.join(path_dir, nav_gzip[:nav_gzip.rfind('.')])
 
     def get_daily_obs(self, path_dir, point, year, day, input_logger=None, delete_gz=True):
-        
+
         """
         TODO
         Доделать поиск ринекс 3 версии, пока только 2
@@ -151,8 +151,6 @@ class CDDISClient:
                 os.remove(os.path.join(path_dir, obs_gzip))
             except Exception as e:
                 logger.error(f'Что то случилось с удалением файла nav.gzip {os.path.join(path_dir, obs_gzip)}. {e}')
-        
-        
-        
+
         logger.handlers.clear()
         return os.path.join(path_dir, obs_gzip[:obs_gzip.rfind('.')])
