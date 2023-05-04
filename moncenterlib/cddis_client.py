@@ -76,10 +76,10 @@ class CDDISClient:
 
         if delete_gz:
             try:
-                os.remove(nav_gzip)
+                os.remove(os.path.join(path_dir, nav_gzip))
             except Exception as e:
                 logger.error(
-                    f'Что то случилось с удалением файла nav.gzip {nav_gzip}. {e}')
+                    f'Что то случилось с удалением файла nav.gzip {os.path.join(path_dir, nav_gzip)}. {e}')
 
         return os.path.join(path_dir, nav_gzip[:nav_gzip.rfind('.')])
 
@@ -146,17 +146,13 @@ class CDDISClient:
             logger.error(f'Что то случилось с разархвивацией файла {obs_gzip} CDDIS. {e}')
             return False
 
-        try:
-            os.remove(os.path.join(path_dir, obs_gzip))
-        except Exception as e:
-            logger.error(f'Что то случилось с удалением файла nav.gzip {obs_gzip}. {e}')
-        
-        if obs_gzip:
+        if delete_gz:
             try:
-                os.remove(obs_gzip)
+                os.remove(os.path.join(path_dir, obs_gzip))
             except Exception as e:
-                logger.error(
-                    f'Что то случилось с удалением файла nav.gzip {obs_gzip}. {e}')
+                logger.error(f'Что то случилось с удалением файла nav.gzip {os.path.join(path_dir, obs_gzip)}. {e}')
+        
+        
         
         logger.handlers.clear()
         return os.path.join(path_dir, obs_gzip[:obs_gzip.rfind('.')])
