@@ -20,7 +20,7 @@ class Anubis:
             ch.setFormatter(formatter)
             logger.addHandler(ch)
         print('')
-        
+
         anubis_path = str(Path(__file__).resolve().parent.parent)
         anubis_path = os.path.join(anubis_path, 'bin')
         anubis_path = os.path.join(anubis_path, 'anubis-3.5-lin-static-64b')

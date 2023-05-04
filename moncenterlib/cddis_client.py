@@ -6,7 +6,7 @@ import shutil
 
 
 class CDDISClient:
-    def get_daily_multi_gnss_brd_eph(path_dir, year, day, input_logger=None, delete_gz=True):
+    def get_daily_multi_gnss_brd_eph(self, path_dir, year, day, input_logger=None, delete_gz=True):
         year = str(year)
         day = str(day).zfill(3)
 
@@ -83,7 +83,7 @@ class CDDISClient:
 
         return os.path.join(path_dir, nav_gzip[:nav_gzip.rfind('.')])
 
-    def get_daily_obs(path_dir, point, year, day, input_logger=None, delete_gz=True):
+    def get_daily_obs(self, path_dir, point, year, day, input_logger=None, delete_gz=True):
         
         """
         TODO
