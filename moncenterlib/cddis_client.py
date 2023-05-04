@@ -6,7 +6,7 @@ import shutil
 
 
 class CDDISClient:
-    def get_daily_multi_gnss_brd_eph(path_dir, year, day, input_logger=None):
+    def get_daily_multi_gnss_brd_eph(path_dir, year, day, input_logger=None, delete_gz=True):
         year = str(year)
         day = str(day).zfill(3)
 
@@ -74,9 +74,16 @@ class CDDISClient:
                 f'Что то случилось с разархвивацией файла {nav_gzip} CDDIS. {e}')
             return False
 
+        if delete_gz:
+            try:
+                os.remove(nav_gzip)
+            except Exception as e:
+                logger.error(
+                    f'Что то случилось с удалением файла nav.gzip {nav_gzip}. {e}')
+
         return os.path.join(path_dir, nav_gzip[:nav_gzip.rfind('.')])
 
-    def get_daily_obs(path_dir, point, year, day, input_logger=None):
+    def get_daily_obs(path_dir, point, year, day, input_logger=None, delete_gz=True):
         
         """
         TODO
@@ -143,6 +150,13 @@ class CDDISClient:
             os.remove(os.path.join(path_dir, obs_gzip))
         except Exception as e:
             logger.error(f'Что то случилось с удалением файла nav.gzip {obs_gzip}. {e}')
-
+        
+        if obs_gzip:
+            try:
+                os.remove(obs_gzip)
+            except Exception as e:
+                logger.error(
+                    f'Что то случилось с удалением файла nav.gzip {obs_gzip}. {e}')
+        
         logger.handlers.clear()
         return os.path.join(path_dir, obs_gzip[:obs_gzip.rfind('.')])
