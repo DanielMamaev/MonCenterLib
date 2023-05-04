@@ -13,7 +13,7 @@ class SoftwareDocker:
     using Docker technology. Thanks to this implementation, it becomes
     possible to work with programs that were written under Linux
     the system, both in Windows OS and Linux OS. The following programs
-    are currently present in the Docker image: RTKLib, CATS.
+    are currently present in the Docker image: RTKLib, Hector.
     """
 
     def __init__(self) -> None:
@@ -422,5 +422,8 @@ class SoftwareDocker:
         os.remove(path_conf)
         return self.__check_files(pos_paths)
 
-    def cats(self):
+    def hector_removeoutliers(self, paths: dict, config: dict):
+        pass
+
+    def hector_estimatetrend(self, paths: dict, config: dict):
         pass

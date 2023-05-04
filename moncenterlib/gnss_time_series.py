@@ -74,13 +74,11 @@ class GnssTimeSeries:
                         row_min = row
                 df_daily.loc[len(df_daily)] = row_min
             df_daily.reset_index(drop=True, inplace=True)
-        
+
         elif filter == 'mean':
             pass
-        
+
         return df_daily
-    
-    
+
     def get_weekly_dataframe(self, data):
         pass
-
