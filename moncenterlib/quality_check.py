@@ -98,7 +98,7 @@ class Anubis:
                             break
             except Exception as e:
                 self.logger.error(f'Ошибка чтения файла {file_obs}-{e}')
-                break
+                continue
 
             if date_obs in filter_files_nav:
                 bar.next()
