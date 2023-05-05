@@ -2,6 +2,8 @@ import logging
 import os
 import json
 from pathlib import Path
+from progress.bar import IncrementalBar
+import datetime as dt
 
 
 class Anubis:
@@ -25,7 +27,8 @@ class Anubis:
     def read_dirs(self, path_obs, path_nav):
         self.match_list = dict()
         if ' ' in path_obs or ' ' in path_nav:
-            self.logger.error('Пожалуйста, уберите в пути или в названии файла пробелы. Anubis не умеет их обрабатывать')
+            self.logger.error(
+                'Пожалуйста, уберите в пути или в названии файла пробелы. Anubis не умеет их обрабатывать')
             return False
 
         files_obs = []
@@ -39,24 +42,15 @@ class Anubis:
                 path = os.path.join(root, file)
                 files_nav.append(path)
 
-        for file_obs in files_obs:
-            date_obs = ''
-            marker_name = ''
-            with open(file_obs, 'r') as f_obs:
-                for n, line_obs in enumerate(f_obs, 1):
-                    if 'TIME OF FIRST OBS' in line_obs:
-                        date_obs = line_obs.split()[:3]
-                        date_obs[1] = date_obs[1].zfill(2)
-                        date_obs[2] = date_obs[2].zfill(2)
-                        date_obs = '-'.join(date_obs)
-                    if 'MARKER NAME' in line_obs:
-                        marker_name = line_obs.split()[0]
-                    elif 'END OF HEADER' in line_obs:
-                        break
-                        
-            for file_nav in files_nav:
-                date_nav = ''
-                flag_end = False
+        bar = IncrementalBar(f'Scan nav - Progress', max=len(files_nav),
+                             suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
+        bar.start()
+
+        filter_files_nav = dict()
+        for file_nav in files_nav:
+            date_nav = ''
+            flag_end = False
+            try:
                 with open(file_nav, 'r') as f_nav:
                     for n, line_nav in enumerate(f_nav, 1):
                         if 'END OF HEADER' in line_nav:
@@ -65,29 +59,62 @@ class Anubis:
                             date_nav = line_nav.split()[1:4]
                             date_nav[1] = date_nav[1].zfill(2)
                             date_nav[2] = date_nav[2].zfill(2)
-                            date_nav[0] = '20' + date_nav[0] if not len(date_nav[0]) == 4 else date_nav[0]
-                            date_nav = '-'.join(date_nav)
+                            date_nav = dt.datetime.strptime(
+                                f'{date_nav[0]}-{date_nav[1]}-{date_nav[2]}', '%y-%m-%d')
+                            date_nav = date_nav.strftime('%Y-%m-%d')
+                            filter_files_nav[date_nav] = file_nav
                             break
-                if date_obs == date_nav:
-                    if marker_name in self.match_list:
-                        self.match_list[marker_name].append([file_obs, file_nav])
-                    else:
-                        self.match_list[marker_name] = [[file_obs, file_nav]]
-                                        
+            except Exception as e:
+                self.logger.error(f'Ошибка чтения файла {file_obs}-{e}')
+                break
+            bar.next()
+        bar.finish()
+
+        bar = IncrementalBar(f'Match files - Progress', max=len(files_obs),
+                             suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
+        bar.start()
+        for file_obs in files_obs:
+            date_obs = ''
+            marker_name = ''
+            try:
+                with open(file_obs, 'r') as f_obs:
+                    for n, line_obs in enumerate(f_obs, 1):
+                        if 'TIME OF FIRST OBS' in line_obs:
+                            date_obs = line_obs.split()[:3]
+                            date_obs[1] = date_obs[1].zfill(2)
+                            date_obs[2] = date_obs[2].zfill(2)
+                            date_obs = '-'.join(date_obs)
+                        if 'MARKER NAME' in line_obs:
+                            marker_name = line_obs.split()[0]
+                        elif 'END OF HEADER' in line_obs:
+                            break
+            except Exception as e:
+                self.logger.error(f'Ошибка чтения файла {file_obs}-{e}')
+                break
+
+            if date_obs in filter_files_nav:
+                bar.next()
+                if marker_name in self.match_list:
+                    self.match_list[marker_name].append([file_obs, filter_files_nav[date_obs]])
+                else:
+                    self.match_list[marker_name] = [[file_obs, filter_files_nav[date_obs]]]
+        
+        bar.finish()
         return self.match_list
 
     def start_linux(self, obs=None, nav=None):
         output_list = dict()
 
         if (obs != None and ' ' in obs) or (nav != None and ' ' in nav):
-            self.logger.error('Пожалуйста, уберите в пути пробелы. Anubis не умеет их обрабатывать')
+            self.logger.error(
+                'Пожалуйста, уберите в пути пробелы. Anubis не умеет их обрабатывать')
             return False
 
         if type(obs) == str and type(nav) == str:
             self.match_list = {'point': [[obs, nav]]}
-                                         
+
         for marker_name, matchs in self.match_list.items():
-            
+
             for match in matchs:
                 date = ''
                 if len(match) != 2:
@@ -96,7 +123,8 @@ class Anubis:
 
                 anubis_path = str(Path(__file__).resolve().parent.parent)
                 anubis_path = os.path.join(anubis_path, 'bin')
-                anubis_path = os.path.join(anubis_path, 'anubis-3.5-lin-static-64b')
+                anubis_path = os.path.join(
+                    anubis_path, 'anubis-3.5-lin-static-64b')
                 cmd = f'{anubis_path} --full '
                 cmd += f':inp:rinexo "{match[0]}" '
                 cmd += f':inp:rinexn "{match[1]}" '
@@ -120,7 +148,8 @@ class Anubis:
                         f'Что то случилось с открытием файла Anubis {match[0]}.xtr. {e}')
                     continue
 
-                self.logger.info(f'Начинаем парсить файл Anubis {match[0]}.xtr')
+                self.logger.info(
+                    f'Начинаем парсить файл Anubis {match[0]}.xtr')
                 meta_data = {}
                 flag_gnssum = False
                 flag_data_error = False
@@ -157,11 +186,15 @@ class Anubis:
                             if row_data == '\n':
                                 break
                             row_data = row_data.split(' ')
-                            row_split = list(filter(lambda i: i != '', row_data))
-                            name_sys = row_split[0].replace("=", "").replace("SUM", "")
+                            row_split = list(
+                                filter(lambda i: i != '', row_data))
+                            name_sys = row_split[0].replace(
+                                "=", "").replace("SUM", "")
                             try:
-                                meta_data["missEpoch"][name_sys] = int(row_split[11])
-                                meta_data["nSlip"][name_sys] = int(row_split[14])
+                                meta_data["missEpoch"][name_sys] = int(
+                                    row_split[11])
+                                meta_data["nSlip"][name_sys] = int(
+                                    row_split[14])
                             except Exception as e:
                                 self.logger.error(
                                     f'Что то не так с парсингом файла. Параметр #GNSSUM. Пропуск обработки. {e}')
@@ -170,21 +203,25 @@ class Anubis:
 
                             try:
                                 meta_data["CodeMulti"][name_sys +
-                                                    "MP1"] = float(row_split[18])
+                                                       "MP1"] = float(row_split[18])
                             except ValueError as e:
                                 self.logger.warning(f'Попался дефис. {e}')
-                                meta_data["CodeMulti"][name_sys+"MP1"] = row_split[18]
+                                meta_data["CodeMulti"][name_sys +
+                                                       "MP1"] = row_split[18]
 
                             try:
                                 meta_data["CodeMulti"][name_sys +
-                                                    "MP2"] = float(row_split[19])
+                                                       "MP2"] = float(row_split[19])
                             except ValueError as e:
                                 self.logger.warning(f'Попался дефис. {e}')
-                                meta_data["CodeMulti"][name_sys+"MP2"] = row_split[19]
+                                meta_data["CodeMulti"][name_sys +
+                                                       "MP2"] = row_split[19]
                             count += 1
 
-                        meta_data["missEpoch"] = json.dumps(meta_data["missEpoch"])
-                        meta_data["CodeMulti"] = json.dumps(meta_data["CodeMulti"])
+                        meta_data["missEpoch"] = json.dumps(
+                            meta_data["missEpoch"])
+                        meta_data["CodeMulti"] = json.dumps(
+                            meta_data["CodeMulti"])
                         meta_data["nSlip"] = json.dumps(meta_data["nSlip"])
                         if flag_data_error:
                             break
@@ -198,16 +235,20 @@ class Anubis:
                         for i in range(num_sys):
                             row_data = data[indx+2+i]
                             row_split = row_data.split(' ')
-                            row_split = list(filter(lambda i: i != '', row_split))
-                            name_sys = row_split[0].replace("=", "").replace("SAT", "")
+                            row_split = list(
+                                filter(lambda i: i != '', row_split))
+                            name_sys = row_split[0].replace(
+                                "=", "").replace("SAT", "")
                             try:
-                                meta_data["SAT_healthy"][name_sys] = int(row_split[3])
+                                meta_data["SAT_healthy"][name_sys] = int(
+                                    row_split[3])
                             except Exception as e:
                                 self.logger.error(
                                     f'Что то не так с парсингом файла. Параметр SAT_healthy. Пропуск обработки. {e}')
                                 flag_data_error = True
                                 break
-                        meta_data["SAT_healthy"] = json.dumps(meta_data["SAT_healthy"])
+                        meta_data["SAT_healthy"] = json.dumps(
+                            meta_data["SAT_healthy"])
 
                         if flag_data_error:
                             break
@@ -224,38 +265,42 @@ class Anubis:
                             if row_data == '\n':
                                 break
                             row_data = row_data.split(' ')
-                            row_split = list(filter(lambda i: i != '', row_data))
+                            row_split = list(
+                                filter(lambda i: i != '', row_data))
                             name_sys = row_split[0].replace("=", "")
                             try:
-                                meta_data["Sig2Noise"][name_sys] = float(row_split[3])
+                                meta_data["Sig2Noise"][name_sys] = float(
+                                    row_split[3])
                             except Exception as e:
                                 self.logger.error(
                                     f'Что то не так с парсингом файла. Параметр Sig2Noise. Пропуск обработки. {e}')
                                 flag_data_error = True
                                 break
                             count += 1
-                        meta_data["Sig2Noise"] = json.dumps(meta_data["Sig2Noise"])
+                        meta_data["Sig2Noise"] = json.dumps(
+                            meta_data["Sig2Noise"])
                         if flag_data_error:
                             break
 
                 if flag_data_error:
-                    self.logger.error(f'Некорректные данные в файле Anubis {match[0]}.xtr.')
+                    self.logger.error(
+                        f'Некорректные данные в файле Anubis {match[0]}.xtr.')
                     continue
 
                 try:
                     data2df = {'total_time': meta_data['total_time'],
-                            'ExptObs': meta_data['ExptObs'],
-                            'ExisObs': meta_data['ExisObs'],
-                            '%Ratio': meta_data['%Ratio'],
-                            'ExptObs>10': meta_data['ExptObs>10'],
-                            'ExisObs>10': meta_data['ExisObs>10'],
-                            '%Ratio>10': meta_data["%Ratio>10"],
-                            'missEpoch': meta_data['missEpoch'],
-                            'CodeMulti': meta_data['CodeMulti'],
-                            'SAT_healthy': meta_data['SAT_healthy'],
-                            'nSlip': meta_data['nSlip'],
-                            'Sig2Noise': meta_data['Sig2Noise']
-                            }
+                               'ExptObs': meta_data['ExptObs'],
+                               'ExisObs': meta_data['ExisObs'],
+                               '%Ratio': meta_data['%Ratio'],
+                               'ExptObs>10': meta_data['ExptObs>10'],
+                               'ExisObs>10': meta_data['ExisObs>10'],
+                               '%Ratio>10': meta_data["%Ratio>10"],
+                               'missEpoch': meta_data['missEpoch'],
+                               'CodeMulti': meta_data['CodeMulti'],
+                               'SAT_healthy': meta_data['SAT_healthy'],
+                               'nSlip': meta_data['nSlip'],
+                               'Sig2Noise': meta_data['Sig2Noise']
+                               }
 
                 except KeyError as e:
                     self.logger.error(
@@ -268,7 +313,7 @@ class Anubis:
                     self.logger.error(
                         f'Что то случилось с удалением файла {match[0]}.xtr. {e}')
 
-                if marker_name in output_list: 
+                if marker_name in output_list:
                     output_list[marker_name][date] = data2df
                 else:
                     output_list[marker_name] = {}
@@ -276,3 +321,8 @@ class Anubis:
 
         self.match_list = list()
         return output_list
+
+
+a = Anubis()
+b = a.read_dirs('/home/danisimo/MonCenterLib/testaa/test_anubis', '/home/danisimo/MonCenterLib/testaa/Post/nav')
+print(b)
