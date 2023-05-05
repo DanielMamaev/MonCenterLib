@@ -122,11 +122,14 @@ class Anubis:
             self.match_list = {'point': [[obs, nav]]}
 
         for marker_name, matchs in self.match_list.items():
-
+            bar = IncrementalBar(f'Anubis - {marker_name} - progress', max=len(matchs),
+                                suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
+            bar.start()
             for match in matchs:
                 date = ''
                 if len(match) != 2:
                     self.logger.error(f'Не хватает какого то файла {match}')
+                    bar.next()
                     continue
 
                 anubis_path = str(Path(__file__).resolve().parent.parent)
@@ -154,6 +157,7 @@ class Anubis:
                 except Exception as e:
                     self.logger.error(
                         f'Что то случилось с открытием файла Anubis {match[0]}.xtr. {e}')
+                    bar.next()
                     continue
 
                 self.logger.info(
@@ -293,6 +297,7 @@ class Anubis:
                 if flag_data_error:
                     self.logger.error(
                         f'Некорректные данные в файле Anubis {match[0]}.xtr.')
+                    bar.next()
                     continue
 
                 try:
@@ -313,6 +318,7 @@ class Anubis:
                 except KeyError as e:
                     self.logger.error(
                         f'Что то случилось с формированием новой записи. {e}')
+                    bar.next()
                     continue
 
                 try:
@@ -326,6 +332,8 @@ class Anubis:
                 else:
                     output_list[marker_name] = {}
                     output_list[marker_name][date] = data2df
-
+                
+                bar.next()
+        bar.finish()
         self.match_list = list()
         return output_list
