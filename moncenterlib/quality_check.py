@@ -31,18 +31,21 @@ class Anubis:
                 'Пожалуйста, уберите в пути или в названии файла пробелы. Anubis не умеет их обрабатывать')
             return False
 
+        self.logger.info(f'Находим файлы измерений obs')
         files_obs = []
         for root, _, files in os.walk(path_obs):
             for file in files:
                 path = os.path.join(root, file)
                 files_obs.append(path)
+        
+        self.logger.info(f'Находим файлы эферид nav')
         files_nav = []
         for root, _, files in os.walk(path_nav):
             for file in files:
                 path = os.path.join(root, file)
                 files_nav.append(path)
 
-        bar = IncrementalBar(f'Scan nav - Progress', max=len(files_nav),
+        bar = IncrementalBar(f'Filter nav - Progress', max=len(files_nav),
                              suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
         bar.start()
 
