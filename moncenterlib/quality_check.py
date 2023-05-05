@@ -329,8 +329,3 @@ class Anubis:
 
         self.match_list = list()
         return output_list
-
-
-a = Anubis()
-b = a.read_dirs('/home/danisimo/MonCenterLib/testaa/test_anubis', '/home/danisimo/MonCenterLib/testaa/Post/nav')
-print(b)
