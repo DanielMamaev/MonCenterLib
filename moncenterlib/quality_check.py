@@ -64,10 +64,10 @@ class Anubis:
                             date_nav[2] = date_nav[2].zfill(2)
                             if len(date_nav[0]) == 4:
                                 date_nav = dt.datetime.strptime(
-                                    f'{date_nav[0]}-{date_nav[1]}-{date_nav[2]}', '%y-%m-%d')
+                                    f'{date_nav[0]}-{date_nav[1]}-{date_nav[2]}', '%Y-%m-%d')
                             else:
                                 date_nav = dt.datetime.strptime(
-                                    f'{date_nav[0]}-{date_nav[1]}-{date_nav[2]}', '%Y-%m-%d')
+                                    f'{date_nav[0]}-{date_nav[1]}-{date_nav[2]}', '%y-%m-%d')
                             
                             date_nav = date_nav.strftime('%Y-%m-%d')
                             filter_files_nav[date_nav] = file_nav
