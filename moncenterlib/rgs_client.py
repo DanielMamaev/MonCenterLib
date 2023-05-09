@@ -3,6 +3,7 @@ import random
 import string
 from urllib.request import urlopen
 import json
+import os
 
 
 class RGSClient:
@@ -60,7 +61,7 @@ class RGSClient:
                 return self._query(method=f'file/{filename}', json_mode=False)
         return None
 
-    def download_file(self, filename, output_file=None, unpack=False):
+    def _download_file(self, filename, output_file=None, unpack=False):
         """
         Скачать файл по его имени
 
@@ -127,3 +128,20 @@ class RGSClient:
                 return json.loads(data)
             else:
                 return data
+    
+    def download_files(self, path_output, request, unpack=True):
+        try:
+            files_list = self.get_file_list(request)
+        except Exception as e:
+            print(f'Проблема с получением списка файлов {e}')
+            return False
+        
+        if files_list == [] or files_list == None:
+            print(f"Список полученных файлов пуст. Ничего не найдено")
+            return False
+        
+        for file in files_list:
+            try:
+                self._download_file(file['name'], os.path.join(path_output, file['name']), unpack)
+            except Exception as e:
+                print(f'Проблема со скачиванием файла {e}')
