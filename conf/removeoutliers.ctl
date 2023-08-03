@@ -1,0 +1,10 @@
+DataFile            Hector_X.mom
+DataDirectory       /home/danisimo/Hector_test/NSK1/X/
+OutputFile          /home/danisimo/MonCenterLib/conf/TEST.mom
+interpolate         no
+seasonalsignal      yes
+halfseasonalsignal  yes
+estimateoffsets     no
+IQ_factor           3.0
+PhysicalUnit        m
+ScaleFactor         1.0
