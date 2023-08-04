@@ -6,6 +6,7 @@ import json
 import os
 import logging
 from progress.bar import IncrementalBar
+from pathlib import Path
 
 class RGSClient:
     def __init__(self, api_token, logger=None):
@@ -169,4 +170,15 @@ class RGSClient:
             bar.next()
         bar.finish()
 
-        return files_list
+        output = {
+            'done': [],
+            'error': []
+        }
+        for file in files_list:
+            direct = Path(os.path.join(path_output, file['name']))
+            if direct.exists():
+                output['done'].append(file)
+            else:
+                output['error'].append(file) 
+        
+        return output
