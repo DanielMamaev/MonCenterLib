@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import urllib.request
 import zipfile
-url2rtklib = "https://github.com/tomojitakasu/RTKLIB/archive/refs/tags/v2.4.3-b34.zip"
+url2rtklib = "http://danisimo.ru:82/index.php/s/GfJ7br5wQwMuZfx/download"
 
 # download RTKLib zip file
 print("Download RTKLib zip file")

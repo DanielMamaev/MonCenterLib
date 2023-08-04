@@ -4,6 +4,9 @@ import json
 from pathlib import Path
 from progress.bar import IncrementalBar
 import datetime as dt
+import xml.etree.ElementTree as ET
+import string
+import random
 
 
 class Anubis:
@@ -19,8 +22,6 @@ class Anubis:
             input_logger: _description_. Defaults to None.
         """
 
-        self.match_list = dict()
-
         self.logger = input_logger
         if not input_logger:
             self.logger = logging.getLogger('Anubis')
@@ -35,7 +36,7 @@ class Anubis:
 
         print('')
 
-    def read_dirs(self, path_obs: str, path_nav: str) -> None:
+    def read_dirs(self, path_obs: str, path_nav: str) -> dict:
         """_summary_
 
         Args:
@@ -46,7 +47,7 @@ class Anubis:
             _type_: _description_
         """        
         
-        self.match_list = dict()
+        match_list = dict()
         if ' ' in path_obs or ' ' in path_nav:
             self.logger.error(
                               """Пожалуйста, уберите в пути или в названии
@@ -126,15 +127,17 @@ class Anubis:
 
             if date_obs in filter_files_nav:
                 bar.next()
-                if marker_name in self.match_list:
-                    self.match_list[marker_name].append([file_obs, filter_files_nav[date_obs]])
+                if marker_name in match_list:
+                    match_list[marker_name].append([file_obs, filter_files_nav[date_obs]])
                 else:
-                    self.match_list[marker_name] = [[file_obs, filter_files_nav[date_obs]]]
+                    match_list[marker_name] = [[file_obs, filter_files_nav[date_obs]]]
         
         bar.finish()
         print('')
 
-    def start_linux(self, obs: str = None, nav: str = None) -> dict:
+        return match_list
+
+    def start(self, match_list: dict = dict(), obs: str = None, nav: str = None) -> dict:
         """_summary_
 
         Args:
@@ -143,7 +146,8 @@ class Anubis:
 
         Returns:
             dict: _description_
-        """             
+        """ 
+        match_list = match_list            
         output_list = dict()
 
         if (obs != None and ' ' in obs) or (nav != None and ' ' in nav):
@@ -152,37 +156,66 @@ class Anubis:
             raise Exception('Пожалуйста, уберите в пути пробелы. Anubis не умеет их обрабатывать')
 
         if type(obs) == str and type(nav) == str:
-            self.match_list = {'point': [[obs, nav]]}
+            match_list = {'point': [[obs, nav]]}
 
-        for marker_name, matchs in self.match_list.items():
+        for marker_name, matchs in match_list.items():
             bar = IncrementalBar(f'Anubis - {marker_name} - progress',
                                  max=len(matchs),
                                  suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
             bar.start()
-            print('')
             for match in matchs:
                 date = ''
                 if len(match) != 2:
                     self.logger.error(f'Не хватает какого то файла {match}')
                     bar.next()
-                    print('')
                     continue
 
                 anubis_path = str(Path(__file__).resolve().parent.parent.parent)
-                anubis_path = anubis_path + '/bin/Anubis/anubis-3.5-lin-static-64b'
+                anubis_path = anubis_path + '/bin/Anubis/app/anubis'
+
+                conf = ET.Element('config')
+                param = {
+                    'sec_sum': "1",
+                    'sec_hdr': "0",
+                    'sec_obs': "1",
+                    'sec_gap': "1",
+                    'sec_bnd': "1",
+                    'sec_pre': "1",
+                    'sec_mpx': "1",
+                    'sec_snr': "1",
+                    'sec_est': "0",
+                    'sec_ele': "0",
+                    'sec_sat': "0"
+                }
+                ET.SubElement(conf, 'qc', param)
+                
+                inp = ET.SubElement(conf, 'inputs')
+                inp_o = ET.SubElement(inp, 'rinexo')
+                inp_o.text = match[0]
+                inp_n = ET.SubElement(inp, 'rinexn')
+                inp_n.text = match[1]
+
+                o = ET.SubElement(conf, 'outputs')
+                xtr = ET.SubElement(o, 'xtr')
+                xtr.text = f'{match[0]}.xtr'
+
+                # создание временного файла конфига
+                path_conf = ''
+                while True:
+                    folder_conf = os.path.join(
+                        Path(__file__).resolve().parent.parent.parent, 'conf')
+                    alphabet = string.ascii_letters + string.digits
+                    name_conf = ''.join(random.choice(alphabet) for i in range(6))
+                    path_conf = os.path.join(folder_conf, name_conf) + '.xml'
+                    direct = Path(path_conf)
+                    if not direct.exists():
+                        break
+                tree = ET.ElementTree(conf)
+                tree.write(path_conf)
+
+                cmd = f"{anubis_path} -x {path_conf}"
                
-                cmd = f'{anubis_path} --full '
-                cmd += f':inp:rinexo "{match[0]}" '
-                cmd += f':inp:rinexn "{match[1]}" '
-                cmd += ':qc:sec_sum=2 '
-                cmd += ':qc:sec_hdr=0 '
-                cmd += ':qc:sec_obs=1 '
-                cmd += ':qc:sec_gap=1 '
-                cmd += ':qc:sec_bnd=1 '
-                cmd += ':qc:sec_pre=1 '
-                cmd += ':qc:sec_mpx=1 '
-                cmd += ':qc:sec_snr=1 '
-                cmd += f':out:xtr {match[0]}.xtr'
+                
                 self.logger.info('Запукс Anubis')
                 os.system(cmd)
                 try:
@@ -322,7 +355,6 @@ class Anubis:
                                 self.logger.error(
                                     f'Что то не так с парсингом файла. Параметр Sig2Noise. Пропуск обработки. {e}')
                                 
-                                
                             count += 1
                         meta_data["Sig2Noise"] = json.dumps(
                             meta_data["Sig2Noise"])
@@ -363,6 +395,11 @@ class Anubis:
                 except Exception as e:
                     self.logger.error(
                         f'Что то случилось с удалением файла {match[0]}.xtr. {e}')
+                try:
+                    os.remove(path_conf)
+                except Exception as e:
+                    self.logger.error(
+                        f'Что то случилось с удалением файла {path_conf}. {e}')
 
                 if marker_name in output_list:
                     output_list[marker_name][date] = data2df
@@ -371,8 +408,6 @@ class Anubis:
                     output_list[marker_name][date] = data2df
 
                 bar.next()
-                print('')
         bar.finish()
         print('')
-        self.match_list = list()
         return output_list

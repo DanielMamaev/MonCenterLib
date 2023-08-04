@@ -2,7 +2,11 @@ __pycache__
 test aa
 testaa
 env
+
+bin/Anubis/
 RTKLIB-2.4.3-b34
 rtklib.zip
+anubis.zip
+
 output
 .vscode
