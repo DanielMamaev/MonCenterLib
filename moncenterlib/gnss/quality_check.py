@@ -408,6 +408,6 @@ class Anubis:
                     output_list[marker_name][date] = data2df
 
                 bar.next()
-        bar.finish()
-        print('')
+            bar.finish()
+            print('')
         return output_list
