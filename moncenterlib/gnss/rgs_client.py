@@ -163,6 +163,7 @@ class RGSClient:
         bar.start()
         print('')
         for file in files_list:
+            self.logger.info(f"File {file['name']} downloading")
             try:
                 self._download_file(file['name'], os.path.join(path_output, file['name']), unpack)
             except Exception as e:
