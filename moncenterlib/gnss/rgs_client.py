@@ -170,16 +170,5 @@ class RGSClient:
                 self.logger.error(f"Проблема со скачиванием файла {file['name']} {e}")
             bar.next()
         bar.finish()
-
-        output = {
-            'done': [],
-            'error': []
-        }
-        for file in files_list:
-            direct = Path(os.path.join(path_output, file['name']))
-            if direct.exists():
-                output['done'].append(file)
-            else:
-                output['error'].append(file) 
         
-        return output
+        return files_list
