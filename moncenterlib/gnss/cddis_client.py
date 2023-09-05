@@ -52,7 +52,7 @@ class CDDISClient:
             self.logger.error(f'Не нашел эфемериды в архиве CDDIS {year}{day}.')
             raise Exception(f'Не нашел эфемериды в архиве CDDIS {year}{day}.')
 
-        self.logger.info(f'Начинаем скачивать файл с архива CDDIS {nav_gzip}')
+        self.logger.info(f'File {nav_gzip} downloading')
         try:
             ftps.retrbinary("RETR " + nav_gzip,
                             open(os.path.join(path_dir, nav_gzip), 'wb').write)
