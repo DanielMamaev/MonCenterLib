@@ -269,7 +269,7 @@ class RtkLibPost:
                             match_list[date] = [file]
                         break
 
-        for file in inputs.get('sp3', []):
+        for file in inputs.get('clk', []):
             flag_end = False
             with open(file, 'r') as f:
                 for n, line in enumerate(f, 1):
