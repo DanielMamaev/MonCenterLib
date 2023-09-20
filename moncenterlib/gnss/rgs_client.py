@@ -39,27 +39,6 @@ class RGSClient:
             return self._query(method='files', filter=filter)
         return None
 
-    def download_files(self, filter={}, output_file=''):
-        """
-        Скачать файлы по фильтру
-
-        :param filter:
-        :param output_file:
-        :return:
-        """
-        if self.api_token:
-            if output_file == '':
-                output_file = 'out_' + \
-                    ''.join(random.choice(string.ascii_lowercase + string.digits)
-                            for i in range(0, 12)) + '.gz'
-
-            data = self._query(method='files/download',
-                               filter=filter, json_mode=False)
-            with open(output_file, 'wb') as out:
-                out.write(data)
-        else:
-            return None
-
     def get_file(self, filename, unpack=False):
         """
         Получить содержимое файла по его имени
@@ -152,7 +131,6 @@ class RGSClient:
             self.logger.error(f'Проблема с получением списка файлов {e}')
             raise Exception(f'Проблема с получением списка файлов {e}')
 
-        
         if files_list == [] or files_list == None:
             self.logger.error('Список полученных файлов пуст. Ничего не найдено')
             raise Exception('Список полученных файлов пуст. Ничего не найдено')
@@ -161,7 +139,6 @@ class RGSClient:
         bar = IncrementalBar(f'{request["working_center"]} - Progress', max=len(files_list),
                              suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
         bar.start()
-        print('')
         for file in files_list:
             self.logger.info(f"File {file['name']} downloading")
             try:
@@ -172,3 +149,24 @@ class RGSClient:
         bar.finish()
         
         return files_list
+    
+        # def download_files(self, filter={}, output_file=''):
+    #     """
+    #     Скачать файлы по фильтру
+
+    #     :param filter:
+    #     :param output_file:
+    #     :return:
+    #     """
+    #     if self.api_token:
+    #         if output_file == '':
+    #             output_file = 'out_' + \
+    #                 ''.join(random.choice(string.ascii_lowercase + string.digits)
+    #                         for i in range(0, 12)) + '.gz'
+
+    #         data = self._query(method='files/download',
+    #                            filter=filter, json_mode=False)
+    #         with open(output_file, 'wb') as out:
+    #             out.write(data)
+    #     else:
+    #         return None

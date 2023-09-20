@@ -121,8 +121,6 @@ class RtkLibConvbin:
                              max=len(input_files),
                              suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
         bar.start()
-        print('')
-
         for file in input_files:
 
             command = ''
@@ -178,13 +176,11 @@ class RtkLibConvbin:
             cmd = str(Path(__file__).resolve().parent.parent.parent)
             cmd += "/bin/RTKLIB-2.4.3-b34/app/consapp/convbin/gcc/convbin "
             cmd += command
-            print(cmd)
+            #print(cmd)
             os.system(cmd)
 
             bar.next()
-            print('')
             # переименование файлов по стандарту ринекса, впланах
 
         bar.finish()
-        print('')
         return self.__check_files(output_files)

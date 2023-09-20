@@ -311,7 +311,6 @@ class RtkLibPost:
         bar = IncrementalBar('Progress', max=len(
             match_list), suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
         bar.start()
-        print('')
 
         for _, value in match_list.items():
             command = f'-ti {timeint} ' if timeint != '' else ''
@@ -333,9 +332,8 @@ class RtkLibPost:
             #print(cmd)
 
             bar.next()
-            print('')
 
         bar.finish()
-        print('')
+        
         os.remove(path_conf)
         return self.__check_files(pos_paths)

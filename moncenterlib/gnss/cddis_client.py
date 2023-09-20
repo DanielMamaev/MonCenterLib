@@ -24,8 +24,6 @@ class CDDISClient:
         year = str(year)
         day = str(day).zfill(3)
 
-        print('')
-
         self.logger.info(f'Ищем эфемериды в архиве CDDIS')
         try:
             ftps = FTP_TLS(host='gdc.cddis.eosdis.nasa.gov')
@@ -93,7 +91,6 @@ class CDDISClient:
 
         year = str(year)
         day = str(day).zfill(3)
-        print('')
 
         self.logger.info(f'Ищем измерения в архиве CDDIS')
         try:

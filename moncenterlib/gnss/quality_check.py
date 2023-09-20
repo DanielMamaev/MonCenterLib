@@ -11,10 +11,6 @@ import random
 
 class Anubis:
 
-    """
-
-    """
-
     def __init__(self, input_logger: logging = None) -> None:
         """_summary_
 
@@ -33,8 +29,6 @@ class Anubis:
                 '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
             ch.setFormatter(formatter)
             self.logger.addHandler(ch)
-
-        print('')
 
     def read_dirs(self, path_obs: str, path_nav: str) -> dict:
         """_summary_
@@ -101,7 +95,6 @@ class Anubis:
             bar.next()
 
         bar.finish()
-        print('')
 
         bar = IncrementalBar(f'Match files - Progress', max=len(files_obs),
                              suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
@@ -133,7 +126,6 @@ class Anubis:
                     match_list[marker_name] = [[file_obs, filter_files_nav[date_obs]]]
         
         bar.finish()
-        print('')
 
         return match_list
 
@@ -226,7 +218,6 @@ class Anubis:
                     self.logger.error(
                         f'Что то случилось с открытием файла Anubis {match[0]}.xtr. {e}')
                     bar.next()
-                    print('')
                     continue
 
                 self.logger.info(
@@ -365,7 +356,6 @@ class Anubis:
                     self.logger.error(
                         f'Некорректные данные в файле Anubis {match[0]}.xtr.')
                     bar.next()
-                    print('')
                     continue
 
                 try:
@@ -387,7 +377,6 @@ class Anubis:
                     self.logger.error(
                         f'Что то случилось с формированием новой записи. {e}')
                     bar.next()
-                    print('')
                     continue
 
                 try:
@@ -409,5 +398,5 @@ class Anubis:
 
                 bar.next()
             bar.finish()
-            print('')
+
         return output_list
