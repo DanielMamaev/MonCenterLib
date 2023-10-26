@@ -1,7 +1,8 @@
 import os
-from typing import Any
-from progress.bar import IncrementalBar
+import subprocess
+# from typing import Any
 from pathlib import Path
+from progress.bar import IncrementalBar
 
 
 class RtkLibConvbin:
@@ -53,8 +54,9 @@ class RtkLibConvbin:
         return self.__default_config.copy()
 
     def __check_type(self, arg: object, type_check: object, name: str) -> None:
-        if not type(arg) is type_check:
-            raise TypeError(f"The type of the '{name}' variable should be {type_check}")
+        if not isinstance(arg, type_check):
+            raise TypeError(
+                f"The type of the '{name}' variable should be {type_check}")
 
     def __check_files(self, files: list) -> dict:
         output_check = {
@@ -71,116 +73,124 @@ class RtkLibConvbin:
 
         return output_check
 
-    def scan_dir(self, input: str, recursion: bool = False) -> list:
+    def scan_dir(self, input_dir: str, recursion: bool = False) -> list:
         self.__check_type(recursion, bool, 'recursion')
-        self.__check_type(input, str, 'input')
-        
+        self.__check_type(input_dir, str, 'input')
+
         input_files = []
-        if os.path.isdir(input):
-            # составляем список файлов из папки
+        if os.path.isdir(input_dir):
             if recursion:
-                for root, _, files in os.walk(input):
+                for root, _, files in os.walk(input_dir):
                     for file in files:
                         path = os.path.join(root, file)
                         input_files.append(path)
             else:
                 temp_lst = []
-                for file in os.listdir(input):
-                    if os.path.isfile(os.path.join(input, file)):
-                        temp_lst.append(os.path.join(input, file))
+                for file in os.listdir(input_dir):
+                    if os.path.isfile(os.path.join(input_dir, file)):
+                        temp_lst.append(os.path.join(input_dir, file))
                 input_files = temp_lst
         else:
-            raise Exception("Path to dir is strange.")
-        
+            raise ValueError("Path to dir is strange.")
+
         return input_files
 
-    def start(self, input: Any, output: str, config: dict) -> dict:
+    def start(self, input_raw: str | list, output: str, config: dict,
+              recursion: bool = False, show_progress: bool = True) -> dict:
 
         # check type
-        #self.__check_type(input, str, 'input')
         self.__check_type(output, str, 'output')
         self.__check_type(config, dict, 'config')
-        
+
         for k, v in config.items():
             self.__check_type(v, str, k)
 
         input_files = []
-        if type(input) == list:
-            input_files = input
-        elif type(input) == str:
-            if os.path.isfile(input):
-                input_files = [input]
+        if isinstance(input_raw, list):
+            input_files = input_raw
+        elif isinstance(input_raw, str):
+            if os.path.isfile(input_raw):
+                input_files = [input_raw]
+            elif os.path.isdir(input_raw):
+                input_files = self.scan_dir(input_raw, recursion)
             else:
-                raise Exception("Path to file is strange.")
+                raise ValueError("Path to file or dir is strange.")
         else:
-            raise TypeError(f"The type of the 'input' variable should be 'str' or 'list'.")
+            raise TypeError(
+                "The type of the 'input_raw' variable should be 'str' or 'list'.")
 
         # запуск конвертации
+        inc_bar = IncrementalBar('Progress convbin',
+                                 max=len(input_files),
+                                 suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
+        if not show_progress:
+            def nothing():
+                pass
+            inc_bar.start = nothing
+            inc_bar.next = nothing
+            inc_bar.finish = nothing
+
+        inc_bar.start()
         output_files = []
-        bar = IncrementalBar('Progress',
-                             max=len(input_files),
-                             suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
-        bar.start()
+        cmd = []
         for file in input_files:
+            path_convbin = str(Path(__file__).resolve().parent.parent.parent)
+            path_convbin += "/bin/RTKLIB-2.4.3-b34/app/consapp/convbin/gcc/convbin"
+            cmd += [path_convbin]
 
-            command = ''
-
-            command += f"-r {config['format']} "
-            command += f"-v {config['rinex_v']} "
+            cmd += ["-r", config['format']]
+            cmd += ["-v", config['rinex_v']]
 
             if not config['start_time'] == '':
-                command += f"-ts {config['start_time']} "
+                cmd += ["-ts", config['start_time']]
 
             if not config['end_time'] == '':
-                command += f"-te {config['end_time']} "
+                cmd += ["-te", config['end_time']]
 
-            command += f"-ti {config['interval']} "
-
-            command += f"-f {config['freq']} "
+            cmd += ["-ti", config['interval']]
+            cmd += ["-f", config['freq']]
 
             full_sys = {'G', 'R', 'E', 'J', 'S', 'C', 'I'}
             sys = set(config['system'].split(','))
             for i in full_sys - sys:
-                command += f"-y {i} "
+                cmd += ["-y", i]
 
             namef = os.path.basename(file)
-            if not Path(namef).suffix == '':
+            if Path(namef).suffix != '':
                 namef = namef.rsplit(Path(namef).suffix, 1)[0]
 
             type_files = ['o', 'n', 'g', 'h', 'q', 'l', 'b', 'i', 's']
             for t in type_files:
                 if config[f'output_{t}'] == '1':
                     temp_path = os.path.join(output, f"{namef}.{t}")
-                    command += f"-{t} '{temp_path}' "
+                    cmd += [f"-{t}", temp_path]
                     output_files.append(os.path.join(output, f"{namef}.{t}"))
 
             other_type = ['od', 'os', 'oi', 'ot', 'ol', 'halfc']
             for t in other_type:
                 if config[f'other_{t}'] == '1':
-                    command += f"-{t} "
+                    cmd += [f"-{t}"]
 
-            command += f"-hc '{config['comment']}' "
+            cmd += ["-hc", config['comment']]
 
-            command += f"-hm '{config['marker_name']}' "
-            command += f"-hn '{config['marker_number']}' "
-            command += f"-ht '{config['marker_type']}' "
+            cmd += ["-hm", config['marker_name']]
+            cmd += ["-hn", config['marker_number']]
+            cmd += ["-ht", config['marker_type']]
 
-            command += f"-ho '{config['about_name']}/{config['about_agency']}' "
-            command += f"-hr '{config['receiver_number']}/{config['receiver_type']}/{config['receiver_version']}' "
-            command += f"-ha '{config['antenna_number']}/{config['antenna_type']}' "
-            command += f"-hp '{config['approx_position_x']}/{config['approx_position_y']}/{config['approx_position_z']}' "
-            command += f"-hd '{config['antenna_delta_h']}/{config['antenna_delta_e']}/{config['antenna_delta_n']}' "
+            cmd += ["-ho", f"{config['about_name']}/{config['about_agency']}"]
+            cmd += ["-hr",
+                    f"{config['receiver_number']}/{config['receiver_type']}/{config['receiver_version']}"]
+            cmd += ["-ha",
+                    f"{config['antenna_number']}/{config['antenna_type']}"]
+            cmd += ["-hp", f"{config['approx_position_x']}/{config['approx_position_y']}/{config['approx_position_z']}"]
+            cmd += ["-hd",
+                    f"{config['antenna_delta_h']}/{config['antenna_delta_e']}/{config['antenna_delta_n']}"]
 
-            command += f"'{file}'"
+            cmd += [file]
 
-            cmd = str(Path(__file__).resolve().parent.parent.parent)
-            cmd += "/bin/RTKLIB-2.4.3-b34/app/consapp/convbin/gcc/convbin "
-            cmd += command
-            #print(cmd)
-            os.system(cmd)
+            subprocess.run(cmd, stderr=subprocess.DEVNULL, check=False)
 
-            bar.next()
-            # переименование файлов по стандарту ринекса, впланах
+            inc_bar.next()
 
-        bar.finish()
+        inc_bar.finish()
         return self.__check_files(output_files)
