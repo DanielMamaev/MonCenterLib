@@ -1,13 +1,14 @@
 import os
-from progress.bar import IncrementalBar
-from pathlib import Path
 import string
 import random
-from pprint import pprint
+from pathlib import Path
+import subprocess
+from progress.bar import IncrementalBar
 
 
 class RtkLibPost:
     def __init__(self):
+        self.__path_conf = ''
         self.__default_config = {
             'pos1-posmode': '0',
             'pos1-frequency':  '2',
@@ -134,7 +135,7 @@ class RtkLibPost:
         return self.__default_config.copy()
 
     def __check_type(self, arg: object, type_check: object, name: str) -> None:
-        if not type(arg) is type_check:
+        if not isinstance(arg, type_check):
             raise TypeError(
                 f"The type of the '{name}' variable should be {type_check}")
 
@@ -153,17 +154,17 @@ class RtkLibPost:
 
         return output_check
 
-    def scan_dir(self, input: dict, recursion: bool = False) -> list:
+    def scan_dir(self, input_rnx: dict, recursion: bool = False) -> list:
         type_files = ['rover', 'base', 'nav', 'sp3', 'clk']
-        for k, v in input.items():
+        for k, v in input_rnx.items():
             if k not in type_files:
-                raise Exception(f"Unidentified key {k}")
+                raise ValueError(f"Unidentified key {k}")
             self.__check_type(v, str, v)
 
         scan_dirs = dict()
-        for key, dir in input.items():
+        for key, directory in input_rnx.items():
             if recursion:
-                for root, _, files in os.walk(dir):
+                for root, _, files in os.walk(directory):
                     for file in files:
                         path = os.path.join(root, file)
                         if key in scan_dirs:
@@ -172,35 +173,39 @@ class RtkLibPost:
                             scan_dirs[key] = [path]
             else:
                 temp_lst = []
-                for file in os.listdir(dir):
-                    if os.path.isfile(os.path.join(dir, file)):
-                        temp_lst.append(os.path.join(dir, file))
+                for file in os.listdir(directory):
+                    if os.path.isfile(os.path.join(directory, file)):
+                        temp_lst.append(os.path.join(directory, file))
                 scan_dirs[key] = temp_lst
         return scan_dirs
-                    
 
-    def start(self, inputs: dict, output: str, config: dict, timeint: int = 0):
+    def start(self, input_rnx: dict, output: str, config: dict, timeint: int = 0,
+              recursion: bool = False, show_progress: bool = True):
 
         # check type
-        self.__check_type(inputs, dict, 'inputs')
+        self.__check_type(input_rnx, dict, 'inputs')
         self.__check_type(config, dict, 'config')
         self.__check_type(output, str, 'output')
         self.__check_type(timeint, int, 'timeint')
         for k, v in config.items():
             self.__check_type(v, str, k)
 
-        for k, v in inputs.items():
-            if type(v) == str and os.path.isfile(v):
+        inputs = dict()
+        for k, v in input_rnx.items():
+            if isinstance(v, str) and os.path.isfile(v):
                 inputs[k] = [v]
-            elif type(v) == list:
-                pass
+            elif isinstance(v, str) and os.path.isdir(v):
+                inputs = self.scan_dir(input_rnx, recursion)
+            elif isinstance(v, list):
+                inputs = input_rnx
             else:
-                raise TypeError("You must first use the scan_dirs function and then pass the result to the start function. Or specify the paths to a specific file.")
+                raise TypeError("You must first use the scan_dirs function and then pass the result to the start \
+                                 function. Or specify the paths to a specific file.")
 
         match_list = dict()
         for file in inputs.get('rover', []):
-            with open(file, 'r') as f:
-                for n, line in enumerate(f, 1):
+            with open(file, 'r', encoding="utf-8") as f:
+                for _, line in enumerate(f, 1):
                     if 'TIME OF FIRST OBS' in line:
                         date = line.split()[:3]
                         date[1] = date[1].zfill(2)
@@ -216,8 +221,8 @@ class RtkLibPost:
                         break
 
         for file in inputs.get('base', []):
-            with open(file, 'r') as f:
-                for n, line in enumerate(f, 1):
+            with open(file, 'r', encoding="utf-8") as f:
+                for _, line in enumerate(f, 1):
                     if 'TIME OF FIRST OBS' in line:
                         date = line.split()[:3]
                         date[1] = date[1].zfill(2)
@@ -234,8 +239,8 @@ class RtkLibPost:
 
         for file in inputs.get('nav', []):
             flag_end = False
-            with open(file, 'r') as f:
-                for n, line in enumerate(f, 1):
+            with open(file, 'r', encoding="utf-8") as f:
+                for _, line in enumerate(f, 1):
                     if 'END OF HEADER' in line:
                         flag_end = True
                     elif flag_end:
@@ -253,8 +258,8 @@ class RtkLibPost:
                         break
 
         for file in inputs.get('sp3', []):
-            with open(file, 'r') as f:
-                for n, line in enumerate(f, 1):
+            with open(file, 'r', encoding="utf-8") as f:
+                for _, line in enumerate(f, 1):
                     if line[0] == "*":
                         date = line.split()[1:4]
                         date[1] = date[1].zfill(2)
@@ -271,8 +276,8 @@ class RtkLibPost:
 
         for file in inputs.get('clk', []):
             flag_end = False
-            with open(file, 'r') as f:
-                for n, line in enumerate(f, 1):
+            with open(file, 'r', encoding="utf-8") as f:
+                for _, line in enumerate(f, 1):
                     if 'END OF HEADER' in line:
                         flag_end = True
                     elif flag_end:
@@ -291,49 +296,68 @@ class RtkLibPost:
         # sbas_fcb_ionex
 
         # создание временного файла конфига
-        path_conf = ''
+        self.__path_conf = ''
         while True:
             folder_conf = os.path.join(
                 Path(__file__).resolve().parent.parent.parent, 'conf')
             alphabet = string.ascii_letters + string.digits
             name_conf = ''.join(random.choice(alphabet) for i in range(6))
-            path_conf = os.path.join(folder_conf, name_conf) + '.conf'
-            direct = Path(path_conf)
+            self.__path_conf = os.path.join(folder_conf, name_conf) + '.conf'
+            direct = Path(self.__path_conf)
             if not direct.exists():
                 break
 
-        f = open(path_conf, 'w')
+        f = open(self.__path_conf, 'w', encoding="utf-8")
         for key, val in config.items():
             f.write(key + '=' + val + '\n')
         f.close()
 
         pos_paths = []
-        bar = IncrementalBar('Progress', max=len(
+        inc_bar = IncrementalBar('Progress', max=len(
             match_list), suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
-        bar.start()
+        if not show_progress:
+            def nothing():
+                pass
+            inc_bar.start = nothing
+            inc_bar.next = nothing
+            inc_bar.finish = nothing
+        
+        inc_bar.start()
 
         for _, value in match_list.items():
-            command = f'-ti {timeint} ' if timeint != '' else ''
-            command += f"-k '{path_conf}' "
+            cmd = list()
+
+            path_bin = str(Path(__file__).resolve().parent.parent.parent)
+            path_bin += "/bin/RTKLIB-2.4.3-b34/app/consapp/rnx2rtkp/gcc/rnx2rtkp"
+            cmd += [path_bin]
+
+            cmd += ["-ti", str(timeint)]
+            cmd += ["-k", self.__path_conf]
 
             for path_file in value:
-                command += f"'{path_file}'" + ' '
+                cmd += [path_file]
 
             path_end = os.path.join(output, os.path.basename(value[0]))
-            command += f"-o '{path_end}.pos'"
+            cmd += ["-o", path_end + ".pos"]
 
             pos_paths.append(
                 f"{os.path.join(output, os.path.basename(value[0]))}.pos")
 
-            cmd = str(Path(__file__).resolve().parent.parent.parent)
-            cmd += "/bin/RTKLIB-2.4.3-b34/app/consapp/rnx2rtkp/gcc/rnx2rtkp "
-            cmd += command
-            os.system(cmd)
-            #print(cmd)
+            # print(cmd)
+            subprocess.run(cmd, stderr=subprocess.DEVNULL, check=False)
 
-            bar.next()
+            inc_bar.next()
 
-        bar.finish()
-        
-        os.remove(path_conf)
+        inc_bar.finish()
+
+        try:
+            os.remove(self.__path_conf)
+        except FileNotFoundError:
+            pass
         return self.__check_files(pos_paths)
+
+    def __del__(self):
+        try:
+            os.remove(self.__path_conf)
+        except FileNotFoundError:
+            pass
