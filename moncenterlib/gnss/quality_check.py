@@ -277,10 +277,8 @@ class Anubis:
                             if row_data == '\n':
                                 break
                             row_data = row_data.split(' ')
-                            row_split = list(
-                                filter(lambda i: i != '', row_data))
-                            name_sys = row_split[0].replace(
-                                "=", "").replace("SUM", "")
+                            row_split = list(filter(lambda i: i != '', row_data))
+                            name_sys = row_split[0].replace("=", "").replace("SUM", "")
                             try:
                                 meta_data["miss_epoch"][name_sys] = int(row_split[11])
                                 meta_data["n_slip"][name_sys] = int(row_split[14])
@@ -302,9 +300,9 @@ class Anubis:
                                 meta_data["code_multi"][name_sys + "MP2"] = row_split[19]
                             count += 1
 
-                        meta_data["miss_epoch"] = json.dumps(meta_data["miss_epoch"])
-                        meta_data["code_multi"] = json.dumps(meta_data["code_multi"])
-                        meta_data["n_slip"] = json.dumps(meta_data["n_slip"])
+                        # meta_data["miss_epoch"] = json.dumps(meta_data["miss_epoch"])
+                        # meta_data["code_multi"] = json.dumps(meta_data["code_multi"])
+                        # meta_data["n_slip"] = json.dumps(meta_data["n_slip"])
                         if flag_data_error:
                             break
 
@@ -325,7 +323,7 @@ class Anubis:
                                 self.logger.warning("Parameter =GNSSYS. Skip %s.", match[0], exc_info=True)
                                 flag_data_error = True
                                 break
-                        meta_data["sat_healthy"] = json.dumps(meta_data["sat_healthy"])
+                        # meta_data["sat_healthy"] = json.dumps(meta_data["sat_healthy"])
 
                         if flag_data_error:
                             break
@@ -350,7 +348,7 @@ class Anubis:
                                 pass
 
                             count += 1
-                        meta_data["sig2noise"] = json.dumps(meta_data["sig2noise"])
+                        # meta_data["sig2noise"] = json.dumps(meta_data["sig2noise"])
 
                 if flag_data_error:
                     self.logger.error("Incorrect data in file %s.xtr.", match[0], exc_info=True)
