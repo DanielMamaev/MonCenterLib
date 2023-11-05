@@ -3,7 +3,7 @@ import os
 import subprocess
 from pathlib import Path
 from progress.bar import IncrementalBar
-from .different_checks import type_check, files_check
+from moncenterlib.gnss.different_tools import type_check, files_check
 
 
 class RtkLibConvbin:
