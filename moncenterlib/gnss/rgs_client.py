@@ -1,12 +1,10 @@
 import gzip
-import random
-import string
-from urllib.request import urlopen
 import json
 import os
 import logging
+import requests
 from progress.bar import IncrementalBar
-from pathlib import Path
+
 
 class RGSClient:
     def __init__(self, api_token, logger=None):
@@ -114,13 +112,15 @@ class RGSClient:
 
         url = '/'.join((self.path, method))
 
-        with urlopen(url) as host_data:
-            data = host_data.read()
-
+        with requests.Session() as session:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0'
+            }
+            request = session.get(url, headers=headers)
             if json_mode:
-                return json.loads(data)
+                return json.loads(request.content.decode())
             else:
-                return data
+                return request.content
 
     def download_files(self, path_output, request, unpack=True):
         files_list = []
@@ -147,26 +147,5 @@ class RGSClient:
                 self.logger.error(f"Проблема со скачиванием файла {file['name']} {e}")
             bar.next()
         bar.finish()
-        
+
         return files_list
-    
-        # def download_files(self, filter={}, output_file=''):
-    #     """
-    #     Скачать файлы по фильтру
-
-    #     :param filter:
-    #     :param output_file:
-    #     :return:
-    #     """
-    #     if self.api_token:
-    #         if output_file == '':
-    #             output_file = 'out_' + \
-    #                 ''.join(random.choice(string.ascii_lowercase + string.digits)
-    #                         for i in range(0, 12)) + '.gz'
-
-    #         data = self._query(method='files/download',
-    #                            filter=filter, json_mode=False)
-    #         with open(output_file, 'wb') as out:
-    #             out.write(data)
-    #     else:
-    #         return None
