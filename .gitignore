@@ -1,7 +1,4 @@
 __pycache__
-test aa
-testaa
-env
 
 bin/Anubis/
 RTKLIB-2.4.3-b34
@@ -10,3 +7,7 @@ anubis.zip
 
 output
 .vscode
+
+build
+dist
+moncenterlib.egg-info
