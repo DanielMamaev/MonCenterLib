@@ -1,8 +1,10 @@
 from pathlib import Path
+from functools import wraps
 
 
 def type_check(*types):
     def decorator(func):
+        @wraps(func)
         def wrapper(*args, **kwargs):
             # Проверка типов аргументов
             for i, arg in enumerate(args[1:]):
