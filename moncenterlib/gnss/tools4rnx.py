@@ -15,7 +15,8 @@ import os
 import subprocess
 from pathlib import Path
 from progress.bar import IncrementalBar
-from moncenterlib.gnss.different_tools import type_check, files_check
+from pydantic import validate_call
+from moncenterlib.gnss.tools import files_check
 
 
 class RtkLibConvbin:
@@ -79,7 +80,7 @@ class RtkLibConvbin:
         """
         return self.__default_config.copy()
 
-    @type_check((str, 'input_dir'), (bool, 'recursion'))
+    @validate_call
     def scan_dir(self, input_dir: str, recursion: bool = False) -> list[str]:
         """This method scans the directory and makes a list of files for further work of the class.
         The method can also recursively search for files.
@@ -178,7 +179,7 @@ class RtkLibConvbin:
             if config[f'other_{t}'] not in ["0", "1"]:
                 raise ValueError(f"Config. Key: {f'other_{t}'}. Unknown value '{config[f'other_{t}']}'.")
 
-    @type_check((object, "input_raw"), (str, "output"), (dict, "config"), (bool, "recursion"), (bool, "show_progress"))
+    @validate_call
     def start(self, input_raw: str | list, output: str, config: dict,
               recursion: bool = False, show_progress: bool = True) -> dict:
         """The method starts the process of preserving files in the RINEX format.
@@ -252,8 +253,8 @@ class RtkLibConvbin:
         output_files = []
         for file in input_files:
             cmd = []
-            path_convbin = str(Path(__file__).resolve().parent.parent.parent)
-            path_convbin += "/bin/RTKLIB-2.4.3-b34/app/consapp/convbin/gcc/convbin"
+
+            path_convbin = str(Path(__file__).resolve().parent.joinpath("bin", "convbin"))
             cmd += [path_convbin]
 
             cmd += ["-r", config['format']]
