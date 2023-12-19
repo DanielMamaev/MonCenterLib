@@ -443,4 +443,3 @@ class TestTools4Rnx(TestCase):
     #     exp_dict['error'].sort()
     #     self.assertEqual(res, exp_dict)
     #     self.clean_output()
-main()
