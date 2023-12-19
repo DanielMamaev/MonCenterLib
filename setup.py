@@ -76,5 +76,6 @@ if __name__ == '__main__':
         packages=find_packages(),
         install_requires=read_requirements(),
         include_package_data=True,
-        package_data={'': [str(PATH_BASE.joinpath("moncenterlib", "gnss", "bin", "*"))]},
+        package_data={'moncenterlib.gnss': [str(PATH_BASE.joinpath("moncenterlib", "gnss", "bin", "*")),
+                                            str(PATH_BASE.joinpath("moncenterlib", "gnss", "conf", "*"))]},
     )
