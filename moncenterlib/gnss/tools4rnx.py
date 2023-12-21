@@ -16,7 +16,7 @@ import subprocess
 from pathlib import Path
 from progress.bar import IncrementalBar
 from pydantic import validate_call
-from moncenterlib.gnss.tools import files_check
+from moncenterlib.gnss.tools import files_check, get_system_info
 
 
 class RtkLibConvbin:
@@ -253,9 +253,18 @@ class RtkLibConvbin:
         output_files = []
         for file in input_files:
             cmd = []
+            path_convbin = ""
 
-            path_convbin = str(Path(__file__).resolve().parent.joinpath("bin", "convbin"))
-            cmd += [path_convbin]
+            if get_system_info()[1] == "x86_64":
+                path_convbin = Path(__file__).resolve().parent.joinpath(
+                    "bin", "x86_64", "convbin_2.4.3-34_x86_64_linux")
+            elif get_system_info()[1] == "aarch64":
+                path_convbin = Path(__file__).resolve().parent.joinpath(
+                    "bin", "aarch64", "convbin_2.4.3-34_aarch64_linux")
+            else:
+                raise OSError(f"{get_system_info()} doesn't support")
+
+            cmd += [str(path_convbin)]
 
             cmd += ["-r", config['format']]
             cmd += ["-v", config['rinex_v']]
