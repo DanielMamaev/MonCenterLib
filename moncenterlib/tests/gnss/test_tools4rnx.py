@@ -1,9 +1,10 @@
 import os
 import subprocess
-from unittest import TestCase
+from unittest import TestCase, main
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 from moncenterlib.gnss.tools4rnx import RtkLibConvbin
+from moncenterlib.gnss.tools import get_system_info
 
 
 class TestTools4Rnx(TestCase):
@@ -335,7 +336,15 @@ class TestTools4Rnx(TestCase):
 
             self.t4r.start('/home/file1', "/", config, False, False)
 
-            exp_cmd = [str(Path(__file__).resolve().parent.parent.parent.joinpath("gnss", "bin", "convbin")),
+            path_convbin = ""
+            if get_system_info()[1] == "x86_64":
+                path_convbin = Path(__file__).resolve().parent.parent.parent.joinpath(
+                    "gnss", "bin", "x86_64", "convbin_2.4.3-34_x86_64_linux")
+            elif get_system_info()[1] == "aarch64":
+                path_convbin = Path(__file__).resolve().parent.parent.parent.joinpath(
+                    "gnss", "bin", "aarch64", "convbin_2.4.3-34_aarch64_linux")
+
+            exp_cmd = [str(path_convbin),
                        '-r', 'ubx',
                        '-v', '3.03',
                        '-ts', '2023/10/27 00:00:00',
@@ -385,9 +394,15 @@ class TestTools4Rnx(TestCase):
             self.t4r.start("/", "/", self.t4r.get_default_config(), False, False)
             self.assertEqual(len(mock_incrementalbar.mock_calls), 1)
 
-    def test_chech_make_convbin(self):
-        path = str(Path(__file__).resolve().parent.parent.parent.joinpath("gnss", "bin", "convbin"))
-        res = subprocess.run([path, "-h"], stderr=subprocess.DEVNULL, check=False)
+    def test_check_make_convbin(self):
+        path_convbin = ""
+        if get_system_info()[1] == "x86_64":
+            path_convbin = Path(__file__).resolve().parent.parent.parent.joinpath(
+                "gnss", "bin", "x86_64", "convbin_2.4.3-34_x86_64_linux")
+        elif get_system_info()[1] == "aarch64":
+            path_convbin = Path(__file__).resolve().parent.parent.parent.joinpath(
+                "gnss", "bin", "aarch64", "convbin_2.4.3-34_aarch64_linux")
+        res = subprocess.run([str(path_convbin), "-h"], stderr=subprocess.DEVNULL, check=False)
         self.assertEqual(0, res.returncode)
 
     def test_output_result(self):
