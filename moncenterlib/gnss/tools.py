@@ -1,4 +1,8 @@
 from pathlib import Path
+import platform
+
+
+PATH_BASE = Path(__file__).resolve().parent
 
 
 def files_check(files: list) -> dict:
@@ -25,3 +29,16 @@ def disable_progress_bar(inc_bar):
     inc_bar.finish = nothing
 
     return inc_bar
+
+
+def get_system_info() -> tuple[str, str]:
+    system = platform.system()
+    bit_info = platform.machine()
+
+    if system == "Linux":
+        if bit_info not in ['x86_64', 'aarch64']:
+            raise OSError(f"{bit_info} doesn't support")
+    else:
+        raise OSError(f"{system} doesn't support")
+
+    return system, bit_info
