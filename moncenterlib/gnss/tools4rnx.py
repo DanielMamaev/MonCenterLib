@@ -22,6 +22,9 @@ from moncenterlib.gnss.tools import files_check, get_system_info
 class RtkLibConvbin:
     """
     This class is based on the RTKLib software package.
+    Convert RTCM, receiver raw data log and RINEX file to RINEX and SBAS/LEX
+    message file. SBAS message file complies with RTKLIB SBAS/LEX message
+    format.
     See more about RTKLIB here: https://rtklib.com/
     See code usage examples in the examples folder
     """

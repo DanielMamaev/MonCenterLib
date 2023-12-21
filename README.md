@@ -7,7 +7,7 @@ Some description
 |Package|Module|Class|Description|Status|
 |---|---|---|---|---|
 |GNSS|stream2file| | |Soon |
-| |tools4rnx|RtkLibConvbin|Converting raw satellite receiver data into a universal RINEX format| Ready|
+| |tools4rnx|RtkLibConvbin|This class is based on the RTKLib software package. Convert RTCM, receiver raw data log and RINEX file to RINEX and SBAS/LEX message file. SBAS message file complies with RTKLIB SBAS/LEX message format. See more about RTKLIB here: https://rtklib.com/| Ready|
 | |postprocessing|RtkLibPost| |Dev|
 | |quality_check|Anubis| |Dev|
 | |cddis_client|CDDISClient| |Dev|
