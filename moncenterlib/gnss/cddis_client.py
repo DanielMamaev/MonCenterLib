@@ -317,5 +317,9 @@ class CDDISClient:
                 except Exception as e:
                     self.logger.error('Something happened to delete %s. %s', output_file_zip, e)
                     continue
+        try:
+            ftps.quit()
+        except Exception as e:
+            self.logger.error("Something happened to close FTP connection. %s", e)
 
         return files_check(output_file_list)
