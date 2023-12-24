@@ -4,6 +4,7 @@ This simplifies the process of searching and downloading various types of files.
 See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/GNSS_data_and_product_archive.html
 
 Learn more about the specific class.
+
 """
 
 import logging
@@ -16,6 +17,7 @@ import subprocess
 from datetime import datetime, timedelta
 import charset_normalizer
 from typeguard import typechecked
+from moncenterlib.gnss.tools import files_check
 
 
 class CDDISClient:
@@ -50,7 +52,7 @@ class CDDISClient:
             self.logger = logging.getLogger('CDDISCLient')
 
     @typechecked
-    def get_daily_multi_gnss_brd_eph(self, output_dir: str, query: dict, delete_gz: bool = True) -> list[str]:
+    def get_daily_multi_gnss_brd_eph(self, output_dir: str, query: dict, delete_gz: bool = True) -> dict:
         """This method allows you to download Daily RINEX V3 GNSS Broadcast Ephemeris Files or Daily Multi-GNSS Broadcast Ephemeris Files.
         These are the format files BRDC00IGS_R_YYYYDDDHHMM_01D_MN.rnx.gz and BRDM00DLR_S_YYYYDDDHHMM_01D_MN.rnx.gz accordingly.
         Daily RINEX V3 GNSS Broadcast Ephemeris Files are downloaded as a priority.
@@ -60,7 +62,7 @@ class CDDISClient:
         Args:
             output_dir (str): The path where the files should be saved.
             query (dict): A request containing a start date and an end date.
-            Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
+                Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
             delete_gz (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Raises:
@@ -69,14 +71,19 @@ class CDDISClient:
             ValueError: Start day must be less than or equal to end day.
 
         Returns:
-            list[str]: The list of downloaded files is returned.
+            dict: The dictionary contains 2 keys. Done and error.
+            The done key stores a list of files that have been successfully created.
+            The error key stores a list of files that have not been created.
 
         Examples:
             >>> cddiscli = CDDISClient()
             >>> query = {"start": "2020-12-30", "end": "2021-01-02"}
             >>> res = cddiscli.get_daily_multi_gnss_brd_eph("/output_dir", query)
             >>> res
-            ["file_1", "file_2"]
+            {
+                "done": ["file_1", "file_2"],
+                "error": []
+            }
         """
 
         if not os.path.isdir(output_dir):
@@ -143,13 +150,13 @@ class CDDISClient:
                 self.logger.error('Something happened to download %s. %s', nav_gzip, e)
                 continue
 
-            self.logger.info('Start unpack %s', nav_gzip)
+            self.logger.info('Start unpack %s', output_file_gz)
             try:
                 with gzip.open(output_file_gz, 'rb') as f_in:
                     with open(output_file_rnx, 'wb') as f_out:
                         shutil.copyfileobj(f_in, f_out)
             except Exception as e:
-                self.logger.error('Something happened to unpack %s. %s', nav_gzip, e)
+                self.logger.error('Something happened to unpack %s. %s', output_file_gz, e)
                 continue
 
             output_file_list.append(output_file_rnx)
@@ -164,86 +171,151 @@ class CDDISClient:
         except Exception as e:
             self.logger.error("Something happened to close FTP connection. %s", e)
 
-        return output_file_list
+        return files_check(output_file_list)
 
-    # @typechecked
-    # def get_daily_30s_data(self, path_dir, point, year, day, delete_gz=True):
-    #     """
-    #     TODO
-    #     Доделать поиск ринекс 3 версии, пока только 2
-    #     Добавить возможность выбора не только файлов измерений но и эфемерид
-    #     """
+    @typechecked
+    def get_daily_30s_data(self, output_dir: str, query: dict, delete_gz=True) -> dict:
+        """This method allows you to download Daily 30-second data. It is possible to select a range of days.
+        Also select the station, file type and RINEX version.
+        So far, linux version 2 is supported.
+        See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/daily_30second_data.html
 
-    #     year = str(year)
-    #     day = str(day).zfill(3)
+        Args:
+            output_dir (str): The path where the files should be saved.
+            query (dict): The dictionary should contain the following keys. "start" - start date,
+                "end"- end date, "station" - station name, "type" - file type, "rinex_v" - RINEX version.
+            delete_gz (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
-    #     self.logger.info(f'Ищем измерения в архиве CDDIS')
-    #     try:
-    #         ftps = FTP_TLS(host='gdc.cddis.eosdis.nasa.gov')
-    #         ftps.login(user='anonymous', passwd='anonymous')
-    #         ftps.prot_p()
-    #         ftps.cwd(f'gnss/data/daily/{year}/{day}/{year[2:]}o/')
-    #         file_lst = ftps.nlst()
-    #     except Exception as e:
-    #         self.logger.error(f'Что то с доступом к архиву CDDIS. {e}')
-    #         raise Exception(f'Что то с доступом к архиву CDDIS. {e}')
+        Raises:
+            ValueError: Path to output_dir is strange.
+            KeyError: Invalid query.
+            ValueError: Start day must be less than or equal to end day.
+            ValueError: Rinex version 3 doesn't support.
 
-    #     obs_gzip = ''
-    #     for i in file_lst:
-    #         if point+day in i:
-    #             obs_gzip = i
-    #     if obs_gzip == '':
-    #         self.logger.error(f'Не нашел измерения в архиве CDDIS {point}-{year}-{day}.')
-    #         raise Exception(f'Не нашел измерения в архиве CDDIS {point}-{year}-{day}.')
+        Returns:
+            dict: The dictionary contains 2 keys. Done and error.
+            The done key stores a list of files that have been successfully created.
+            The error key stores a list of files that have not been created.
 
-    #     self.logger.info(f'Начинаем скачивать файл с архива CDDIS {obs_gzip}')
-    #     try:
-    #         ftps.retrbinary("RETR " + obs_gzip, open(os.path.join(path_dir, obs_gzip), 'wb').write)
-    #     except Exception as e:
-    #         self.logger.error(f'Что то случилось со скачиванием файла {obs_gzip} с CDDIS. {e}')
-    #         raise Exception(f'Что то случилось со скачиванием файла {obs_gzip} с CDDIS. {e}')
+        Examples:
+            >>> cddiscli = CDDISClient()
+            >>> query = {"start": "2020-12-30", "end": "2021-01-02", "station": "NOVM", "type": "o", "rinex_v": "2"}
+            >>> res = cddiscli.get_daily_30s_data("/output_path", query))
+            >>> res
+            {
+                "done": ["file_1", "file_2"],
+                "error": []
+            }
+        """
 
-    #     try:
-    #         ftps.quit()
-    #     except Exception as e:
-    #         self.logger.error(e)
+        if not os.path.isdir(output_dir):
+            raise ValueError("Path to output_dir is strange.")
 
-    #     self.logger.info(f'Начинаем разархивировать файл {obs_gzip} с архива CDDIS')
-    #     try:
-    #         with gzip.open(os.path.join(path_dir, obs_gzip), 'rb') as f_in:
-    #             with open(os.path.join(path_dir, obs_gzip[:obs_gzip.rfind('.')]), 'wb') as f_out:
-    #                 shutil.copyfileobj(f_in, f_out)
-    #     except Exception as e:
-    #         self.logger.warning(f'Что то случилось с разархвивацией файла {obs_gzip} CDDIS. {e}')
-    #         self.logger.info(f'Пробуем другой метод разархивации {obs_gzip} CDDIS.')
+        if (not query.get("start", None) or
+            not query.get("end", None) or
+            not query.get("station", None) or
+            not query.get("rinex_v", None) or
+                not query.get("type", None)):
+            raise KeyError("Invalid query.")
 
-    #         zip_path = os.path.join(path_dir, obs_gzip)
-    #         decompressed_file_path = os.path.join(path_dir, obs_gzip[:obs_gzip.rfind('.')])
-    #         try:
-    #             with open(decompressed_file_path, 'wb') as f_out:
-    #                 subprocess.run(['gunzip', '-c', zip_path], stdout=f_out, check=True)
+        output_file_list = []
 
-    #             # Detecting the encoding of the decompressed file
-    #             with open(decompressed_file_path, 'rb') as file:
-    #                 raw_data = file.read(5000)
-    #             detected_encoding = charset_normalizer.detect(raw_data)['encoding']
+        start_day = datetime.strptime(query["start"], "%Y-%m-%d")
+        end_day = datetime.strptime(query["end"], "%Y-%m-%d")
+        if start_day > end_day:
+            raise ValueError("Start day must be less than or equal to end day.")
 
-    #             if detected_encoding.lower() != 'utf-8':
-    #                 with open(decompressed_file_path, 'r', encoding=detected_encoding) as file:
-    #                     file_content = file.read()
+        self.logger.info('Connect to CDDIS FTP.')
+        try:
+            ftps = FTP_TLS(host='gdc.cddis.eosdis.nasa.gov')
+            ftps.login(user='anonymous', passwd='anonymous')
+            ftps.prot_p()
+        except Exception as e:
+            self.logger.error("Something happened to the CDDIS connection. %s", e)
+            raise
 
-    #                 with open(decompressed_file_path, 'w', encoding='utf-8') as file:
-    #                     file.write(file_content)
+        # generate list dates
+        temp_day = start_day
+        list_dates: list[datetime] = []
+        for _ in range((end_day - start_day).days + 1):
+            list_dates.append(temp_day)
+            temp_day += timedelta(1)
 
-    #         except Exception as e:
-    #             raise Exception(f'Что то случилось с разархвивацией файла {obs_gzip} CDDIS. {e}')
+        for date in list_dates:
+            year = date.strftime("%Y")
+            year_short = date.strftime("%y")
+            num_day = date.strftime("%j")
 
-    #     if delete_gz:
-    #         try:
-    #             os.remove(os.path.join(path_dir, obs_gzip))
-    #         except Exception as e:
-    #             self.logger.error(
-    #                 f'Что то случилось с удалением файла nav.gzip {os.path.join(path_dir, obs_gzip)}. {e}')
+            dir_on_ftp = f"gnss/data/daily/{year}/{num_day}/{year_short}{query['type'].lower()}/"
+            name_file = ""
+            temp_name_file = ""
+            if query["rinex_v"] == "2":
+                temp_name_file = f"{query['station'].lower()}{num_day}0.{year_short}{query['type'].lower()}.gz"
+                self.logger.info('Searching file %s', temp_name_file)
+                try:
+                    ftps.size(dir_on_ftp + temp_name_file)
+                except Exception:
+                    self.logger.warning('File %s not found.', temp_name_file)
+                else:
+                    name_file = temp_name_file
 
-    #     self.logger.handlers.clear()
-    #     return os.path.join(path_dir, obs_gzip[:obs_gzip.rfind('.')])
+                if name_file == "":
+                    temp_name_file = f"{query['station'].lower()}{num_day}0.{year_short}{query['type'].lower()}.Z"
+                    self.logger.info('Searching file %s', temp_name_file)
+                    try:
+                        ftps.size(dir_on_ftp + temp_name_file)
+                    except Exception:
+                        self.logger.error('File %s not found.', temp_name_file)
+                        continue
+                    else:
+                        name_file = temp_name_file
+            elif query["rinex_v"] == "3":
+                raise ValueError("Rinex version 3 doesn't support.")
+
+            self.logger.info('File %s downloading', name_file)
+            output_file_zip = os.path.join(output_dir, name_file)
+            try:
+                ftps.retrbinary(f"RETR {dir_on_ftp}{name_file}", open(output_file_zip, 'wb').write)
+            except Exception as e:
+                self.logger.error('Something happened to download %s. %s', output_file_zip, e)
+                continue
+
+            self.logger.info('Start unpack %s', output_file_zip)
+            output_file_rnx = ""
+            if name_file.endswith(".gz"):
+                output_file_rnx = os.path.join(output_dir, name_file[:-3])
+                try:
+                    with gzip.open(output_file_zip, 'rb') as f_in:
+                        with open(output_file_rnx, 'wb') as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+                except Exception as e:
+                    self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
+                    continue
+            elif name_file.endswith(".Z"):
+                output_file_rnx = os.path.join(output_dir, name_file[:-2])
+                try:
+                    with open(output_file_rnx, 'wb') as f_out:
+                        subprocess.run(['gunzip', '-c', output_file_zip], stdout=f_out, check=True)
+
+                    with open(output_file_rnx, 'rb') as file:
+                        raw_data = file.read(5000)
+                    detected_encoding = charset_normalizer.detect(raw_data)['encoding']
+
+                    if detected_encoding.lower() != 'utf-8':
+                        with open(output_file_rnx, 'r', encoding=detected_encoding) as file:
+                            file_content = file.read()
+
+                        with open(output_file_rnx, 'w', encoding='utf-8') as file:
+                            file.write(file_content)
+                except Exception as e:
+                    self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
+
+            output_file_list.append(output_file_rnx)
+            if delete_gz:
+                try:
+                    os.remove(output_file_zip)
+                except Exception as e:
+                    self.logger.error('Something happened to delete %s. %s', output_file_zip, e)
+                    continue
+
+        return files_check(output_file_list)
