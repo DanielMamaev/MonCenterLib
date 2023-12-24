@@ -99,77 +99,70 @@ class CDDISClient:
             raise ValueError("Start day must be less than or equal to end day.")
 
         self.logger.info('Connect to CDDIS FTP.')
-        try:
-            ftps = FTP_TLS(host='gdc.cddis.eosdis.nasa.gov')
+        with FTP_TLS('gdc.cddis.eosdis.nasa.gov') as ftps:
             ftps.login(user='anonymous', passwd='anonymous')
             ftps.prot_p()
-        except Exception as e:
-            self.logger.error("Something happened to the CDDIS connection. %s", e)
-            raise
+            ftps.set_pasv(True)
 
-        # generate list dates
-        temp_day = start_day
-        list_days: list[datetime] = []
-        for _ in range((end_day - start_day).days + 1):
-            list_days.append(temp_day)
-            temp_day += timedelta(1)
+            # generate list dates
+            temp_day = start_day
+            list_days: list[datetime] = []
+            for _ in range((end_day - start_day).days + 1):
+                list_days.append(temp_day)
+                temp_day += timedelta(1)
 
-        for day in list_days:
-            year = day.strftime("%Y")
-            num_day = day.strftime("%j")
+            for day in list_days:
+                year = day.strftime("%Y")
+                num_day = day.strftime("%j")
 
-            nav_gzip = ''
-            dir_on_ftp = f"gnss/data/daily/{year}/brdc/"
+                nav_gzip = ''
+                dir_on_ftp = f"gnss/data/daily/{year}/brdc/"
 
-            name_file = f"BRDC00IGS_R_{year}{num_day}0000_01D_MN.rnx.gz"
-            self.logger.info('Searching file %s', name_file)
-            try:
-                ftps.size(dir_on_ftp + name_file)
-            except Exception:
-                self.logger.warning('File %s not found.', name_file)
-            else:
-                nav_gzip = name_file
-
-            if nav_gzip == "":
-                name_file = f"BRDM00DLR_S_{year}{num_day}0000_01D_MN.rnx.gz"
+                name_file = f"BRDC00IGS_R_{year}{num_day}0000_01D_MN.rnx.gz"
                 self.logger.info('Searching file %s', name_file)
                 try:
                     ftps.size(dir_on_ftp + name_file)
                 except Exception:
-                    self.logger.error('File %s not found.', name_file)
-                    continue
+                    self.logger.warning('File %s not found.', name_file)
                 else:
                     nav_gzip = name_file
 
-            self.logger.info('File %s downloading', nav_gzip)
-            output_file_gz = os.path.join(output_dir, nav_gzip)
-            output_file_rnx = os.path.join(output_dir, nav_gzip[:-3])
-            try:
-                ftps.retrbinary(f"RETR {dir_on_ftp}{nav_gzip}", open(output_file_gz, 'wb').write)
-            except Exception as e:
-                self.logger.error('Something happened to download %s. %s', nav_gzip, e)
-                continue
+                if nav_gzip == "":
+                    name_file = f"BRDM00DLR_S_{year}{num_day}0000_01D_MN.rnx.gz"
+                    self.logger.info('Searching file %s', name_file)
+                    try:
+                        ftps.size(dir_on_ftp + name_file)
+                    except Exception:
+                        self.logger.error('File %s not found.', name_file)
+                        continue
+                    else:
+                        nav_gzip = name_file
 
-            self.logger.info('Start unpack %s', output_file_gz)
-            try:
-                with gzip.open(output_file_gz, 'rb') as f_in:
-                    with open(output_file_rnx, 'wb') as f_out:
-                        shutil.copyfileobj(f_in, f_out)
-            except Exception as e:
-                self.logger.error('Something happened to unpack %s. %s', output_file_gz, e)
-                continue
-
-            output_file_list.append(output_file_rnx)
-            if delete_gz:
+                self.logger.info('File %s downloading', nav_gzip)
+                output_file_gz = os.path.join(output_dir, nav_gzip)
+                output_file_rnx = os.path.join(output_dir, nav_gzip[:-3])
                 try:
-                    os.remove(output_file_gz)
+                    ftps.retrbinary(f"RETR {dir_on_ftp}{nav_gzip}", open(output_file_gz, 'wb').write)
                 except Exception as e:
-                    self.logger.error('Something happened to delete %s. %s', output_file_gz, e)
+                    self.logger.error('Something happened to download %s. %s', nav_gzip, e)
                     continue
-        try:
-            ftps.quit()
-        except Exception as e:
-            self.logger.error("Something happened to close FTP connection. %s", e)
+
+                self.logger.info('Start unpack %s', output_file_gz)
+                try:
+                    with gzip.open(output_file_gz, 'rb') as f_in:
+                        with open(output_file_rnx, 'wb') as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+                except Exception as e:
+                    self.logger.error('Something happened to unpack %s. %s', output_file_gz, e)
+                    continue
+
+                output_file_list.append(output_file_rnx)
+                if delete_gz:
+                    try:
+                        os.remove(output_file_gz)
+                    except Exception as e:
+                        self.logger.error('Something happened to delete %s. %s', output_file_gz, e)
+                        continue
 
         return files_check(output_file_list)
 
@@ -226,100 +219,93 @@ class CDDISClient:
             raise ValueError("Start day must be less than or equal to end day.")
 
         self.logger.info('Connect to CDDIS FTP.')
-        try:
-            ftps = FTP_TLS(host='gdc.cddis.eosdis.nasa.gov')
+        with FTP_TLS('gdc.cddis.eosdis.nasa.gov') as ftps:
             ftps.login(user='anonymous', passwd='anonymous')
             ftps.prot_p()
-        except Exception as e:
-            self.logger.error("Something happened to the CDDIS connection. %s", e)
-            raise
+            ftps.set_pasv(True)
 
-        # generate list dates
-        temp_day = start_day
-        list_dates: list[datetime] = []
-        for _ in range((end_day - start_day).days + 1):
-            list_dates.append(temp_day)
-            temp_day += timedelta(1)
+            # generate list dates
+            temp_day = start_day
+            list_dates: list[datetime] = []
+            for _ in range((end_day - start_day).days + 1):
+                list_dates.append(temp_day)
+                temp_day += timedelta(1)
 
-        for date in list_dates:
-            year = date.strftime("%Y")
-            year_short = date.strftime("%y")
-            num_day = date.strftime("%j")
+            for date in list_dates:
+                year = date.strftime("%Y")
+                year_short = date.strftime("%y")
+                num_day = date.strftime("%j")
 
-            dir_on_ftp = f"gnss/data/daily/{year}/{num_day}/{year_short}{query['type'].lower()}/"
-            name_file = ""
-            temp_name_file = ""
-            if query["rinex_v"] == "2":
-                temp_name_file = f"{query['station'].lower()}{num_day}0.{year_short}{query['type'].lower()}.gz"
-                self.logger.info('Searching file %s', temp_name_file)
-                try:
-                    ftps.size(dir_on_ftp + temp_name_file)
-                except Exception:
-                    self.logger.warning('File %s not found.', temp_name_file)
-                else:
-                    name_file = temp_name_file
-
-                if name_file == "":
-                    temp_name_file = f"{query['station'].lower()}{num_day}0.{year_short}{query['type'].lower()}.Z"
+                dir_on_ftp = f"gnss/data/daily/{year}/{num_day}/{year_short}{query['type'].lower()}/"
+                name_file = ""
+                temp_name_file = ""
+                if query["rinex_v"] == "2":
+                    temp_name_file = f"{query['station'].lower()}{num_day}0.{year_short}{query['type'].lower()}.gz"
                     self.logger.info('Searching file %s', temp_name_file)
                     try:
                         ftps.size(dir_on_ftp + temp_name_file)
                     except Exception:
-                        self.logger.error('File %s not found.', temp_name_file)
-                        continue
+                        self.logger.warning('File %s not found.', temp_name_file)
                     else:
                         name_file = temp_name_file
-            elif query["rinex_v"] == "3":
-                raise ValueError("Rinex version 3 doesn't support.")
 
-            self.logger.info('File %s downloading', name_file)
-            output_file_zip = os.path.join(output_dir, name_file)
-            try:
-                ftps.retrbinary(f"RETR {dir_on_ftp}{name_file}", open(output_file_zip, 'wb').write)
-            except Exception as e:
-                self.logger.error('Something happened to download %s. %s', output_file_zip, e)
-                continue
+                    if name_file == "":
+                        temp_name_file = f"{query['station'].lower()}{num_day}0.{year_short}{query['type'].lower()}.Z"
+                        self.logger.info('Searching file %s', temp_name_file)
+                        try:
+                            ftps.size(dir_on_ftp + temp_name_file)
+                        except Exception:
+                            self.logger.error('File %s not found.', temp_name_file)
+                            continue
+                        else:
+                            name_file = temp_name_file
+                elif query["rinex_v"] == "3":
+                    raise ValueError("Rinex version 3 doesn't support.")
 
-            self.logger.info('Start unpack %s', output_file_zip)
-            output_file_rnx = ""
-            if name_file.endswith(".gz"):
-                output_file_rnx = os.path.join(output_dir, name_file[:-3])
+                self.logger.info('File %s downloading', name_file)
+                output_file_zip = os.path.join(output_dir, name_file)
                 try:
-                    with gzip.open(output_file_zip, 'rb') as f_in:
+                    ftps.retrbinary(f"RETR {dir_on_ftp}{name_file}", open(output_file_zip, 'wb').write)
+                except Exception as e:
+                    self.logger.error('Something happened to download %s. %s', output_file_zip, e)
+                    continue
+
+                self.logger.info('Start unpack %s', output_file_zip)
+                output_file_rnx = ""
+                if name_file.endswith(".gz"):
+                    output_file_rnx = os.path.join(output_dir, name_file[:-3])
+                    try:
+                        with gzip.open(output_file_zip, 'rb') as f_in:
+                            with open(output_file_rnx, 'wb') as f_out:
+                                shutil.copyfileobj(f_in, f_out)
+                    except Exception as e:
+                        self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
+                        continue
+                elif name_file.endswith(".Z"):
+                    output_file_rnx = os.path.join(output_dir, name_file[:-2])
+                    try:
                         with open(output_file_rnx, 'wb') as f_out:
-                            shutil.copyfileobj(f_in, f_out)
-                except Exception as e:
-                    self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
-                    continue
-            elif name_file.endswith(".Z"):
-                output_file_rnx = os.path.join(output_dir, name_file[:-2])
-                try:
-                    with open(output_file_rnx, 'wb') as f_out:
-                        subprocess.run(['gunzip', '-c', output_file_zip], stdout=f_out, check=True)
+                            subprocess.run(['gunzip', '-c', output_file_zip], stdout=f_out, check=True)
 
-                    with open(output_file_rnx, 'rb') as file:
-                        raw_data = file.read(5000)
-                    detected_encoding = charset_normalizer.detect(raw_data)['encoding']
+                        with open(output_file_rnx, 'rb') as file:
+                            raw_data = file.read(5000)
+                        detected_encoding = charset_normalizer.detect(raw_data)['encoding']
 
-                    if detected_encoding.lower() != 'utf-8':
-                        with open(output_file_rnx, 'r', encoding=detected_encoding) as file:
-                            file_content = file.read()
+                        if detected_encoding.lower() != 'utf-8':
+                            with open(output_file_rnx, 'r', encoding=detected_encoding) as file:
+                                file_content = file.read()
 
-                        with open(output_file_rnx, 'w', encoding='utf-8') as file:
-                            file.write(file_content)
-                except Exception as e:
-                    self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
+                            with open(output_file_rnx, 'w', encoding='utf-8') as file:
+                                file.write(file_content)
+                    except Exception as e:
+                        self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
 
-            output_file_list.append(output_file_rnx)
-            if delete_gz:
-                try:
-                    os.remove(output_file_zip)
-                except Exception as e:
-                    self.logger.error('Something happened to delete %s. %s', output_file_zip, e)
-                    continue
-        try:
-            ftps.quit()
-        except Exception as e:
-            self.logger.error("Something happened to close FTP connection. %s", e)
+                output_file_list.append(output_file_rnx)
+                if delete_gz:
+                    try:
+                        os.remove(output_file_zip)
+                    except Exception as e:
+                        self.logger.error('Something happened to delete %s. %s', output_file_zip, e)
+                        continue
 
         return files_check(output_file_list)
