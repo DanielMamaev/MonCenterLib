@@ -15,7 +15,7 @@ import os
 import subprocess
 from pathlib import Path
 from progress.bar import IncrementalBar
-from pydantic import validate_call
+from typeguard import typechecked
 from moncenterlib.gnss.tools import files_check, get_system_info
 
 
@@ -26,7 +26,8 @@ class RtkLibConvbin:
     message file. SBAS message file complies with RTKLIB SBAS/LEX message
     format.
     See more about RTKLIB here: https://rtklib.com/
-    See code usage examples in the examples folder
+    This class can convert one or more files.
+    See code usage examples in the examples folder.
     """
 
     def __init__(self):
@@ -83,7 +84,7 @@ class RtkLibConvbin:
         """
         return self.__default_config.copy()
 
-    @validate_call
+    @typechecked
     def scan_dir(self, input_dir: str, recursion: bool = False) -> list[str]:
         """This method scans the directory and makes a list of files for further work of the class.
         The method can also recursively search for files.
@@ -182,7 +183,7 @@ class RtkLibConvbin:
             if config[f'other_{t}'] not in ["0", "1"]:
                 raise ValueError(f"Config. Key: {f'other_{t}'}. Unknown value '{config[f'other_{t}']}'.")
 
-    @validate_call
+    @typechecked
     def start(self, input_raw: str | list, output: str, config: dict,
               recursion: bool = False, show_progress: bool = True) -> dict:
         """The method starts the process of preserving files in the RINEX format.
