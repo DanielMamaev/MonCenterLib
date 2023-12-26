@@ -8,6 +8,7 @@ Learn more about the specific class.
 """
 
 import logging
+from logging import Logger
 import logging.config
 from ftplib import FTP_TLS
 import os
@@ -21,35 +22,33 @@ from moncenterlib.gnss.tools import files_check
 
 
 class CDDISClient:
-    def __init__(self, logger=None):
+    """
+
+    """
+
+    def __init__(self, logger: bool | Logger = None) -> None:
+        """
+        Args:
+            logger (bool | Logger, optional): if the logger is None, a logger will be created inside the default class.
+                If the logger is False, then no information will be output.
+                If you pass an instance of your logger, the information output will be implemented according to your logger.
+                Defaults to None.
+        """
         self.logger = logger
 
-        if not self.logger:
-            conf_log = {
-                "version": 1,
-                "formatters": {
-                    "default": {
-                        "format": "{asctime} {name} {levelname} {message}",
-                        "style": "{",
-                    },
-                },
-                "handlers": {
-                    "stream_handler": {
-                        "level": "INFO",
-                        "class": "logging.StreamHandler",
-                        "formatter": "default",
-                        "filters": [],
-                    },
-                },
-                "loggers": {
-                    "CDDISCLient": {
-                        "level": "INFO",
-                        "handlers": ["stream_handler"],
-                    },
-                }
-            }
-            logging.config.dictConfig(conf_log)
+        if self.logger in [None, False]:
             self.logger = logging.getLogger('CDDISCLient')
+            if logger is False:
+                self.logger.setLevel(logging.NOTSET)
+            else:
+                self.logger.setLevel(logging.INFO)
+
+            handlers = logging.StreamHandler()
+            handlers.setLevel(logging.INFO)
+
+            formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+            handlers.setFormatter(formatter)
+            self.logger.addHandler(handlers)
 
     @typechecked
     def get_daily_multi_gnss_brd_eph(self, output_dir: str, query: dict, delete_gz: bool = True) -> dict:
