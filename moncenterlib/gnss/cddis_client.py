@@ -222,7 +222,7 @@ class CDDISClient:
         Args:
             output_dir (str): The path where the files should be saved.
             query (dict): The dictionary should contain the following keys. "start" - start date,
-                "end"- end date, "station" - station name, "type" - file type, "rinex_v" - RINEX version.
+                "end"- end date, "station" - station name, "type" - file type, "rinex_v" - RINEX version (2, 3, auto).
             delete_gz (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Raises:
