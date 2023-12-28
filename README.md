@@ -10,8 +10,8 @@ Some description
 | |tools4rnx|RtkLibConvbin|This class is based on the RTKLib software package. Convert RTCM, receiver raw data log and RINEX file to RINEX and SBAS/LEX message file. SBAS message file complies with RTKLIB SBAS/LEX message format. See more about RTKLIB here: https://rtklib.com/| Ready|
 | |postprocessing|RtkLibPost| |Dev|
 | |quality_check|Anubis| |Dev|
-| |cddis_client|CDDISClient| |Dev|
-| |rgs_client|RGSClient| |Dev|
+| |cddis_client|CDDISClient|This module is designed to download one or more GNSS files from the CDDIS archive. |Ready|
+| |rgs_client|RGSClient|This module allows you to download various GNSS files from the service https://rgs-centre.ru |Ready|
 | |gnss_time_series|| |Soon|
 |Soon|| | |
 
@@ -19,20 +19,18 @@ Some description
 ### Basic install
 
 1. Download and unpack repository;
-2. Install additional programs. `sudo apt install automake gfortran -y`
-3. Move to directory MonCenterLib;
-4. Don't forget to enable the python virtual environment;
-5. Run `pip install .`
-6. Ready to use.
-7. P.S. After installation, run testing just in case. `python3 -m unittest discover`
+2. Move to directory MonCenterLib;
+3. Don't forget to enable the python virtual environment;
+4. Run `pip install .`
+5. Ready to use.
+6. P.S. After installation, run testing just in case. `python3 -m unittest discover`
 
 ### Install in Google Colab
 
 1. Download repository. `!git clone https://github.com/DanielMamaev/MonCenterLib.git`
-2. Install additional programs. `!sudo apt install automake gfortran -y`
-3. Run `!cd MonCenterLib && pip install .`
-4. Ready to use.
-7. P.S. After installation, run testing just in case. `!cd MonCenterLib && python3 -m unittest discover`
+2. Move to MonCenterLib directory and run `!cd MonCenterLib && pip install .`
+3. Ready to use.
+4. P.S. After installation, run testing just in case. `!cd MonCenterLib && python3 -m unittest discover`
 
 ## Usage example
 
