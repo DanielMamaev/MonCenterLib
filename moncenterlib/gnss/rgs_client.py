@@ -51,12 +51,13 @@ class RGSClient:
             else:
                 self.logger.setLevel(logging.INFO)
 
-            handlers = logging.StreamHandler()
-            handlers.setLevel(logging.INFO)
+            if not self.logger.handlers:
+                handlers = logging.StreamHandler()
+                handlers.setLevel(logging.INFO)
 
-            formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
-            handlers.setFormatter(formatter)
-            self.logger.addHandler(handlers)
+                formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+                handlers.setFormatter(formatter)
+                self.logger.addHandler(handlers)
 
     def _download_file(self, filename: str, output_dir: str, unpack: bool) -> str:
         output_path_file: str = os.path.join(output_dir, filename)

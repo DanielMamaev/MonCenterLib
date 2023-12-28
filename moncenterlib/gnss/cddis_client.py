@@ -44,12 +44,13 @@ class CDDISClient:
             else:
                 self.logger.setLevel(logging.INFO)
 
-            handlers = logging.StreamHandler()
-            handlers.setLevel(logging.INFO)
+            if not self.logger.handlers:
+                handlers = logging.StreamHandler()
+                handlers.setLevel(logging.INFO)
 
-            formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
-            handlers.setFormatter(formatter)
-            self.logger.addHandler(handlers)
+                formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+                handlers.setFormatter(formatter)
+                self.logger.addHandler(handlers)
 
     def __generate_list_dates(self, start_day: str, end_day: str) -> list[datetime]:
         temp_day = start_day
