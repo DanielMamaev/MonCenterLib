@@ -1,5 +1,7 @@
 from pathlib import Path
 import platform
+import logging
+from logging import Logger
 
 
 PATH_BASE = Path(__file__).resolve().parent
@@ -42,3 +44,31 @@ def get_system_info() -> tuple[str, str]:
         raise OSError(f"{system} doesn't support")
 
     return system, bit_info
+
+
+class NoLoggingFilter(logging.Filter):
+    def __init__(self, flag: bool = True) -> None:
+        self.flag = flag
+        super().__init__()
+
+    def filter(self, record):
+        return self.flag
+
+
+def create_simple_logger(name: str, disable_output: bool) -> Logger:
+    logger = logging.getLogger(name)
+    if disable_output is False:
+        logger.filters = [NoLoggingFilter(False)]
+    else:
+        logger.setLevel(logging.INFO)
+        logger.filters = [NoLoggingFilter(True)]
+
+    if not logger.handlers:
+        handlers = logging.StreamHandler()
+        handlers.setLevel(logging.INFO)
+
+        formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
+        handlers.setFormatter(formatter)
+        logger.addHandler(handlers)
+
+    return logger
