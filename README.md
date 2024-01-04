@@ -23,14 +23,13 @@ Some description
 3. Don't forget to enable the python virtual environment;
 4. Run `pip install .`
 5. Ready to use.
-6. P.S. After installation, run testing just in case. `python3 -m unittest discover`
+
 
 ### Install in Google Colab
 
 1. Download repository. `!git clone https://github.com/DanielMamaev/MonCenterLib.git`
 2. Move to MonCenterLib directory and run `!cd MonCenterLib && pip install .`
 3. Ready to use.
-4. P.S. After installation, run testing just in case. `!cd MonCenterLib && python3 -m unittest discover`
 
 ## Usage example
 
