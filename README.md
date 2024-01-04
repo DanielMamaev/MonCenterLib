@@ -34,7 +34,7 @@ Some description
 
 ## Usage example
 
-See examples code [here](examples/)
+See examples code [here](examples/README.md)
 
 ## Release History
 
