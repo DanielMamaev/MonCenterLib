@@ -12,18 +12,17 @@ See example code in example folder.
 import gzip
 import json
 import os
-import logging
 from logging import Logger
 import requests
 from typeguard import typechecked
-from moncenterlib.gnss.tools import files_check
+from moncenterlib.gnss.tools import files_check, create_simple_logger
 
 
 class RGSClient:
     """
     """
-
-    def __init__(self, api_token: str, ssl: bool = True, logger: bool | Logger = None) -> None:
+    @typechecked
+    def __init__(self, api_token: str, ssl: bool = True, logger: bool | Logger | None = None) -> None:
         """
         Args:
             api_token (str): API token from personal account of rgs-centre.
@@ -35,30 +34,25 @@ class RGSClient:
                 If the logger is False, then no information will be output.
                 If you pass an instance of your logger, the information output will be implemented according to your logger.
                 Defaults to None.
+
+        Raises:
+            ValueError: API token is empty.
         """
 
         self.ssl = ssl
 
         self.path = 'https://rgs-centre.ru/api'
+
+        if api_token == "":
+            raise ValueError("API token is empty")
         self.api_token = api_token
 
         self.logger = logger
 
         if self.logger in [None, False]:
-            self.logger = logging.getLogger('RGSCLient')
-            if logger is False:
-                self.logger.setLevel(logging.NOTSET)
-            else:
-                self.logger.setLevel(logging.INFO)
+            self.logger = create_simple_logger("RGSClient", logger)
 
-            if not self.logger.handlers:
-                handlers = logging.StreamHandler()
-                handlers.setLevel(logging.INFO)
-
-                formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
-                handlers.setFormatter(formatter)
-                self.logger.addHandler(handlers)
-
+    @typechecked
     def _download_file(self, filename: str, output_dir: str, unpack: bool) -> str:
         output_path_file: str = os.path.join(output_dir, filename)
         if unpack:
@@ -90,6 +84,7 @@ class RGSClient:
                 response = session.get(request, headers=headers, verify=self.ssl)
             except Exception as e:
                 self.logger.error("Something happened to request %s. %s", request, e)
+                raise
 
             if json_mode:
                 try:
@@ -128,7 +123,7 @@ class RGSClient:
         return self._request('files', filter_param)
 
     @typechecked
-    def station_info(self, fags_name: str) -> dict:
+    def get_station_info(self, fags_name: str) -> dict:
         """Get information of station.
         See name of stations here: https://rgs-centre.ru/fags-map or https://rgs-centre.ru/fags-coords
 
@@ -178,6 +173,7 @@ class RGSClient:
             unpack (bool, optional): Unpack archive. Defaults to True.
 
         Raises:
+            ValueError: Path to output_dir is strange.
             Exception: List information about files is empty.
 
         Returns:
@@ -185,6 +181,10 @@ class RGSClient:
             The done key stores a list of files that have been successfully created.
             The error key stores a list of files that have not been created.
         """
+
+        if not os.path.isdir(output_dir):
+            raise ValueError("Path to output_dir is strange.")
+
         files_list = []
         output_path_list = []
         self.logger.info('Start get information about files.')
@@ -194,14 +194,13 @@ class RGSClient:
             self.logger.error('Something happened to get information about files %s.', e)
             raise
 
-        if files_list == [] or files_list is None:
+        if files_list == []:
             self.logger.error('List information about files is empty.')
             raise Exception('List information about files is empty.')
 
         self.logger.info('Start download files.')
         for file in files_list:
             self.logger.info("File %s downloading.", file['name'])
-
             try:
                 output_path_list.append(self._download_file(file['name'], output_dir, unpack))
             except Exception as e:
