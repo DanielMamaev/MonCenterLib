@@ -38,7 +38,7 @@ class CDDISClient:
             self.logger = create_simple_logger("CDDISCLient", logger)
 
     @typechecked
-    def _generate_list_dates(self, start_day: str, end_day: str) -> list[datetime]:
+    def _generate_list_dates(self, start_day: datetime, end_day: datetime) -> list[datetime]:
         temp_day = start_day
         list_days: list[datetime] = []
         for _ in range((end_day - start_day).days + 1):
