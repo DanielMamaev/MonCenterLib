@@ -6,10 +6,7 @@ See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/GNSS_data_a
 Learn more about the specific class.
 
 """
-
-import logging
 from logging import Logger
-import logging.config
 from ftplib import FTP_TLS
 import os
 import gzip
@@ -19,15 +16,15 @@ from datetime import datetime, timedelta
 import charset_normalizer
 from typeguard import typechecked
 from gps_time import GPSTime
-from moncenterlib.gnss.tools import files_check
+from moncenterlib.gnss.tools import create_simple_logger, files_check
 
 
 class CDDISClient:
     """
 
     """
-
-    def __init__(self, logger: bool | Logger = None) -> None:
+    @typechecked
+    def __init__(self, logger: bool | Logger | None = None) -> None:
         """
         Args:
             logger (bool | Logger, optional): if the logger is None, a logger will be created inside the default class.
@@ -38,21 +35,10 @@ class CDDISClient:
         self.logger = logger
 
         if self.logger in [None, False]:
-            self.logger = logging.getLogger('CDDISCLient')
-            if logger is False:
-                self.logger.setLevel(logging.NOTSET)
-            else:
-                self.logger.setLevel(logging.INFO)
+            self.logger = create_simple_logger("CDDISCLient", logger)
 
-            if not self.logger.handlers:
-                handlers = logging.StreamHandler()
-                handlers.setLevel(logging.INFO)
-
-                formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s')
-                handlers.setFormatter(formatter)
-                self.logger.addHandler(handlers)
-
-    def __generate_list_dates(self, start_day: str, end_day: str) -> list[datetime]:
+    @typechecked
+    def _generate_list_dates(self, start_day: str, end_day: str) -> list[datetime]:
         temp_day = start_day
         list_days: list[datetime] = []
         for _ in range((end_day - start_day).days + 1):
@@ -113,7 +99,7 @@ class CDDISClient:
             ftps.prot_p()
             ftps.set_pasv(True)
 
-            list_dates = self.__generate_list_dates(start_day, end_day)
+            list_dates = self._generate_list_dates(start_day, end_day)
 
             for date in list_dates:
                 year = date.strftime("%Y")
@@ -170,8 +156,8 @@ class CDDISClient:
 
         return files_check(output_file_list)
 
-    def __search_daily_30s_data_v2(self, ftps: FTP_TLS, query: dict, num_day: str,
-                                   year_short: str, dir_on_ftp: str) -> str:
+    def _search_daily_30s_data_v2(self, ftps: FTP_TLS, query: dict, num_day: str,
+                                  year_short: str, dir_on_ftp: str) -> str:
         temp_name_file = ""
         name_file = ""
         temp_name_file = f"{query['station'].lower()}{num_day}0.{year_short}{query['type'].lower()}.gz"
@@ -194,7 +180,7 @@ class CDDISClient:
                 name_file = temp_name_file
         return name_file
 
-    def __search_daily_30s_data_v3(self, ftps: FTP_TLS, query: dict, num_day: str, year: str, dir_on_ftp: str) -> str:
+    def _search_daily_30s_data_v3(self, ftps: FTP_TLS, query: dict, num_day: str, year: str, dir_on_ftp: str) -> str:
         self.logger.info('Searching station %s', query["station"])
         name_file = ""
         file_lst = []
@@ -272,7 +258,7 @@ class CDDISClient:
             ftps.prot_p()
             ftps.set_pasv(True)
 
-            list_dates = self.__generate_list_dates(start_day, end_day)
+            list_dates = self._generate_list_dates(start_day, end_day)
 
             for date in list_dates:
                 year = date.strftime("%Y")
@@ -282,17 +268,17 @@ class CDDISClient:
                 dir_on_ftp = f"gnss/data/daily/{year}/{num_day}/{year_short}{query['type'].lower()}/"
                 name_file = ""
                 if query["rinex_v"] == "2":
-                    name_file = self.__search_daily_30s_data_v2(ftps, query, num_day, year_short, dir_on_ftp)
+                    name_file = self._search_daily_30s_data_v2(ftps, query, num_day, year_short, dir_on_ftp)
                     if name_file == "":
                         continue
                 elif query["rinex_v"] == "3":
-                    name_file = self.__search_daily_30s_data_v3(ftps, query, num_day, year, dir_on_ftp)
+                    name_file = self._search_daily_30s_data_v3(ftps, query, num_day, year, dir_on_ftp)
                     if name_file == "":
                         continue
                 elif query["rinex_v"] == "auto":
-                    name_file = self.__search_daily_30s_data_v2(ftps, query, num_day, year_short, dir_on_ftp)
+                    name_file = self._search_daily_30s_data_v2(ftps, query, num_day, year_short, dir_on_ftp)
                     if name_file == "":
-                        name_file = self.__search_daily_30s_data_v3(ftps, query, num_day, year, dir_on_ftp)
+                        name_file = self._search_daily_30s_data_v3(ftps, query, num_day, year, dir_on_ftp)
                         if name_file == "":
                             continue
                 else:
@@ -385,7 +371,7 @@ class CDDISClient:
             ftps.set_pasv(True)
 
             output_file_list = []
-            list_dates = self.__generate_list_dates(start_day, end_day)
+            list_dates = self._generate_list_dates(start_day, end_day)
             last_names_erp_files = []
 
             for date in list_dates:
