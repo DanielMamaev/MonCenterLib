@@ -5,4 +5,8 @@ Examples folder: https://drive.google.com/drive/folders/1L2ALYwWAvDieR1V1rESOQrY
     - rgs_client
         * RGSClient: https://colab.research.google.com/drive/1KvtWStbbBTBfafQSnoiL-hEbARG-wxYM?usp=sharing
     - cddis_client
-        * CDDISClient: soon
+        * CDDISClient: https://colab.research.google.com/drive/1B9UBXHPIu4xUKcrJFL3g51NmC_yvf3ed?usp=sharing
+    - tools4rnx
+        * RtkLibConvbin: soon
+    - quality_check
+        * Anubis: soon
