@@ -462,7 +462,9 @@ class CDDISClient:
                     except Exception as e:
                         self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
 
-                output_file_list.append(output_file_rnx)
+                if output_file_rnx not in output_file_list:
+                    output_file_list.append(output_file_rnx)
+
                 if delete_archive:
                     try:
                         os.remove(output_file_zip)
