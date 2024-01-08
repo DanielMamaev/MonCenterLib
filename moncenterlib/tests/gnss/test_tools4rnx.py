@@ -1,5 +1,6 @@
 import os
 import subprocess
+import tempfile
 from unittest import TestCase, main
 from unittest.mock import MagicMock, patch
 from pathlib import Path
@@ -406,9 +407,67 @@ class TestTools4Rnx(TestCase):
         self.assertEqual(0, res.returncode)
 
     def test_output_result(self):
-        with (patch('moncenterlib.gnss.tools4rnx.subprocess')):
+        with patch('moncenterlib.gnss.tools4rnx.subprocess'):
             list_files = ['/home/file1', '/home/file2']
             res = self.t4r.start(list_files, "/", self.t4r.get_default_config(), False, False)
             self.assertEqual({"done": [],
                               "error": ['/file1.o', '/file1.n',
                                         '/file2.o', '/file2.n', ]}, res)
+
+    def test_real_working(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            input_file = str(Path(__file__).resolve().parent.joinpath(
+                "data", "tools4rnx", "RtkLibConvbin", "observation.ubx"))
+            config = self.t4r.get_default_config()
+
+            config['format'] = 'ubx'
+            config['rinex_v'] = '3.03'
+            config['interval'] = '5'
+            config['freq'] = '1'
+            config['system'] = 'G,R'
+            config['output_o'] = '1'
+            config['output_n'] = '1'
+            config['output_g'] = '1'
+            config['output_h'] = '1'
+            config['output_q'] = '1'
+            config['output_l'] = '1'
+            config['output_b'] = '1'
+            config['output_i'] = '1'
+            config['output_s'] = '1'
+            config['other_od'] = '1'
+            config['other_os'] = '1'
+            config['other_oi'] = '1'
+            config['other_ot'] = '1'
+            config['other_ol'] = '1'
+            config['other_halfc'] = '1'
+            config['comment'] = 'comment'
+            config['marker_name'] = 'marker_name'
+            config['marker_number'] = 'marker_number'
+            config['marker_type'] = 'marker_type'
+            config['about_name'] = 'about_name'
+            config['about_agency'] = 'about_agency'
+            config['receiver_number'] = 'receiver_number'
+            config['receiver_type'] = 'receiver_type'
+            config['receiver_version'] = 'receiver_version'
+            config['antenna_number'] = 'antenna_number'
+            config['antenna_type'] = 'antenna_type'
+            config['approx_position_x'] = '1'
+            config['approx_position_y'] = '2'
+            config['approx_position_z'] = '3'
+            config['antenna_delta_h'] = '4'
+            config['antenna_delta_e'] = '5'
+            config['antenna_delta_n'] = '6'
+
+            res = self.t4r.start(input_file, temp_dir, config)
+
+            with (open(input_file.replace(".ubx", ".o"), "r", encoding="utf-8") as file1,
+                  open(res["done"][0], "r", encoding="utf-8") as file2):
+
+                lines1 = file1.readlines()
+                lines2 = file2.readlines()
+
+                self.assertEqual(len(lines1), len(lines2))
+
+                for i, _ in enumerate(lines1):
+                    if i != 1:
+                        self.assertEqual(lines1[i], lines2[i])
