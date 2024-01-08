@@ -47,7 +47,7 @@ class CDDISClient:
         return list_days
 
     @typechecked
-    def get_daily_multi_gnss_brd_eph(self, output_dir: str, query: dict, delete_archive: bool = True) -> dict:
+    def get_daily_multi_gnss_brd_eph(self, output_dir: str, query: dict, unpack: bool = True) -> dict:
         """This method allows you to download Daily RINEX V3 GNSS Broadcast Ephemeris Files or Daily Multi-GNSS Broadcast Ephemeris Files.
         These are the format files BRDC00IGS_R_YYYYDDDHHMM_01D_MN.rnx.gz and BRDM00DLR_S_YYYYDDDHHMM_01D_MN.rnx.gz accordingly.
         Daily RINEX V3 GNSS Broadcast Ephemeris Files are downloaded as a priority.
@@ -58,7 +58,7 @@ class CDDISClient:
             output_dir (str): The path where the files should be saved.
             query (dict): A request containing a start date and an end date.
                 Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
-            delete_gz (bool, optional): Deleting an archive after unpacking. Defaults to True.
+            unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Raises:
             ValueError: Path to output_dir is strange.
@@ -137,22 +137,25 @@ class CDDISClient:
                     self.logger.error('Something happened to download %s. %s', nav_gzip, e)
                     continue
 
-                self.logger.info('Start unpack %s', output_file_gz)
-                try:
-                    with gzip.open(output_file_gz, 'rb') as f_in:
-                        with open(output_file_rnx, 'wb') as f_out:
-                            shutil.copyfileobj(f_in, f_out)
-                except Exception as e:
-                    self.logger.error('Something happened to unpack %s. %s', output_file_gz, e)
-                    continue
+                if unpack:
+                    self.logger.info('Start unpack %s', output_file_gz)
+                    try:
+                        with gzip.open(output_file_gz, 'rb') as f_in:
+                            with open(output_file_rnx, 'wb') as f_out:
+                                shutil.copyfileobj(f_in, f_out)
+                    except Exception as e:
+                        self.logger.error('Something happened to unpack %s. %s', output_file_gz, e)
+                        continue
 
-                output_file_list.append(output_file_rnx)
-                if delete_archive:
+                    output_file_list.append(output_file_rnx)
+
                     try:
                         os.remove(output_file_gz)
                     except Exception as e:
                         self.logger.error('Something happened to delete %s. %s', output_file_gz, e)
                         continue
+                else:
+                    output_file_list.append(output_file_gz)
 
         return files_check(output_file_list)
 
@@ -201,7 +204,7 @@ class CDDISClient:
         return name_file
 
     @typechecked
-    def get_daily_30s_data(self, output_dir: str, query: dict, delete_archive=True) -> dict:
+    def get_daily_30s_data(self, output_dir: str, query: dict, unpack=True) -> dict:
         """This method allows you to download Daily 30-second data. It is possible to select a range of days.
         Also select the station, file type and RINEX version.
         See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/daily_30second_data.html
@@ -210,7 +213,7 @@ class CDDISClient:
             output_dir (str): The path where the files should be saved.
             query (dict): The dictionary should contain the following keys. "start" - start date,
                 "end"- end date, "station" - station name, "type" - file type, "rinex_v" - RINEX version (2, 3, auto).
-            delete_gz (bool, optional): Deleting an archive after unpacking. Defaults to True.
+            unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Raises:
             ValueError: Path to output_dir is strange.
@@ -292,55 +295,58 @@ class CDDISClient:
                     self.logger.error('Something happened to download %s. %s', output_file_zip, e)
                     continue
 
-                self.logger.info('Start unpack %s', output_file_zip)
-                output_file_rnx = ""
-                if name_file.endswith(".gz"):
-                    output_file_rnx = os.path.join(output_dir, name_file[:-3])
-                    try:
-                        with gzip.open(output_file_zip, 'rb') as f_in:
+                if unpack:
+                    self.logger.info('Start unpack %s', output_file_zip)
+                    output_file_rnx = ""
+                    if name_file.endswith(".gz"):
+                        output_file_rnx = os.path.join(output_dir, name_file[:-3])
+                        try:
+                            with gzip.open(output_file_zip, 'rb') as f_in:
+                                with open(output_file_rnx, 'wb') as f_out:
+                                    shutil.copyfileobj(f_in, f_out)
+                        except Exception as e:
+                            self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
+                            continue
+                    elif name_file.endswith(".Z"):
+                        output_file_rnx = os.path.join(output_dir, name_file[:-2])
+                        try:
                             with open(output_file_rnx, 'wb') as f_out:
-                                shutil.copyfileobj(f_in, f_out)
-                    except Exception as e:
-                        self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
-                        continue
-                elif name_file.endswith(".Z"):
-                    output_file_rnx = os.path.join(output_dir, name_file[:-2])
-                    try:
-                        with open(output_file_rnx, 'wb') as f_out:
-                            subprocess.run(['gunzip', '-c', output_file_zip], stdout=f_out, check=True)
+                                subprocess.run(['gunzip', '-c', output_file_zip], stdout=f_out, check=True)
 
-                        with open(output_file_rnx, 'rb') as file:
-                            raw_data = file.read(5000)
-                        detected_encoding = charset_normalizer.detect(raw_data)['encoding']
+                            with open(output_file_rnx, 'rb') as file:
+                                raw_data = file.read(5000)
+                            detected_encoding = charset_normalizer.detect(raw_data)['encoding']
 
-                        if detected_encoding.lower() != 'utf-8':
-                            with open(output_file_rnx, 'r', encoding=detected_encoding) as file:
-                                file_content = file.read()
+                            if detected_encoding.lower() != 'utf-8':
+                                with open(output_file_rnx, 'r', encoding=detected_encoding) as file:
+                                    file_content = file.read()
 
-                            with open(output_file_rnx, 'w', encoding='utf-8') as file:
-                                file.write(file_content)
-                    except Exception as e:
-                        self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
+                                with open(output_file_rnx, 'w', encoding='utf-8') as file:
+                                    file.write(file_content)
+                        except Exception as e:
+                            self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
 
-                output_file_list.append(output_file_rnx)
-                if delete_archive:
+                    output_file_list.append(output_file_rnx)
+
                     try:
                         os.remove(output_file_zip)
                     except Exception as e:
                         self.logger.error('Something happened to delete %s. %s', output_file_zip, e)
                         continue
+                else:
+                    output_file_list.append(output_file_zip)
 
         return files_check(output_file_list)
 
     @typechecked
-    def __week_products(self, type_prod: str, output_dir: str, query: dict, delete_archive=True) -> dict:
+    def __week_products(self, type_prod: str, output_dir: str, query: dict, unpack=True) -> dict:
         """
         Args:
             type_prod (str): Type of product. (sp3, clk_5m, clk_30s, erp).
             output_dir (str): The path where the files should be saved.
             query (dict): A request containing a start date and an end date.
                 Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
-            delete_gz (bool, optional): Deleting an archive after unpacking. Defaults to True.
+            unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Raises:
             ValueError: Path to output_dir is strange.
@@ -432,50 +438,52 @@ class CDDISClient:
                     self.logger.error('Something happened to download %s. %s', output_file_zip, e)
                     continue
 
-                self.logger.info('Start unpack %s', output_file_zip)
-                output_file_rnx = ""
-                if name_file.endswith(".gz"):
-                    output_file_rnx = os.path.join(output_dir, name_file[:-3])
-                    try:
-                        with gzip.open(output_file_zip, 'rb') as f_in:
+                if unpack:
+                    self.logger.info('Start unpack %s', output_file_zip)
+                    output_file_rnx = ""
+                    if name_file.endswith(".gz"):
+                        output_file_rnx = os.path.join(output_dir, name_file[:-3])
+                        try:
+                            with gzip.open(output_file_zip, 'rb') as f_in:
+                                with open(output_file_rnx, 'wb') as f_out:
+                                    shutil.copyfileobj(f_in, f_out)
+                        except Exception as e:
+                            self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
+                            continue
+                    elif name_file.endswith(".Z"):
+                        output_file_rnx = os.path.join(output_dir, name_file[:-2])
+                        try:
                             with open(output_file_rnx, 'wb') as f_out:
-                                shutil.copyfileobj(f_in, f_out)
-                    except Exception as e:
-                        self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
-                        continue
-                elif name_file.endswith(".Z"):
-                    output_file_rnx = os.path.join(output_dir, name_file[:-2])
-                    try:
-                        with open(output_file_rnx, 'wb') as f_out:
-                            subprocess.run(['gunzip', '-c', output_file_zip], stdout=f_out, check=True)
+                                subprocess.run(['gunzip', '-c', output_file_zip], stdout=f_out, check=True)
 
-                        with open(output_file_rnx, 'rb') as file:
-                            raw_data = file.read(5000)
-                        detected_encoding = charset_normalizer.detect(raw_data)['encoding']
+                            with open(output_file_rnx, 'rb') as file:
+                                raw_data = file.read(5000)
+                            detected_encoding = charset_normalizer.detect(raw_data)['encoding']
 
-                        if detected_encoding.lower() != 'utf-8':
-                            with open(output_file_rnx, 'r', encoding=detected_encoding) as file:
-                                file_content = file.read()
+                            if detected_encoding.lower() != 'utf-8':
+                                with open(output_file_rnx, 'r', encoding=detected_encoding) as file:
+                                    file_content = file.read()
 
-                            with open(output_file_rnx, 'w', encoding='utf-8') as file:
-                                file.write(file_content)
-                    except Exception as e:
-                        self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
+                                with open(output_file_rnx, 'w', encoding='utf-8') as file:
+                                    file.write(file_content)
+                        except Exception as e:
+                            self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
 
-                if output_file_rnx not in output_file_list:
-                    output_file_list.append(output_file_rnx)
+                    if output_file_rnx not in output_file_list:
+                        output_file_list.append(output_file_rnx)
 
-                if delete_archive:
                     try:
                         os.remove(output_file_zip)
                     except Exception as e:
                         self.logger.error('Something happened to delete %s. %s', output_file_zip, e)
                         continue
+                else:
+                    output_file_list.append(output_file_zip)
 
         return files_check(output_file_list)
 
     @typechecked
-    def get_precise_orbits(self, output_dir: str, query: dict, delete_archive=True) -> dict:
+    def get_precise_orbits(self, output_dir: str, query: dict, unpack=True) -> dict:
         """A method for downloading files of final precise orbits (SP3).
         See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/orbit_products.html
 
@@ -483,7 +491,7 @@ class CDDISClient:
             output_dir (str): The path where the files should be saved.
             query (dict): A request containing a start date and an end date.
                 Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
-            delete_gz (bool, optional): Deleting an archive after unpacking. Defaults to True.
+            unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
             dict: The dictionary contains 2 keys. Done and error.
@@ -500,10 +508,10 @@ class CDDISClient:
                 "error": []
             }
         """
-        return self.__week_products("sp3", output_dir, query, delete_archive)
+        return self.__week_products("sp3", output_dir, query, unpack)
 
     @typechecked
-    def get_clock_30s(self, output_dir: str, query: dict, delete_archive=True) -> dict:
+    def get_clock_30s(self, output_dir: str, query: dict, unpack=True) -> dict:
         """A method for downloading files of final station clock solutions (CLK 30 seconds).
         See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/clock_products.html
 
@@ -511,7 +519,7 @@ class CDDISClient:
             output_dir (str): The path where the files should be saved.
             query (dict): A request containing a start date and an end date.
                 Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
-            delete_gz (bool, optional): Deleting an archive after unpacking. Defaults to True.
+            unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
             dict: The dictionary contains 2 keys. Done and error.
@@ -528,10 +536,10 @@ class CDDISClient:
                 "error": []
             }
         """
-        return self.__week_products("clk_30s", output_dir, query, delete_archive)
+        return self.__week_products("clk_30s", output_dir, query, unpack)
 
     @typechecked
-    def get_clock_5m(self, output_dir: str, query: dict, delete_archive=True) -> dict:
+    def get_clock_5m(self, output_dir: str, query: dict, unpack=True) -> dict:
         """A method for downloading files of final station clock solutions (CLK 5 minutes).
         See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/clock_products.html
 
@@ -539,7 +547,7 @@ class CDDISClient:
             output_dir (str): The path where the files should be saved.
             query (dict): A request containing a start date and an end date.
                 Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
-            delete_gz (bool, optional): Deleting an archive after unpacking. Defaults to True.
+            unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
             dict: The dictionary contains 2 keys. Done and error.
@@ -556,10 +564,10 @@ class CDDISClient:
                 "error": []
             }
         """
-        return self.__week_products("clk_5m", output_dir, query, delete_archive)
+        return self.__week_products("clk_5m", output_dir, query, unpack)
 
     @typechecked
-    def get_earth_orientation(self, output_dir: str, query: dict, delete_archive=True) -> dict:
+    def get_earth_orientation(self, output_dir: str, query: dict, unpack=True) -> dict:
         """A method for downloading files of final Earth rotation parameters (ERP).
         See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/orbit_products.html
 
@@ -567,7 +575,7 @@ class CDDISClient:
             output_dir (str): The path where the files should be saved.
             query (dict): A request containing a start date and an end date.
                 Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
-            delete_gz (bool, optional): Deleting an archive after unpacking. Defaults to True.
+            unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
             dict: The dictionary contains 2 keys. Done and error.
@@ -584,4 +592,4 @@ class CDDISClient:
                 "error": []
             }
         """
-        return self.__week_products("erp", output_dir, query, delete_archive)
+        return self.__week_products("erp", output_dir, query, unpack)
