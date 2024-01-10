@@ -83,7 +83,7 @@ class CDDISClient:
 
         if not os.path.isdir(output_dir):
             raise ValueError("Path to output_dir is strange.")
-        if not query.get("start", None) or not query.get("start", None):
+        if not query.get("start", None) or not query.get("end", None):
             raise KeyError("The query must have the start and end keys.")
 
         output_file_list = []
@@ -159,6 +159,7 @@ class CDDISClient:
 
         return files_check(output_file_list)
 
+    @typechecked
     def _search_daily_30s_data_v2(self, ftps: FTP_TLS, query: dict, num_day: str,
                                   year_short: str, dir_on_ftp: str) -> str:
         temp_name_file = ""
@@ -183,6 +184,7 @@ class CDDISClient:
                 name_file = temp_name_file
         return name_file
 
+    @typechecked
     def _search_daily_30s_data_v3(self, ftps: FTP_TLS, query: dict, num_day: str, year: str, dir_on_ftp: str) -> str:
         self.logger.info('Searching station %s', query["station"])
         name_file = ""
@@ -339,7 +341,7 @@ class CDDISClient:
         return files_check(output_file_list)
 
     @typechecked
-    def __week_products(self, type_prod: str, output_dir: str, query: dict, unpack=True) -> dict:
+    def _week_products(self, type_prod: str, output_dir: str, query: dict, unpack=True) -> dict:
         """
         Args:
             type_prod (str): Type of product. (sp3, clk_5m, clk_30s, erp).
@@ -362,7 +364,7 @@ class CDDISClient:
         if not os.path.isdir(output_dir):
             raise ValueError("Path to output_dir is strange.")
 
-        if not query.get("start", None) or not query.get("start", None):
+        if not query.get("start", None) or not query.get("end", None):
             raise KeyError("The query must have the start and end keys.")
 
         start_day = datetime.strptime(query["start"], "%Y-%m-%d")
@@ -396,9 +398,10 @@ class CDDISClient:
                     temp_name_file_new = f"IGS0OPSFIN_{year}{num_day}0000_01D_15M_ORB.SP3.gz"
                 elif type_prod == "erp":
                     temp_name_file_old = f"igs{gps_week}7.erp.Z"
-                    start_num_day = GPSTime(gps_week).to_datetime()
-                    start_num_day = start_num_day.strftime("%j")
-                    temp_name_file_new = f"IGS0OPSFIN_{year}{start_num_day}0000_07D_01D_ERP.ERP.gz"
+                    start_of_week = GPSTime(gps_week).to_datetime()
+                    start_year = start_of_week.strftime("%Y")
+                    start_day = start_of_week.strftime("%j")
+                    temp_name_file_new = f"IGS0OPSFIN_{start_year}{start_day}0000_07D_01D_ERP.ERP.gz"
 
                     if last_names_erp_files == [temp_name_file_old, temp_name_file_new]:
                         continue
@@ -508,7 +511,7 @@ class CDDISClient:
                 "error": []
             }
         """
-        return self.__week_products("sp3", output_dir, query, unpack)
+        return self._week_products("sp3", output_dir, query, unpack)
 
     @typechecked
     def get_clock_30s(self, output_dir: str, query: dict, unpack=True) -> dict:
@@ -536,7 +539,7 @@ class CDDISClient:
                 "error": []
             }
         """
-        return self.__week_products("clk_30s", output_dir, query, unpack)
+        return self._week_products("clk_30s", output_dir, query, unpack)
 
     @typechecked
     def get_clock_5m(self, output_dir: str, query: dict, unpack=True) -> dict:
@@ -564,7 +567,7 @@ class CDDISClient:
                 "error": []
             }
         """
-        return self.__week_products("clk_5m", output_dir, query, unpack)
+        return self._week_products("clk_5m", output_dir, query, unpack)
 
     @typechecked
     def get_earth_orientation(self, output_dir: str, query: dict, unpack=True) -> dict:
@@ -592,4 +595,4 @@ class CDDISClient:
                 "error": []
             }
         """
-        return self.__week_products("erp", output_dir, query, unpack)
+        return self._week_products("erp", output_dir, query, unpack)
