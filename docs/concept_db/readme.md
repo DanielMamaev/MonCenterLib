@@ -1,0 +1,1 @@
+This is a conceptual database model for geodetic monitoring.
