@@ -41,7 +41,7 @@ class RGSClient:
 
         self.ssl = ssl
 
-        self.path = 'https://rgs-centre.ru/api'
+        self.path = 'https://rgs.cgkipd.ru/api'
 
         if api_token == "":
             raise ValueError("API token is empty")
