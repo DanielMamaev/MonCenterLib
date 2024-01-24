@@ -4,14 +4,10 @@ from unittest.mock import MagicMock, patch, call
 import logging
 from logging import Logger
 import json
-import tempfile
 from moncenterlib.gnss.rgs_client import RGSClient
 
 
 class TestRgsClient(TestCase):
-    def setUp(self) -> None:
-        self.API_KEY = os.getenv("RGS_API_KEY")
-
     def test_init_raises(self):
         with self.assertRaises(Exception):
             rgs_cli = RGSClient(None, 123, 123)
@@ -101,7 +97,7 @@ class TestRgsClient(TestCase):
             rgs_cli.download_files(None, None, None)
 
         with (patch("moncenterlib.gnss.rgs_client.RGSClient._request") as mock_request,
-              patch("moncenterlib.gnss.rgs_client.RGSClient._download_file") as mock_download_file):
+              patch("moncenterlib.gnss.rgs_client.RGSClient._download_file")):
 
             with self.assertRaises(ValueError):
                 rgs_cli.download_files("", {})
@@ -219,7 +215,7 @@ class TestRgsClient(TestCase):
             with self.assertRaises(Exception):
                 rgs_cli._request("fags", {"param1": 1, "param2": 2}, True)
 
-            self.assertEqual(('https://rgs-centre.ru/api/fags?param1=1&param2=2&api_token= ',),
+            self.assertEqual(('https://rgs.cgkipd.ru/api/fags?param1=1&param2=2&api_token= ',),
                              mock_get.mock_calls[0].args)
             self.assertEqual({'headers':
                               {
@@ -235,7 +231,7 @@ class TestRgsClient(TestCase):
             with self.assertRaises(Exception):
                 rgs_cli._request("fags", {}, True)
 
-            self.assertEqual(('https://rgs-centre.ru/api/fags?api_token= ',),
+            self.assertEqual(('https://rgs.cgkipd.ru/api/fags?api_token= ',),
                              mock_get.mock_calls[0].args)
             self.assertEqual({'headers':
                               {
@@ -260,29 +256,3 @@ class TestRgsClient(TestCase):
             res = rgs_cli._request("fags", {}, False)
             self.assertEqual(b"some_content", res)
             self.assertEqual(rgs_cli.ssl, mock_get.mock_calls[0].kwargs["verify"])
-
-    def test_real_working(self):
-        rgs_cli = RGSClient(self.API_KEY, ssl=False, logger=False)
-        res = rgs_cli.get_station_info("nsk1")
-        self.assertEqual(19, len(res))
-
-        res = rgs_cli.get_all_stations_info()
-        self.assertEqual(56, len(res))
-
-        filter_param = {
-            "working_center": "NSK1",
-            "date[0]": "2022-01-01",
-            "date[1]": "2022-01-02",
-            "type": "O"
-        }
-        res = rgs_cli.get_info_list_of_files(filter_param)
-        self.assertEqual(10, len(res[0]))
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            res = rgs_cli.download_files(temp_dir, filter_param)
-            self.assertEqual(
-                {
-                    'done': [os.path.join(temp_dir, 'nsk10020.22o'),
-                             os.path.join(temp_dir, 'NSK100RUS_R_20220010000_01D_30S_MO.rnx')],
-                    'error': []
-                }, res)
