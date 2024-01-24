@@ -237,8 +237,6 @@ class RtkLibConvbin:
                 input_files = self.scan_dir(input_raw, recursion)
             else:
                 raise ValueError("Path to file or dir is strange.")
-        else:
-            raise TypeError("The type of the 'input_raw' variable should be 'str' or 'list'.")
 
         if not os.path.isdir(output):
             raise ValueError("Path to output dir is strange.")
