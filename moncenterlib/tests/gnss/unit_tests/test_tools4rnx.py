@@ -339,10 +339,10 @@ class TestTools4Rnx(TestCase):
 
             path_convbin = ""
             if get_system_info()[1] == "x86_64":
-                path_convbin = Path(__file__).resolve().parent.parent.parent.joinpath(
+                path_convbin = Path(__file__).resolve().parent.parent.parent.parent.joinpath(
                     "gnss", "bin", "x86_64", "convbin_2.4.3-34_x86_64_linux")
             elif get_system_info()[1] == "aarch64":
-                path_convbin = Path(__file__).resolve().parent.parent.parent.joinpath(
+                path_convbin = Path(__file__).resolve().parent.parent.parent.parent.joinpath(
                     "gnss", "bin", "aarch64", "convbin_2.4.3-34_aarch64_linux")
 
             exp_cmd = [str(path_convbin),
@@ -398,10 +398,10 @@ class TestTools4Rnx(TestCase):
     def test_check_make_convbin(self):
         path_convbin = ""
         if get_system_info()[1] == "x86_64":
-            path_convbin = Path(__file__).resolve().parent.parent.parent.joinpath(
+            path_convbin = Path(__file__).resolve().parent.parent.parent.parent.joinpath(
                 "gnss", "bin", "x86_64", "convbin_2.4.3-34_x86_64_linux")
         elif get_system_info()[1] == "aarch64":
-            path_convbin = Path(__file__).resolve().parent.parent.parent.joinpath(
+            path_convbin = Path(__file__).resolve().parent.parent.parent.parent.joinpath(
                 "gnss", "bin", "aarch64", "convbin_2.4.3-34_aarch64_linux")
         res = subprocess.run([str(path_convbin), "-h"], stderr=subprocess.DEVNULL, check=False)
         self.assertEqual(0, res.returncode)
@@ -416,7 +416,7 @@ class TestTools4Rnx(TestCase):
 
     def test_real_working(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            input_file = str(Path(__file__).resolve().parent.joinpath(
+            input_file = str(Path(__file__).resolve().parent.parent.joinpath(
                 "data", "tools4rnx", "RtkLibConvbin", "observation.ubx"))
             config = self.t4r.get_default_config()
 
@@ -471,3 +471,33 @@ class TestTools4Rnx(TestCase):
                 for i, _ in enumerate(lines1):
                     if i != 1:
                         self.assertEqual(lines1[i], lines2[i])
+
+    def test_architecture(self):
+        with (patch("moncenterlib.gnss.tools4rnx.subprocess.run") as mock_subprocess,
+              patch("moncenterlib.gnss.tools4rnx.os.path.isfile") as mock_isfile,
+              patch("moncenterlib.gnss.tools4rnx.get_system_info") as mock_get_system_info):
+
+            mock_isfile.return_value = True
+            mock_get_system_info.return_value = ("Linux", "x86_64")
+
+            config = self.t4r.get_default_config()
+            self.t4r.start('/home/file1', "/", config, False, False)
+            path_convbin = Path(__file__).resolve().parent.parent.parent.parent.joinpath(
+                "gnss", "bin", "x86_64", "convbin_2.4.3-34_x86_64_linux")
+            self.assertEqual(mock_subprocess.call_args_list[0][0][0][0], str(path_convbin))
+
+            mock_subprocess.reset_mock()
+            mock_get_system_info.return_value = ("Linux", "aarch64")
+            self.t4r.start('/home/file1', "/", config, False, False)
+            path_convbin = Path(__file__).resolve().parent.parent.parent.parent.joinpath(
+                "gnss", "bin", "aarch64", "convbin_2.4.3-34_aarch64_linux")
+            self.assertEqual(mock_subprocess.call_args_list[0][0][0][0], str(path_convbin))
+
+            mock_get_system_info.return_value = ("Linux", "OPS")
+            with self.assertRaises(OSError) as msg:
+                self.t4r.start('/home/file1', "/", config, False, False)
+            self.assertEqual(str(msg.exception), "('Linux', 'OPS') doesn't support")
+
+
+if __name__ == "__main__":
+    main()
