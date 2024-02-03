@@ -327,6 +327,7 @@ class CDDISClient:
                                     file.write(file_content)
                         except Exception as e:
                             self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
+                            continue
 
                     output_file_list.append(output_file_rnx)
 
