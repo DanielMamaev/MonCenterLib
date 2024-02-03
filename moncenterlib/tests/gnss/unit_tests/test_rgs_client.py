@@ -1,5 +1,4 @@
-import os
-from unittest import TestCase
+from unittest import TestCase, main
 from unittest.mock import MagicMock, patch, call
 import logging
 from logging import Logger
@@ -256,3 +255,7 @@ class TestRgsClient(TestCase):
             res = rgs_cli._request("fags", {}, False)
             self.assertEqual(b"some_content", res)
             self.assertEqual(rgs_cli.ssl, mock_get.mock_calls[0].kwargs["verify"])
+
+
+if __name__ == "__main__":
+    main()
