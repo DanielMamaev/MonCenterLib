@@ -31,6 +31,13 @@ class RtkLibConvbin:
     """
     @typechecked
     def __init__(self, logger: bool | Logger | None = None):
+        """
+        Args:
+            logger (bool | Logger, optional): if the logger is None, a logger will be created inside the default class.
+                If the logger is False, then no information will be output.
+                If you pass an instance of your logger, the information output will be implemented according to your logger.
+                Defaults to None.
+        """
         self.__default_config = {
             'format': 'rtcm2',
             'rinex_v': '3.04',
@@ -72,7 +79,7 @@ class RtkLibConvbin:
             'antenna_delta_e': '',
             'antenna_delta_n': ''
         }
-        
+
         self.logger = logger
 
         if self.logger in [None, False]:
@@ -152,14 +159,16 @@ class RtkLibConvbin:
             try:
                 datetime.datetime.strptime(config['start_time'], "%Y/%m/%d %H:%M:%S")
             except ValueError:
-                self.logger.error("Config. Key: start_time. Incorrect data format %s, should be YYYY/MM/DD HH:MM:SS.", config['start_time'])
+                self.logger.error(
+                    "Config. Key: start_time. Incorrect data format %s, should be YYYY/MM/DD HH:MM:SS.", config['start_time'])
                 raise ValueError(
                     f"Config. Key: start_time. Incorrect data format {config['start_time']}, should be YYYY/MM/DD HH:MM:SS.")
         if config['end_time'] != '':
             try:
                 datetime.datetime.strptime(config['end_time'], "%Y/%m/%d %H:%M:%S")
             except ValueError:
-                self.logger.error("Config. Key: end_time. Incorrect data format %s, should be YYYY/MM/DD HH:MM:SS.", config['end_time'])
+                self.logger.error(
+                    "Config. Key: end_time. Incorrect data format %s, should be YYYY/MM/DD HH:MM:SS.", config['end_time'])
                 raise ValueError(
                     f"Config. Key: end_time. Incorrect data format {config['end_time']}, should be YYYY/MM/DD HH:MM:SS.")
 
