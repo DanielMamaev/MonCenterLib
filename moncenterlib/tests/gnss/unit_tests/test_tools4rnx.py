@@ -1,3 +1,5 @@
+from logging import Logger
+import logging
 import os
 import subprocess
 import tempfile
@@ -5,12 +7,37 @@ from unittest import TestCase, main
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 from moncenterlib.gnss.tools4rnx import RtkLibConvbin
-from moncenterlib.gnss.tools import get_system_info
+from moncenterlib.gnss.tools import get_path2bin
 
 
 class TestTools4Rnx(TestCase):
     def setUp(self) -> None:
-        self.t4r = RtkLibConvbin()
+        self.t4r = RtkLibConvbin(False)
+    
+    def test_init_raises(self):
+        with self.assertRaises(Exception):
+            convbin = RtkLibConvbin("None")
+
+    def test_init_with_enable_logger(self):
+        convbin = RtkLibConvbin()
+        self.assertEqual(Logger, type(convbin.logger))
+        self.assertEqual("RtkLibConvbin", convbin.logger.name)
+
+    def test_init_with_disable_logger(self):
+        convbin = RtkLibConvbin(False)
+        self.assertEqual(Logger, type(convbin.logger))
+        self.assertEqual("RtkLibConvbin", convbin.logger.name)
+
+    def test_init_with_my_logger(self):
+        logger = logging.getLogger()
+        convbin = RtkLibConvbin(logger=logger)
+        self.assertEqual(logger, convbin.logger)
+        self.assertEqual("root", convbin.logger.name)
+
+    def test_init_check_dublicate_handlers(self):
+        convbin = RtkLibConvbin()
+        convbin = RtkLibConvbin()
+        self.assertEqual(1, len(convbin.logger.handlers))
 
     def test_different_id_default_config(self):
         config = self.t4r.get_default_config()
@@ -31,18 +58,13 @@ class TestTools4Rnx(TestCase):
         self.assertEqual(str(ms.exception), "Path to dir is strange.")
 
     def test_func_scan_dir(self):
-        with patch("moncenterlib.gnss.tools4rnx.os.walk") as mock_walk:
-            mock_walk.return_value = (("/home/", None, ["file1", "file2"]), ("/home/2/", None, ["file3", "file4"]))
+        with patch("moncenterlib.gnss.tools4rnx.get_files_from_dir") as mock_get_files_from_dir:
+            mock_get_files_from_dir.return_value = ['/home/file1', '/home/file2', '/home/2/file3', '/home/2/file4']
             res = self.t4r.scan_dir("/", True)
             self.assertEqual(len(res), 4)
             self.assertEqual(['/home/file1', '/home/file2', '/home/2/file3', '/home/2/file4'], res)
 
-            mock_walk.return_value = (("/home/", None, []), ("/home/2/", None, ["file3", "file4"]))
-            res = self.t4r.scan_dir("/", True)
-            self.assertEqual(len(res), 2)
-            self.assertEqual(['/home/2/file3', '/home/2/file4'], res)
-
-            mock_walk.return_value = (("/home/", None, []), ("/home/2/", None, []))
+            mock_get_files_from_dir.return_value = []
             res = self.t4r.scan_dir("/", True)
             self.assertEqual(len(res), 0)
             self.assertEqual([], res)
@@ -58,30 +80,27 @@ class TestTools4Rnx(TestCase):
 
     def test_start_raises(self):
         with self.assertRaises(Exception) as ms:
-            self.t4r.start(123, 'path', self.t4r.get_default_config(), False, False)
+            self.t4r.start(123, 'path', self.t4r.get_default_config(), False)
 
         with self.assertRaises(Exception) as ms:
-            self.t4r.start('path', 123, self.t4r.get_default_config(), False, False)
+            self.t4r.start('path', 123, self.t4r.get_default_config(), False)
 
         with self.assertRaises(Exception) as ms:
-            self.t4r.start('path', 'path', 'dict()', False, False)
+            self.t4r.start('path', 'path', 'dict()', False)
 
         with self.assertRaises(Exception) as ms:
-            self.t4r.start('path', 'path', self.t4r.get_default_config(), 'False', False)
-
-        with self.assertRaises(Exception) as ms:
-            self.t4r.start('path', 'path', self.t4r.get_default_config(), False, 'False')
+            self.t4r.start('path', 'path', self.t4r.get_default_config(), 'False')
 
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', self.t4r.get_default_config(), False, False)
+            self.t4r.start('path', 'path', self.t4r.get_default_config(), False)
         self.assertEqual(str(ms.exception), "Path to file or dir is strange.")
 
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start(os.curdir, 'path', self.t4r.get_default_config(), False, False)
+            self.t4r.start(os.curdir, 'path', self.t4r.get_default_config(), False)
         self.assertEqual(str(ms.exception), "Path to output dir is strange.")
 
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start(os.curdir, 'path', self.t4r.get_default_config(), False, False)
+            self.t4r.start(os.curdir, 'path', self.t4r.get_default_config(), False)
         self.assertEqual(str(ms.exception), "Path to output dir is strange.")
 
     @patch('moncenterlib.gnss.tools4rnx.subprocess')
@@ -89,7 +108,7 @@ class TestTools4Rnx(TestCase):
         mock_subprocess.run = MagicMock()
 
         list_files = ['/home/file1', '/home/file2', '/home/2/file3', '/home/2/file4']
-        self.t4r.start(list_files, "/", self.t4r.get_default_config(), False, False)
+        self.t4r.start(list_files, "/", self.t4r.get_default_config(), False)
 
         exis_list = []
         for i in mock_subprocess.run.call_args_list:
@@ -106,7 +125,7 @@ class TestTools4Rnx(TestCase):
             mock_subprocess.run = MagicMock()
             mock_scan_dir.return_value = list_files
 
-            self.t4r.start("/", "/", self.t4r.get_default_config(), False, False)
+            self.t4r.start("/", "/", self.t4r.get_default_config())
             exis_list = []
             for i in mock_subprocess.run.call_args_list:
                 exis_list += i[0][0]
@@ -119,172 +138,172 @@ class TestTools4Rnx(TestCase):
             mock_isfile.return_value = True
             mock_subprocess.run = MagicMock()
 
-            self.t4r.start('/home/file1', "/", self.t4r.get_default_config(), False, False)
+            self.t4r.start('/home/file1', "/", self.t4r.get_default_config(), False)
             exis_list = mock_subprocess.run.call_args_list[0][0][0]
             self.assertIn('/home/file1', exis_list)
 
     @patch('moncenterlib.gnss.tools4rnx.subprocess')
     def test_raises_config(self, mock_subprocess):
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', dict(), False, False)
+            self.t4r.start('path', 'path', dict(), False)
         self.assertEqual(str(ms.exception), "Config is empty.")
 
         with self.assertRaises(TypeError) as ms:
-            self.t4r.start('path', 'path', {'k': 1}, False, False)
+            self.t4r.start('path', 'path', {'k': 1}, False)
         self.assertEqual(str(ms.exception), "Config. Value '1' of key 'k' must be str.")
 
         with self.assertRaises(TypeError) as ms:
-            self.t4r.start('path', 'path', {111: 1}, False, False)
+            self.t4r.start('path', 'path', {111: 1}, False)
         self.assertEqual(str(ms.exception), "Config. Key '111' must be str.")
 
         with self.assertRaises(Exception) as ms:
-            self.t4r.start('path', 'path', {'111': '1'}, False, False)
+            self.t4r.start('path', 'path', {'111': '1'}, False)
         self.assertEqual(str(ms.exception), "Config. Not found key 'format'.")
 
         config = self.t4r.get_default_config()
         config['format'] = 'uuu'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: format. Unknown format 'uuu'.")
         config['format'] = 'ubx'
 
         config['rinex_v'] = '1.0'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: rinex_v. Unknown rinex version '1.0'.")
         config['rinex_v'] = '3.04'
 
         config['start_time'] = '01.01.1900'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception),
                          "Config. Key: start_time. Incorrect data format 01.01.1900, should be YYYY/MM/DD HH:MM:SS.")
         config['start_time'] = ''
 
         config['end_time'] = '01.01.1900'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception),
                          "Config. Key: end_time. Incorrect data format 01.01.1900, should be YYYY/MM/DD HH:MM:SS.")
         config['end_time'] = ''
 
         config['interval'] = '-1'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: interval. Interval -1 must be >= 0.")
         config['interval'] = '0'
 
         config['freq'] = '-1'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: freq. Freq -1 must be 0 <= freq <= 127.")
         config['freq'] = '3'
 
         config['freq'] = '128'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: freq. Freq 128 must be 0 <= freq <= 127.")
         config['freq'] = '3'
 
         config['system'] = 'A'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: system. Unknown system 'A'.")
         config['system'] = 'G,R'
 
         config['system'] = 'G,R,A,B'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: system. Unknown system 'A'.")
         config['system'] = 'G,R'
 
         config['output_o'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: output_o. Unknown value 'nothing'.")
         config['output_o'] = '1'
 
         config['output_n'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: output_n. Unknown value 'nothing'.")
         config['output_n'] = '1'
 
         config['output_g'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: output_g. Unknown value 'nothing'.")
         config['output_g'] = '1'
 
         config['output_h'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: output_h. Unknown value 'nothing'.")
         config['output_h'] = '1'
 
         config['output_q'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: output_q. Unknown value 'nothing'.")
         config['output_q'] = '1'
 
         config['output_l'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: output_l. Unknown value 'nothing'.")
         config['output_l'] = '1'
 
         config['output_b'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: output_b. Unknown value 'nothing'.")
         config['output_b'] = '1'
 
         config['output_i'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: output_i. Unknown value 'nothing'.")
         config['output_i'] = '1'
 
         config['output_s'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: output_s. Unknown value 'nothing'.")
         config['output_s'] = '1'
 
         config['other_od'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: other_od. Unknown value 'nothing'.")
         config['other_od'] = '1'
 
         config['other_os'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: other_os. Unknown value 'nothing'.")
         config['other_os'] = '1'
 
         config['other_oi'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: other_oi. Unknown value 'nothing'.")
         config['other_oi'] = '1'
 
         config['other_ot'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: other_ot. Unknown value 'nothing'.")
         config['other_ot'] = '1'
 
         config['other_ol'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: other_ol. Unknown value 'nothing'.")
         config['other_ol'] = '1'
 
         config['other_halfc'] = 'nothing'
         with self.assertRaises(ValueError) as ms:
-            self.t4r.start('path', 'path', config, False, False)
+            self.t4r.start('path', 'path', config, False)
         self.assertEqual(str(ms.exception), "Config. Key: other_halfc. Unknown value 'nothing'.")
         config['other_halfc'] = '1'
 
@@ -335,17 +354,9 @@ class TestTools4Rnx(TestCase):
             config['antenna_delta_e'] = '5'
             config['antenna_delta_n'] = '6'
 
-            self.t4r.start('/home/file1', "/", config, False, False)
+            self.t4r.start('/home/file1', "/", config, False)
 
-            path_convbin = ""
-            if get_system_info()[1] == "x86_64":
-                path_convbin = Path(__file__).resolve().parent.parent.parent.parent.joinpath(
-                    "gnss", "bin", "x86_64", "convbin_2.4.3-34_x86_64_linux")
-            elif get_system_info()[1] == "aarch64":
-                path_convbin = Path(__file__).resolve().parent.parent.parent.parent.joinpath(
-                    "gnss", "bin", "aarch64", "convbin_2.4.3-34_aarch64_linux")
-
-            exp_cmd = [str(path_convbin),
+            exp_cmd = [get_path2bin("convbin"),
                        '-r', 'ubx',
                        '-v', '3.03',
                        '-ts', '2023/10/27 00:00:00',
@@ -385,31 +396,14 @@ class TestTools4Rnx(TestCase):
 
             self.assertEqual(mock_subprocess.call_args_list[0][0][0], exp_cmd)
 
-    def test_show_process(self):
-        with (patch('moncenterlib.gnss.tools4rnx.subprocess'),
-              patch('moncenterlib.gnss.tools4rnx.IncrementalBar') as mock_incrementalbar):
-            self.t4r.start("/", "/", self.t4r.get_default_config(), False, True)
-            self.assertGreater(len(mock_incrementalbar.mock_calls), 1)
-
-            mock_incrementalbar.mock_calls = []
-            self.t4r.start("/", "/", self.t4r.get_default_config(), False, False)
-            self.assertEqual(len(mock_incrementalbar.mock_calls), 1)
-
     def test_check_make_convbin(self):
-        path_convbin = ""
-        if get_system_info()[1] == "x86_64":
-            path_convbin = Path(__file__).resolve().parent.parent.parent.parent.joinpath(
-                "gnss", "bin", "x86_64", "convbin_2.4.3-34_x86_64_linux")
-        elif get_system_info()[1] == "aarch64":
-            path_convbin = Path(__file__).resolve().parent.parent.parent.parent.joinpath(
-                "gnss", "bin", "aarch64", "convbin_2.4.3-34_aarch64_linux")
-        res = subprocess.run([str(path_convbin), "-h"], stderr=subprocess.DEVNULL, check=False)
+        res = subprocess.run([get_path2bin("convbin"), "-h"], stderr=subprocess.DEVNULL, check=False)
         self.assertEqual(0, res.returncode)
 
     def test_output_result(self):
         with patch('moncenterlib.gnss.tools4rnx.subprocess'):
             list_files = ['/home/file1', '/home/file2']
-            res = self.t4r.start(list_files, "/", self.t4r.get_default_config(), False, False)
+            res = self.t4r.start(list_files, "/", self.t4r.get_default_config(), False)
             self.assertEqual({"done": [],
                               "error": ['/file1.o', '/file1.n',
                                         '/file2.o', '/file2.n', ]}, res)
@@ -475,28 +469,29 @@ class TestTools4Rnx(TestCase):
     def test_architecture(self):
         with (patch("moncenterlib.gnss.tools4rnx.subprocess.run") as mock_subprocess,
               patch("moncenterlib.gnss.tools4rnx.os.path.isfile") as mock_isfile,
-              patch("moncenterlib.gnss.tools4rnx.get_system_info") as mock_get_system_info):
+              patch("moncenterlib.gnss.tools4rnx.get_path2bin") as mock_get_path2bin):
 
             mock_isfile.return_value = True
-            mock_get_system_info.return_value = ("Linux", "x86_64")
+            path_convbin = str(Path(__file__).resolve().parent.parent.parent.parent.joinpath(
+                "gnss", "bin", "x86_64", "convbin_2.4.3-34_x86_64_linux"))
+            mock_get_path2bin.return_value = path_convbin
 
             config = self.t4r.get_default_config()
-            self.t4r.start('/home/file1', "/", config, False, False)
-            path_convbin = Path(__file__).resolve().parent.parent.parent.parent.joinpath(
-                "gnss", "bin", "x86_64", "convbin_2.4.3-34_x86_64_linux")
-            self.assertEqual(mock_subprocess.call_args_list[0][0][0][0], str(path_convbin))
+            self.t4r.start('/home/file1', "/", config, False)
+
+            self.assertEqual(mock_subprocess.call_args_list[0][0][0][0], path_convbin)
 
             mock_subprocess.reset_mock()
-            mock_get_system_info.return_value = ("Linux", "aarch64")
-            self.t4r.start('/home/file1', "/", config, False, False)
             path_convbin = Path(__file__).resolve().parent.parent.parent.parent.joinpath(
                 "gnss", "bin", "aarch64", "convbin_2.4.3-34_aarch64_linux")
-            self.assertEqual(mock_subprocess.call_args_list[0][0][0][0], str(path_convbin))
+            mock_get_path2bin.return_value = path_convbin
+            self.t4r.start('/home/file1', "/", config, False)
 
-            mock_get_system_info.return_value = ("Linux", "OPS")
-            with self.assertRaises(OSError) as msg:
-                self.t4r.start('/home/file1', "/", config, False, False)
-            self.assertEqual(str(msg.exception), "('Linux', 'OPS') doesn't support")
+            self.assertEqual(mock_subprocess.call_args_list[0][0][0][0], path_convbin)
+
+            mock_get_path2bin.side_effect = OSError()
+            with self.assertRaises(OSError):
+                self.t4r.start('/home/file1', "/", config, False)
 
 
 if __name__ == "__main__":
