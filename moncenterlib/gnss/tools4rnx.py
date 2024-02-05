@@ -11,12 +11,12 @@ Learn more about the specific class.
 """
 
 import datetime
+from logging import Logger
 import os
 import subprocess
 from pathlib import Path
-from progress.bar import IncrementalBar
 from typeguard import typechecked
-from moncenterlib.gnss.tools import files_check, get_system_info
+from moncenterlib.gnss.tools import files_check, get_path2bin, create_simple_logger, get_files_from_dir
 
 
 class RtkLibConvbin:
@@ -29,8 +29,8 @@ class RtkLibConvbin:
     This class can convert one or more files.
     See code usage examples in the examples folder.
     """
-
-    def __init__(self):
+    @typechecked
+    def __init__(self, logger: bool | Logger | None = None):
         self.__default_config = {
             'format': 'rtcm2',
             'rinex_v': '3.04',
@@ -72,6 +72,11 @@ class RtkLibConvbin:
             'antenna_delta_e': '',
             'antenna_delta_n': ''
         }
+        
+        self.logger = logger
+
+        if self.logger in [None, False]:
+            self.logger = create_simple_logger("RtkLibConvbin", logger)
 
     def get_default_config(self) -> dict:
         """
@@ -105,21 +110,7 @@ class RtkLibConvbin:
             >>> res
             ["file_1", "file_2"]
         """
-        input_files = []
-        if os.path.isdir(input_dir):
-            if recursion:
-                for root, _, files in os.walk(input_dir):
-                    for file in files:
-                        path = os.path.join(root, file)
-                        input_files.append(path)
-            else:
-                temp_lst = []
-                for file in os.listdir(input_dir):
-                    if os.path.isfile(os.path.join(input_dir, file)):
-                        temp_lst.append(os.path.join(input_dir, file))
-                input_files = temp_lst
-        else:
-            raise ValueError("Path to dir is strange.")
+        input_files = get_files_from_dir(input_dir, recursion)
 
         return input_files
 
@@ -132,60 +123,73 @@ class RtkLibConvbin:
         full_sys = ['G', 'R', 'E', 'J', 'S', 'C', 'I']
 
         if len(config) == 0:
+            self.logger.error("Config is empty.")
             raise ValueError("Config is empty.")
 
         for key, val in config.items():
             if not isinstance(key, str):
+                self.logger.error("Config. Key '%s' must be str.", key)
                 raise TypeError(f"Config. Key '{key}' must be str.")
 
             if not isinstance(val, str):
+                self.logger.error("Config. Value '%s' of key '%s' must be str.", val, key)
                 raise TypeError(f"Config. Value '{val}' of key '{key}' must be str.")
 
         for key in self.__default_config.keys():
             if key not in config:
+                self.logger.error("Config. Not found key '%s'.", key)
                 raise Exception(f"Config. Not found key '{key}'.")
 
         if config['format'] not in format_raw:
+            self.logger.error("Config. Key: format. Unknown format '%s'.", config['format'])
             raise ValueError(f"Config. Key: format. Unknown format '{config['format']}'.")
 
         if config['rinex_v'] not in rinex_v:
+            self.logger.error("Config. Key: rinex_v. Unknown rinex version '%s'.", config['rinex_v'])
             raise ValueError(f"Config. Key: rinex_v. Unknown rinex version '{config['rinex_v']}'.")
 
         if config['start_time'] != '':
             try:
                 datetime.datetime.strptime(config['start_time'], "%Y/%m/%d %H:%M:%S")
             except ValueError:
+                self.logger.error("Config. Key: start_time. Incorrect data format %s, should be YYYY/MM/DD HH:MM:SS.", config['start_time'])
                 raise ValueError(
                     f"Config. Key: start_time. Incorrect data format {config['start_time']}, should be YYYY/MM/DD HH:MM:SS.")
         if config['end_time'] != '':
             try:
                 datetime.datetime.strptime(config['end_time'], "%Y/%m/%d %H:%M:%S")
             except ValueError:
+                self.logger.error("Config. Key: end_time. Incorrect data format %s, should be YYYY/MM/DD HH:MM:SS.", config['end_time'])
                 raise ValueError(
                     f"Config. Key: end_time. Incorrect data format {config['end_time']}, should be YYYY/MM/DD HH:MM:SS.")
 
         if float(config['interval']) < 0:
+            self.logger.error("Config. Key: interval. Interval %s must be >= 0.", config['interval'])
             raise ValueError(f"Config. Key: interval. Interval {config['interval']} must be >= 0.")
 
         if not (0 <= int(config['freq']) <= 127):
+            self.logger.error("Config. Key: freq. Freq %s must be 0 <= freq <= 127.", config['freq'])
             raise ValueError(f"Config. Key: freq. Freq {config['freq']} must be 0 <= freq <= 127.")
 
         systems = config['system'].split(",")
         for s in systems:
             if s not in full_sys:
+                self.logger.error("Config. Key: system. Unknown system '%s'.", s)
                 raise ValueError(f"Config. Key: system. Unknown system '{s}'.")
 
         for t in output_type:
             if config[f'output_{t}'] not in ["0", "1"]:
+                self.logger.error("Config. Key: {f'output_%s'}. Unknown value '%s'.", t, config[f'output_{t}'])
                 raise ValueError(f"Config. Key: {f'output_{t}'}. Unknown value '{config[f'output_{t}']}'.")
 
         for t in other_type:
             if config[f'other_{t}'] not in ["0", "1"]:
+                self.logger.error("Config. Key: {f'other_%s'}. Unknown value '%s'.", t, config[f'other_{t}'])
                 raise ValueError(f"Config. Key: {f'other_{t}'}. Unknown value '{config[f'other_{t}']}'.")
 
     @typechecked
     def start(self, input_raw: str | list, output: str, config: dict,
-              recursion: bool = False, show_progress: bool = True) -> dict:
+              recursion: bool = False) -> dict:
         """The method starts the process of preserving files in the RINEX format.
 
         Args:
@@ -200,8 +204,6 @@ class RtkLibConvbin:
 
             recursion (bool, optional): When you put path to directory, you can use recursively search for files.
                                         Defaults to False.
-
-            show_progress (bool, optional): The progress bar is displayed. Defaults to True.
 
         Raises:
             ValueError: Path to file or dir is strange.
@@ -218,13 +220,14 @@ class RtkLibConvbin:
             >>> list_files = t4r.scan_dir("/some_path_to_dir", True)
             >>> config = t4r.get_default_config()
             >>> config["format"] = "ubx"
-            >>> res = t4r.start(list_files, "/some_output_dir", config, False, True)
+            >>> res = t4r.start(list_files, "/some_output_dir", config, True)
             >>> res
             {
                 'done': ["file_1", "file_2"],
                 'error': ["file_3"]
             }
         """
+        self.logger.info("Checking config")
         self.__check_config(config)
 
         input_files = []
@@ -236,37 +239,20 @@ class RtkLibConvbin:
             elif os.path.isdir(input_raw):
                 input_files = self.scan_dir(input_raw, recursion)
             else:
+                self.logger.error("Path to file or dir is strange.")
                 raise ValueError("Path to file or dir is strange.")
 
         if not os.path.isdir(output):
+            self.logger.error("Path to output dir is strange.")
             raise ValueError("Path to output dir is strange.")
 
         # запуск конвертации
-        inc_bar = IncrementalBar('Progress convbin', max=len(input_files),
-                                 suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
-        if not show_progress:
-            def nothing():
-                pass
-            inc_bar.start = nothing
-            inc_bar.next = nothing
-            inc_bar.finish = nothing
-
-        inc_bar.start()
         output_files = []
         for file in input_files:
+            self.logger.info("Start converting %s", file)
             cmd = []
-            path_convbin = ""
 
-            if get_system_info()[1] == "x86_64":
-                path_convbin = Path(__file__).resolve().parent.joinpath(
-                    "bin", "x86_64", "convbin_2.4.3-34_x86_64_linux")
-            elif get_system_info()[1] == "aarch64":
-                path_convbin = Path(__file__).resolve().parent.joinpath(
-                    "bin", "aarch64", "convbin_2.4.3-34_aarch64_linux")
-            else:
-                raise OSError(f"{get_system_info()} doesn't support")
-
-            cmd += [str(path_convbin)]
+            cmd += [get_path2bin("convbin")]
 
             cmd += ["-r", config['format']]
             cmd += ["-v", config['rinex_v']]
@@ -318,8 +304,4 @@ class RtkLibConvbin:
             cmd += [file]
 
             subprocess.run(cmd, stderr=subprocess.DEVNULL, check=False)
-
-            inc_bar.next()
-
-        inc_bar.finish()
         return files_check(output_files)
