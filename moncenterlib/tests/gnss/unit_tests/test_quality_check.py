@@ -161,10 +161,10 @@ class TestAnubis(TestCase):
             mock_get_path2bin.return_value = "anubis_bin"
 
             # check dict
-            mock_parsing_xtr.side_effect = [{"date": None},
-                                            {"date": None},
-                                            {"date": None},
-                                            {"date": None}]
+            mock_parsing_xtr.side_effect = [{"date": "1"},
+                                            {"date": "1"},
+                                            {"date": "1"},
+                                            {"date": "1"}]
             input_data = {
                 "station1": [["obs1", "nav1"], ["obs2", "nav2"]],
                 "station2": [["obs3", "nav3"], ["obs4", "nav4"]],
@@ -182,7 +182,7 @@ class TestAnubis(TestCase):
             # check tuple one file
             mock_create_config.reset_mock()
             mock_isfile.return_value = True
-            mock_parsing_xtr.side_effect = [{"date": None}]
+            mock_parsing_xtr.side_effect = [{"date": "1"}]
             input_data = ("obs.txt", "nav.txt")
             anubis.start(input_data)
             self.assertEqual(["obs.txt", "nav.txt"], mock_create_config.call_args_list[0].args[0])
@@ -191,10 +191,10 @@ class TestAnubis(TestCase):
             mock_create_config.reset_mock()
             mock_isfile.return_value = False
             mock_isdir.return_value = True
-            mock_parsing_xtr.side_effect = [{"date": None},
-                                            {"date": None},
-                                            {"date": None},
-                                            {"date": None}]
+            mock_parsing_xtr.side_effect = [{"date": "None"},
+                                            {"date": "None"},
+                                            {"date": "None"},
+                                            {"date": "None"}]
             mock_scan_dirs = MagicMock()
             mock_scan_dirs.return_value = {
                 "station1": [["obs1", "nav1"], ["obs2", "nav2"]],
