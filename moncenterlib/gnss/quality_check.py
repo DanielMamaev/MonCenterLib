@@ -1,5 +1,10 @@
 """
+This module is designed for monitoring the quality and quantity of multi—GNSS data.
+The module has the following classes:
+- Anubis;
+- Soon.
 
+Learn more about the specific class.
 """
 
 
@@ -15,19 +20,56 @@ from pathlib import Path
 
 
 class Anubis:
-    """_summary_
-
+    """
+    G-Nut/Anubis is an open source tool designed to monitor the quality and quantity of multi—GNSS data stored in
+    RINEX 2.xx and 3.0x formats.
+    It is capable of processing new signals from all global navigation satellite systems and their add-ons
+    (GPS, GLONASS, Galileo, BeiDou, SBAS and QZSS).
+    G-Nut/Anubis supports GPS, GLONASS and Galileo and performs single-point positioning,
+    as well as provides GNSS data characteristics based on altitude and azimuth.
+    See more about RTKLIB here: https://gnutsoftware.com/software/anubis
+    This class can processing one or more files.
+    See code usage examples in the examples folder.
     """
     @typechecked
     def __init__(self, logger: bool | Logger | None = None) -> None:
-
+        """
+        Args:
+            logger (bool | Logger, optional): if the logger is None, a logger will be created inside the default class.
+                If the logger is False, then no information will be output.
+                If you pass an instance of your logger, the information output will be implemented according to your logger.
+                Defaults to None.
+        """
         self.logger = logger
 
         if self.logger in [None, False]:
             self.logger = mcl_tools.create_simple_logger("Anubis", logger)
 
     @typechecked
-    def scan_dirs(self, input_dir_obs: str, input_dir_nav: str, recursion: bool = False) -> dict:
+    def scan_dirs(self, input_dir_obs: str, input_dir_nav: str, recursion: bool = False) -> dict[str, list[list[str]]]:
+        """
+        This method scans the directory and makes a match list of files for further work of the class.
+        The method can also recursively search for files.
+
+        Args:
+            input_dir_obs (str): Path to the observation directory.
+            input_dir_nav (str): Path to the navigation directory.
+            recursion (bool, optional): Recursively search for files. Defaults to False.
+
+        Raises:
+            ValueError: Please, remove spaces in path.
+
+        Returns:
+            dict[str, list[list[str]]]: List of matches. Key is name of station. Value is list of matches.
+            The list of matches contains observation and navigation files matched by date.
+
+        Examples:
+            >>> anubis = Anubis()
+            >>> res = anubis.scan_dir("/path_to_dir_obs", "/path_to_dir_nav", True)
+            >>> res
+            {"station1": [["/obs1.txt", "/nav1.txt"], ["/obs2.txt", "/nav2.txt"]],
+            "station2": [["/obs3.txt", "/nav1.txt"], ["/obs4.txt", "/nav4.txt"]]}
+        """
         match_list = defaultdict(list)
         if ' ' in input_dir_obs or ' ' in input_dir_nav:
             self.logger.error("Please, remove spaces in path.")
@@ -70,8 +112,40 @@ class Anubis:
         return dict(match_list)
 
     @typechecked
-    def start(self, input_data: dict | tuple, recursion: bool = False, output_dir_xtr: str | None = None) -> dict:
+    def start(self, input_data: dict | tuple,
+              recursion: bool = False,
+              output_dir_xtr: str | None = None) -> dict[str, dict[str, float | int | str | dict]]:
+        """
+        This method starts the process of calculating the quality and quantity of multi-GNSS data.
+        The method allows you to upload one or more files for calculation.
 
+        Args:
+            input_data (dict | tuple): There are several possible input options.
+                Tuple which contains the path to the observations and navigation file("/obs.txt", "/nav.txt").
+                Tuple which contains the path to the directory of observation and navigation files, respectively("/dir_obs", "/dir_nav"). 
+                As well as the dictionary obtained from the scan_dirs method.
+            recursion (bool, optional): Recursively search for files. Defaults to False.
+            output_dir_xtr (str | None, optional): The directory where the anubis xtr output files will be saved. Defaults to None.
+
+        Raises:
+            ValueError: Please, remove spaces in path.
+            ValueError: Path to file or dir is strange.
+
+        Returns:
+            dict[str, dict[str, float | int | str | dict]]: Returns a dictionary of metrics for each date found for each station.
+
+        Examples:
+            >>> anubis = Anubis()
+            >>> result = anubis.start(("/path_to_dir_obs", "/path_to_dir_nav"), False, "/path2output_xtr")
+            >>> res
+            {"station1": {"date1": {"some_metrics": "123"},
+                          "date2": {"some_metrics": "123"}
+                          },
+             "station2": {"date1": {"some_metrics": "123"},
+                          "date2": {"some_metrics": "123"}
+                          }
+            }
+        """
         match_list = {}
         output_list = defaultdict(dict)
 
@@ -123,6 +197,13 @@ class Anubis:
 
     @typechecked
     def _create_config(self, match: list, temp_file: str, output_files_xtr: str | None) -> None:
+        """A method for creating a configuration file for Anubis.
+
+        Args:
+            match (list): The list must contain the path to the observation file and the path to the navigation file.
+            temp_file (str): Path to existing temp file of config.
+            output_files_xtr (str | None): The directory where the output files of anubis xtr will be saved.
+        """
         conf = ET.Element('config')
         param = {
             'sec_sum': "1",
@@ -156,6 +237,14 @@ class Anubis:
 
     @typechecked
     def _parsing_xtr(self, path2file: str) -> dict[str, float | int | str | dict] | None:
+        """A method for creating a reading of a xtr file and forming a dictionary with metrics.
+
+        Args:
+            path2file (str): Path to xtr file.
+
+        Returns:
+            dict[str, float | int | str | dict] | None: Returns a dictionary of metrics.
+        """
         try:
             with open(path2file, 'r', encoding="utf-8") as f:
                 data = f.readlines()
