@@ -156,7 +156,8 @@ class Anubis:
                 if ' ' in input_data[0] or ' ' in input_data[1]:
                     self.logger.error("Please, remove spaces in path.")
                     raise ValueError("Please, remove spaces in path.")
-                match_list = {'point': [[input_data[0], input_data[1]]]}
+                marker_name = mcl_tools.get_marker_name(input_data[0])
+                match_list = {marker_name: [[input_data[0], input_data[1]]]}
 
             elif os.path.isdir(input_data[0]) and os.path.isdir(input_data[1]):
                 match_list = self.scan_dirs(input_data[0], input_data[1], recursion)
