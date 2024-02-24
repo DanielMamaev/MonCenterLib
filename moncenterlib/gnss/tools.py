@@ -82,23 +82,23 @@ def create_simple_logger(name: str, disable_output: bool) -> Logger:
 
 
 def get_files_from_dir(input_dir: str, recursion: bool) -> list[str]:
-    files = []
+    output_files = []
     if os.path.isdir(input_dir):
         if recursion:
             for root, _, files in os.walk(input_dir):
                 for file in files:
                     path = os.path.join(root, file)
-                    files.append(path)
+                    output_files.append(path)
         else:
             temp_lst = []
             for file in os.listdir(input_dir):
                 if os.path.isfile(os.path.join(input_dir, file)):
                     temp_lst.append(os.path.join(input_dir, file))
-            files = temp_lst
+            output_files = temp_lst
     else:
         raise ValueError("Path to dir is strange.")
 
-    return files
+    return output_files
 
 
 def get_start_date_from_nav(file_nav: str) -> str:
