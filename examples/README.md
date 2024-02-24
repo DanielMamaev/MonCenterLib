@@ -9,4 +9,4 @@ Examples folder: https://drive.google.com/drive/folders/1L2ALYwWAvDieR1V1rESOQrY
     - tools4rnx
         * RtkLibConvbin: soon
     - quality_check
-        * Anubis: soon
+        * Anubis: https://colab.research.google.com/drive/1YuanGObVYZoYFN26_fRgoosY6ZfQGtJ-?usp=sharing
