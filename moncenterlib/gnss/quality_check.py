@@ -189,7 +189,7 @@ class Anubis:
                 else:
                     output_file_xtr = str(Path(output_dir_xtr).joinpath(Path(match[0]).name + ".xtr"))
 
-                self.logger.info("Start parsing file Anubis %s.xtr", output_file_xtr)
+                self.logger.info("Start parsing file Anubis %s", output_file_xtr)
                 data_metric = self._parsing_xtr(output_file_xtr)
 
                 output_list[marker_name][data_metric["date"]] = data_metric
