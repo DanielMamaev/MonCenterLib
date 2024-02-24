@@ -1,6 +1,6 @@
-from io import TextIOWrapper, BytesIO
 from logging import Logger
 import logging
+from pathlib import Path
 import tempfile
 from unittest import TestCase, main
 from unittest.mock import MagicMock, patch, call
@@ -152,6 +152,7 @@ class TestAnubis(TestCase):
         with (patch("moncenterlib.gnss.quality_check.os.path.isfile") as mock_isfile,
               patch("moncenterlib.gnss.quality_check.os.path.isdir") as mock_isdir,
               patch("moncenterlib.gnss.quality_check.mcl_tools.get_path2bin") as mock_get_path2bin,
+              patch("moncenterlib.gnss.quality_check.mcl_tools.get_marker_name") as mock_get_marker_name,
               patch("moncenterlib.gnss.quality_check.subprocess.run")):
             mock_create_config = MagicMock()
             mock_parsing_xtr = MagicMock()
@@ -180,6 +181,7 @@ class TestAnubis(TestCase):
                                                   mock_create_config.call_args_list[3].args[0]])
 
             # check tuple one file
+            mock_get_marker_name.return_value = "point"
             mock_create_config.reset_mock()
             mock_isfile.return_value = True
             mock_parsing_xtr.side_effect = [{"date": "1"}]
@@ -695,6 +697,33 @@ class TestAnubis(TestCase):
                               'n_slip': {'GPS': 530, 'GLO': 0},
                               'sat_healthy': {'GPS': 29, 'GLO': 17},
                               'sig2noise': {'GPSSS1': 30.99, 'GPSSS2': 31.14, 'GLOSS1': 37.85, 'GLOSS2': 36.1}}, result)
+
+    def test_real_working(self):
+
+        input_file_obs = str(Path(__file__).resolve().parent.parent.joinpath(
+            "data", "quality_check", "Anubis", "novm0040.22o"))
+        input_file_nav = str(Path(__file__).resolve().parent.parent.joinpath(
+            "data", "quality_check", "Anubis", "BRDC00IGS_R_20220040000_01D_MN.rnx"))
+        result = self.anubis.start((input_file_obs, input_file_nav))
+        self.assertEqual(
+            {"NOVM": {
+                "2022-01-04 00:00:00": {
+                    'date': '2022-01-04 00:00:00',
+                    'total_time': 24.0,
+                    'expt_obs': 57486,
+                    'exis_obs': 39694,
+                    'ratio': 69.05,
+                    'expt_obs10': 45087,
+                    'exis_obs10': 35061,
+                    'ratio10': 77.76,
+                    'miss_epoch': {'GPS': 0, 'GLO': 0},
+                    'code_multi': {'GPSMP1': 51.8, 'GPSMP2': 37.1, 'GLOMP1': 66.1, 'GLOMP2': 40.3},
+                    'n_slip': {'GPS': 562, 'GLO': 165},
+                    'sat_healthy': {'GPS': 29, 'GLO': 15},
+                    'sig2noise': {'GPSSS1': 30.29, 'GPSSS2': 30.4, 'GLOSS1': 37.99, 'GLOSS2': 39.18}
+                }
+            }
+            }, result)
 
 
 if __name__ == "__main__":
