@@ -3,7 +3,6 @@ from pathlib import Path
 import platform
 import logging
 from logging import Logger
-from datetime import datetime
 
 PATH_BASE = Path(__file__).resolve().parent
 
