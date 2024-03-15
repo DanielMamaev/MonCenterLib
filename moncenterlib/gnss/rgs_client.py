@@ -15,7 +15,7 @@ import os
 from logging import Logger
 import requests
 from typeguard import typechecked
-from moncenterlib.gnss.tools import files_check, create_simple_logger
+from moncenterlib.tools import files_check, create_simple_logger
 
 
 class RGSClient:

@@ -15,7 +15,8 @@ import xml.etree.ElementTree as ET
 import subprocess
 from collections import defaultdict
 from typeguard import typechecked
-import moncenterlib.gnss.tools as mcl_tools
+import moncenterlib.tools as mcl_tools
+import moncenterlib.gnss.tools as mcl_gnss_tools
 from pathlib import Path
 
 
@@ -27,7 +28,7 @@ class Anubis:
     (GPS, GLONASS, Galileo, BeiDou, SBAS and QZSS).
     G-Nut/Anubis supports GPS, GLONASS and Galileo and performs single-point positioning,
     as well as provides GNSS data characteristics based on altitude and azimuth.
-    See more about RTKLIB here: https://gnutsoftware.com/software/anubis
+    See more about G-Nut/Anubis here: https://gnutsoftware.com/software/anubis
     This class can processing one or more files.
     See code usage examples in the examples folder.
     """
@@ -85,7 +86,7 @@ class Anubis:
         filter_files_nav = dict()
         for file_nav in files_nav:
             try:
-                date_nav = mcl_tools.get_start_date_from_nav(file_nav)
+                date_nav = mcl_gnss_tools.get_start_date_from_nav(file_nav)
             except Exception:
                 self.logger.error("Something happened to get date from nav file %s.", file_nav, exc_info=True)
                 continue
@@ -95,13 +96,13 @@ class Anubis:
             date_obs = ''
             marker_name = ''
             try:
-                date_obs = mcl_tools.get_start_date_from_obs(file_obs)
+                date_obs = mcl_gnss_tools.get_start_date_from_obs(file_obs)
             except Exception:
                 self.logger.error("Something happened to get date from obs file %s.", file_obs, exc_info=True)
                 continue
 
             try:
-                marker_name = mcl_tools.get_marker_name(file_obs)
+                marker_name = mcl_gnss_tools.get_marker_name(file_obs)
             except Exception:
                 self.logger.error("Something happened to get marker name from obs file %s.", file_obs, exc_info=True)
                 continue
@@ -156,7 +157,7 @@ class Anubis:
                 if ' ' in input_data[0] or ' ' in input_data[1]:
                     self.logger.error("Please, remove spaces in path.")
                     raise ValueError("Please, remove spaces in path.")
-                marker_name = mcl_tools.get_marker_name(input_data[0])
+                marker_name = mcl_gnss_tools.get_marker_name(input_data[0])
                 match_list = {marker_name: [[input_data[0], input_data[1]]]}
 
             elif os.path.isdir(input_data[0]) and os.path.isdir(input_data[1]):

@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import charset_normalizer
 from typeguard import typechecked
 from gps_time import GPSTime
-from moncenterlib.gnss.tools import create_simple_logger, files_check
+from moncenterlib.tools import create_simple_logger, files_check
 
 
 class CDDISClient:

@@ -50,9 +50,9 @@ class TestAnubis(TestCase):
 
     def test_scan_dirs(self):
         with (patch("moncenterlib.gnss.quality_check.mcl_tools.get_files_from_dir") as mock_get_files_from_dir,
-              patch("moncenterlib.gnss.quality_check.mcl_tools.get_start_date_from_nav") as mock_get_start_date_from_nav,
-              patch("moncenterlib.gnss.quality_check.mcl_tools.get_start_date_from_obs") as mock_get_start_date_from_obs,
-              patch("moncenterlib.gnss.quality_check.mcl_tools.get_marker_name") as mock_get_marker_name):
+              patch("moncenterlib.gnss.quality_check.mcl_gnss_tools.get_start_date_from_nav") as mock_get_start_date_from_nav,
+              patch("moncenterlib.gnss.quality_check.mcl_gnss_tools.get_start_date_from_obs") as mock_get_start_date_from_obs,
+              patch("moncenterlib.gnss.quality_check.mcl_gnss_tools.get_marker_name") as mock_get_marker_name):
 
             # check send arg to get_files_from_dir
             mock_get_files_from_dir.return_value = []
@@ -152,7 +152,7 @@ class TestAnubis(TestCase):
         with (patch("moncenterlib.gnss.quality_check.os.path.isfile") as mock_isfile,
               patch("moncenterlib.gnss.quality_check.os.path.isdir") as mock_isdir,
               patch("moncenterlib.gnss.quality_check.mcl_tools.get_path2bin") as mock_get_path2bin,
-              patch("moncenterlib.gnss.quality_check.mcl_tools.get_marker_name") as mock_get_marker_name,
+              patch("moncenterlib.gnss.quality_check.mcl_gnss_tools.get_marker_name") as mock_get_marker_name,
               patch("moncenterlib.gnss.quality_check.subprocess.run")):
             mock_create_config = MagicMock()
             mock_parsing_xtr = MagicMock()

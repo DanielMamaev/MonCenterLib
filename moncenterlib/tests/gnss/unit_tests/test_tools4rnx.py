@@ -7,7 +7,7 @@ from unittest import TestCase, main
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 from moncenterlib.gnss.tools4rnx import RtkLibConvbin
-from moncenterlib.gnss.tools import get_path2bin
+from moncenterlib.tools import get_path2bin
 
 
 class TestTools4Rnx(TestCase):
@@ -55,7 +55,7 @@ class TestTools4Rnx(TestCase):
 
         with self.assertRaises(ValueError) as ms:
             self.t4r.scan_dir('test', False)
-        self.assertEqual(str(ms.exception), "Path to dir is strange.")
+        self.assertEqual(str(ms.exception), "Path 'test' to dir is strange.")
 
     def test_func_scan_dir(self):
         with patch("moncenterlib.gnss.tools4rnx.get_files_from_dir") as mock_get_files_from_dir:
