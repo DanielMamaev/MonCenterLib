@@ -197,13 +197,18 @@ class Stream2File:
     def start(self, name: str):
         """
         This method is used to start a connection.
-        Importantly!
-        You should use a context manager to start a connection.
+        Importantly!!!
+        1. You should use a context manager to start a connection.
         The context manager will allow you to close the connection and write to the file automatically.
         If this is not done, there is a high risk that the process will not be killed, It will run until the computer is restarted.
 
-        Every connection have have key 'process'. Value of this key is the subprocess object. if something goes wrong,
+        2. Every connection have have key 'process'. Value of this key is the subprocess object. if something goes wrong,
         you will have access to this object, which started the process of connecting and writing to the file.
+
+        3. When your program finished, all processes will be stopped.
+
+        4. It follows from the 3rd point that if you want connections to be constantly active, you need the program to work constantly.
+        For example, you can use an infinite loop or something else.
 
         See code usage examples in the examples folder.
 
