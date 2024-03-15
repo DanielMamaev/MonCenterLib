@@ -219,7 +219,7 @@ class TestStream2File(TestCase):
             str2file.add_connection("TEST", param, "/some_dir")
         self.assertEqual(str(msg.exception), "Path '/some_dir' to dir is strange.")
 
-        with patch("moncenterlib.gnss.stream2file.os.path.isdir") as mock_isdir:
+        with patch("moncenterlib.stream2file.os.path.isdir") as mock_isdir:
             mock_isdir.return_value = True
             str2file.add_connection("TEST", param, "/some_dir")
             exp = {
@@ -286,8 +286,8 @@ class TestStream2File(TestCase):
         self.assertEqual(("TEST", ), str2file._check_name_in_connections.call_args_list[0].args)
 
         # check open file status
-        with (patch("moncenterlib.gnss.stream2file.open") as mock_open,
-              patch("moncenterlib.gnss.stream2file.os.path.isfile") as mock_isfile,
+        with (patch("moncenterlib.stream2file.open") as mock_open,
+              patch("moncenterlib.stream2file.os.path.isfile") as mock_isfile,
               tempfile.NamedTemporaryFile() as temp_file):
             mock_isfile.return_value = True
             str2file.connections["TEST"]["temp_file"] = temp_file
@@ -298,7 +298,7 @@ class TestStream2File(TestCase):
             self.assertEqual({"encoding": "utf-8"}, mock_open.call_args_list[0].kwargs)
 
         # check read file status
-        with (patch("moncenterlib.gnss.stream2file.os.path.isfile") as mock_isfile,
+        with (patch("moncenterlib.stream2file.os.path.isfile") as mock_isfile,
               tempfile.NamedTemporaryFile(mode="w") as temp_file):
             mock_isfile.return_value = True
             with open(temp_file.name, "w", encoding="utf-8") as f:
@@ -311,7 +311,7 @@ class TestStream2File(TestCase):
                              "bps": "456", "connect": ["connected"]})
 
         # check read file no data
-        with (patch("moncenterlib.gnss.stream2file.os.path.isfile") as mock_isfile,
+        with (patch("moncenterlib.stream2file.os.path.isfile") as mock_isfile,
               tempfile.NamedTemporaryFile(mode="w") as temp_file):
             mock_isfile.return_value = True
             with open(temp_file.name, "w", encoding="utf-8") as f:
@@ -333,7 +333,7 @@ class TestStream2File(TestCase):
         }
         # check before condition
         with (patch("moncenterlib.tools.get_path2bin") as mock_tools,
-              patch("moncenterlib.gnss.stream2file.subprocess") as mock_subprocess):
+              patch("moncenterlib.stream2file.subprocess") as mock_subprocess):
             str2file.start("TEST")
             self.assertEqual(("TEST", ), str2file._check_name_in_connections.call_args_list[0].args)
             self.assertEqual(("TEST", ), str2file._stop_process.call_args_list[0].args)
@@ -341,9 +341,9 @@ class TestStream2File(TestCase):
 
         # check serial condition
         with (patch("moncenterlib.tools.get_path2bin") as mock_get_path2bin,
-              patch("moncenterlib.gnss.stream2file.subprocess.Popen") as mock_subprocess,
-              patch("moncenterlib.gnss.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
-              patch("moncenterlib.gnss.stream2file.datetime") as mock_datetime):
+              patch("moncenterlib.stream2file.subprocess.Popen") as mock_subprocess,
+              patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
+              patch("moncenterlib.stream2file.datetime") as mock_datetime):
             mock_utcnow = mock_datetime.utcnow
             mock_utcnow.return_value = datetime.datetime(1970, 1, 1, 1, 2, 3)
             mock_get_path2bin.return_value = "/path2bin/str2str"
@@ -371,9 +371,9 @@ class TestStream2File(TestCase):
 
         # check tcpcli condition
         with (patch("moncenterlib.tools.get_path2bin") as mock_get_path2bin,
-              patch("moncenterlib.gnss.stream2file.subprocess.Popen") as mock_subprocess,
-              patch("moncenterlib.gnss.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
-              patch("moncenterlib.gnss.stream2file.datetime") as mock_datetime):
+              patch("moncenterlib.stream2file.subprocess.Popen") as mock_subprocess,
+              patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
+              patch("moncenterlib.stream2file.datetime") as mock_datetime):
             mock_utcnow = mock_datetime.utcnow
             mock_utcnow.return_value = datetime.datetime(1970, 1, 1, 1, 2, 3)
             mock_get_path2bin.return_value = "/path2bin/str2str"
@@ -401,9 +401,9 @@ class TestStream2File(TestCase):
 
         # check ntrip condition
         with (patch("moncenterlib.tools.get_path2bin") as mock_get_path2bin,
-              patch("moncenterlib.gnss.stream2file.subprocess.Popen") as mock_subprocess,
-              patch("moncenterlib.gnss.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
-              patch("moncenterlib.gnss.stream2file.datetime") as mock_datetime):
+              patch("moncenterlib.stream2file.subprocess.Popen") as mock_subprocess,
+              patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
+              patch("moncenterlib.stream2file.datetime") as mock_datetime):
             mock_utcnow = mock_datetime.utcnow
             mock_utcnow.return_value = datetime.datetime(1970, 1, 1, 1, 2, 3)
             mock_get_path2bin.return_value = "/path2bin/str2str"
@@ -440,8 +440,8 @@ class TestStream2File(TestCase):
     def test__stop_process(self):
         str2file = Stream2File(False)
         str2file._check_name_in_connections = MagicMock()
-        with (patch("moncenterlib.gnss.stream2file.subprocess.Popen") as mock_subprocess,
-              patch("moncenterlib.gnss.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file):
+        with (patch("moncenterlib.stream2file.subprocess.Popen") as mock_subprocess,
+              patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file):
 
             # temo_file and process are not None
             str2file.connections = {"TEST": {
