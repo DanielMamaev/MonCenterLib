@@ -1,3 +1,2 @@
-progress==1.6
 typeguard==4.1.5
 gps-time==2.8.8
