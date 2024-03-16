@@ -194,7 +194,7 @@ class Stream2File:
         return status
 
     @typechecked
-    def start(self, name: str):
+    def start(self, name: str) -> None:
         """
         This method is used to start a connection.
         Importantly!!!
@@ -256,7 +256,7 @@ class Stream2File:
         self.connections[name]["process"] = process
 
     @typechecked
-    def stop(self, name: str):
+    def stop(self, name: str) -> None:
         """
         This method is used to stop a connection. After you can start a connection again.
 
@@ -273,7 +273,7 @@ class Stream2File:
         self._stop_process(name)
 
     @typechecked
-    def _stop_process(self, name: str):
+    def _stop_process(self, name: str) -> None:
         self._check_name_in_connections(name)
 
         if self.connections[name]["process"] is not None:
@@ -281,7 +281,7 @@ class Stream2File:
         if self.connections[name]["temp_file"] is not None:
             self.connections[name]["temp_file"].close()
 
-    def start_all(self):
+    def start_all(self) -> None:
         """
         This method is used to start all connections.
 
@@ -296,7 +296,7 @@ class Stream2File:
         for name in self.connections.keys():
             self.start(name)
 
-    def stop_all(self):
+    def stop_all(self) -> None:
         """
         This method is used to stop all connections.
 
