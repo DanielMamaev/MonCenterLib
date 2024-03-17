@@ -194,7 +194,7 @@ class Stream2File:
         return status
 
     @typechecked
-    def start(self, name: str) -> None:
+    def start(self, name: str) -> str:
         """
         This method is used to start a connection.
         Importantly!!!
@@ -216,6 +216,10 @@ class Stream2File:
 
         Args:
             name (str): Name of the connection.
+
+        Returns:
+            str: Path to output file.
+
 
         Examples:
             >>> from moncenterlib.gnss.stream2file import Stream2File
@@ -255,6 +259,8 @@ class Stream2File:
         self.connections[name]["temp_file"] = temp_file
         self.connections[name]["process"] = process
 
+        return str(output_file)
+
     @typechecked
     def stop(self, name: str) -> None:
         """
@@ -281,9 +287,12 @@ class Stream2File:
         if self.connections[name]["temp_file"] is not None:
             self.connections[name]["temp_file"].close()
 
-    def start_all(self) -> None:
+    def start_all(self) -> list[str]:
         """
         This method is used to start all connections.
+
+        Returns:
+            list[str]: List of output files.
 
         Examples:
             >>> from moncenterlib.gnss.stream2file import Stream2File
@@ -292,9 +301,12 @@ class Stream2File:
             >>> s2f.add_connection("TEST2",...)
             >>> s2f.start_all()
         """
+        output_files = []
         self.logger.info("Starting all connections.")
         for name in self.connections.keys():
-            self.start(name)
+            output_files.append(self.start(name))
+
+        return output_files
 
     def stop_all(self) -> None:
         """
