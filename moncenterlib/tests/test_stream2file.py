@@ -524,6 +524,32 @@ class TestStream2File(TestCase):
         self.assertTrue(mock_stop_all.called)
         self.assertEqual(1, mock_stop_all.call_count)
 
+    def test_output_files(self):
+        str2file = Stream2File(False)
+        str2file._check_name_in_connections = MagicMock()
+        str2file._stop_process = MagicMock()
+        with (patch("moncenterlib.tools.get_path2bin"),
+              patch("moncenterlib.stream2file.subprocess.Popen"),
+              patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile"),
+              patch("moncenterlib.stream2file.datetime") as mock_datetime,
+              patch("moncenterlib.stream2file.os.path.isdir") as mock_isdir):
+
+            mock_isdir.return_value = True
+            # one file
+            mock_utcnow = mock_datetime.utcnow
+            mock_utcnow.return_value = datetime.datetime(1970, 1, 1, 1, 2, 3)
+            str2file.add_connection("TEST", {"type": "ntrip", "output_dir": "/output_dir", "user": "u", "passwd": "123", "addr": "1.2.3.4", "port": "123", "mntpnt": "QWER"},
+                                    "/output_dir")
+            output_file = str2file.start("TEST")
+            self.assertEqual('/output_dir/TEST_19700101_010203.log', output_file)
+
+            # two files
+            str2file.add_connection("TEST2", {"type": "ntrip", "output_dir": "/output_dir", "user": "u", "passwd": "123", "addr": "1.2.3.4", "port": "123", "mntpnt": "QWER"},
+                                    "/output_dir")
+            output_files = str2file.start_all()
+            self.assertEqual(['/output_dir/TEST_19700101_010203.log',
+                             '/output_dir/TEST2_19700101_010203.log'], output_files)
+
 
 if __name__ == "__main__":
     main()
