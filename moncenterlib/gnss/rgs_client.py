@@ -177,9 +177,10 @@ class RGSClient:
             Exception: List information about files is empty.
 
         Returns:
-            dict: The dictionary contains 2 keys. Done and error.
+            dict: The dictionary contains 3 keys. done, no_exists, no_found_dates.
             The done key stores a list of files that have been successfully created.
-            The error key stores a list of files that have not been created.
+            The no_exists key stores a list of files that have not been created.
+            The no_found_dates key stores a list of dates that have not been found.
         """
 
         if not os.path.isdir(output_dir):
@@ -187,6 +188,8 @@ class RGSClient:
 
         files_list = []
         output_path_list = []
+        no_found_dates = []
+
         self.logger.info('Start get information about files.')
         try:
             files_list = self.get_info_list_of_files(filter_param)
@@ -205,5 +208,8 @@ class RGSClient:
                 output_path_list.append(self._download_file(file['name'], output_dir, unpack))
             except Exception as e:
                 self.logger.error("Something happened to download file %s. %s.", file['name'], e)
+                no_found_dates.append(file['date'])
 
-        return files_check(output_path_list)
+        output_dict = files_check(output_path_list)
+        output_dict["no_found_dates"] = no_found_dates
+        return output_dict
