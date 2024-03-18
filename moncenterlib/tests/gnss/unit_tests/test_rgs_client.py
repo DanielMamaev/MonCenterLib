@@ -117,18 +117,18 @@ class TestRgsClient(TestCase):
               patch("moncenterlib.gnss.rgs_client.RGSClient._download_file") as mock_download_file):
             rgs_cli = RGSClient(" ", logger=False)
 
-            mock_request.return_value = [{"name": "something1"}, {"name": "something2"}]
+            mock_request.return_value = [{"name": "something1", "date": "2020-01-01"}, {"name": "something2", "date": "2020-01-01"}]
             mock_download_file.side_effect = Exception()
 
             res = rgs_cli.download_files("/", {})
-            self.assertEqual({'done': [], 'error': []}, res)
+            self.assertEqual({'done': [], 'no_exists': [], 'no_found_dates': ['2020-01-01', '2020-01-01']}, res)
             self.assertEqual([call('something1', '/', True), call('something2', '/', True)],
                              mock_download_file.mock_calls)
 
             mock_download_file.mock_calls = []
             mock_download_file.side_effect = ["path1", "path2"]
             res = rgs_cli.download_files("/", {}, unpack=False)
-            self.assertEqual({'done': [], 'error': ["path1", "path2"]}, res)
+            self.assertEqual({'done': [], 'no_exists': ["path1", "path2"], "no_found_dates": []}, res)
             self.assertEqual([call('something1', '/', False), call('something2', '/', False)],
                              mock_download_file.mock_calls)
 
