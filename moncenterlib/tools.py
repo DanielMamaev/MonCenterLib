@@ -87,7 +87,7 @@ def get_files_from_dir(input_dir: str, recursion: bool) -> list[str]:
 def files_check(files: list) -> dict:
     output_check = {
         'done': [],
-        'error': []
+        'no_exists': []
     }
 
     for file in files:
@@ -95,6 +95,6 @@ def files_check(files: list) -> dict:
         if direct.exists():
             output_check['done'].append(file)
         else:
-            output_check['error'].append(file)
+            output_check['no_exists'].append(file)
 
     return output_check
