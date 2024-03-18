@@ -331,7 +331,7 @@ class TestCddisClient(TestCase):
 
             query = {"start": "2020-01-01", "end": "2020-01-03"}
             res = cddis_cli._week_products("sp3", "/", query, False)
-            self.assertEqual(['/igs20863.sp3.Z', '/igs20865.sp3.Z'], res["error"])
+            self.assertEqual(['/igs20863.sp3.Z', '/igs20865.sp3.Z'], res["no_exists"])
 
     def test__week_products_check_unpack_file_with_gz(self):
         cddis_cli = CDDISClient(False)
@@ -350,7 +350,7 @@ class TestCddisClient(TestCase):
             res = cddis_cli._week_products("sp3", "/", query)
             self.assertEqual(['/IGS0OPSFIN_20200010000_01D_15M_ORB.SP3',
                               '/IGS0OPSFIN_20200020000_01D_15M_ORB.SP3'],
-                             res["error"])
+                             res["no_exists"])
             self.assertEqual([('/IGS0OPSFIN_20200010000_01D_15M_ORB.SP3.gz', 'rb'),
                               ('/IGS0OPSFIN_20200020000_01D_15M_ORB.SP3.gz', 'rb')],
                              [mock_gzip_open.call_args_list[0].args,
@@ -371,7 +371,7 @@ class TestCddisClient(TestCase):
             res = cddis_cli._week_products("sp3", "/", query)
             self.assertEqual(['/IGS0OPSFIN_20200010000_01D_15M_ORB.SP3',
                               '/IGS0OPSFIN_20200030000_01D_15M_ORB.SP3'],
-                             res["error"])
+                             res["no_exists"])
 
     def test__week_products_check_unpack_file_with_Z(self):
         cddis_cli = CDDISClient(False)
@@ -385,7 +385,7 @@ class TestCddisClient(TestCase):
             mock_detect.return_value = {"encoding": "utf-8"}
             query = {"start": "2020-01-01", "end": "2020-01-02"}
             res = cddis_cli._week_products("sp3", "/", query)
-            self.assertEqual(['/igs20863.sp3', '/igs20864.sp3'], res["error"])
+            self.assertEqual(['/igs20863.sp3', '/igs20864.sp3'], res["no_exists"])
             self.assertEqual([('/igs20863.sp3', 'wb'),
                               ('/igs20863.sp3', 'rb'),
                               ('/igs20864.sp3', 'wb'),
@@ -424,7 +424,34 @@ class TestCddisClient(TestCase):
             mock_subproc.side_effect = [True, Exception(), True]
             query = {"start": "2020-01-01", "end": "2020-01-03"}
             res = cddis_cli._week_products("sp3", "/", query)
-            self.assertEqual(['/igs20863.sp3', '/igs20865.sp3'], res["error"])
+            self.assertEqual(['/igs20863.sp3', '/igs20865.sp3'], res["no_exists"])
+
+    def test__week_products_check_output(self):
+        cddis_cli = CDDISClient(False)
+        with (patch("moncenterlib.gnss.cddis_client.FTP_TLS") as mock_ftps,
+              patch("moncenterlib.gnss.cddis_client.files_check") as mock_files_check):
+            instance_mock_ftps = mock_ftps.return_value.__enter__()
+            instance_mock_ftps.size.side_effect = Exception()
+            mock_files_check.return_value = {"done": [], "no_exists": []}
+
+            # check no_found_dates
+            result = cddis_cli._week_products("sp3", "/", {"start": "2020-01-01", "end": "2020-01-02"}, False)
+            self.assertEqual({"done": [], "no_exists": [], "no_found_dates": ["2020-01-01", "2020-01-02"]}, result)
+            self.assertTrue(mock_files_check.called)
+            mock_files_check.reset_mock()
+
+            instance_mock_ftps.size.side_effect = None
+            result = cddis_cli._week_products("sp3", "/", {"start": "2020-01-01", "end": "2020-01-02"}, False)
+            self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, result)
+            self.assertTrue(mock_files_check.called)
+            mock_files_check.reset_mock()
+
+            # check done and no_exists
+            mock_files_check.return_value = {"done": ["2020-01-01"], "no_exists": ["2020-01-02"]}
+            result = cddis_cli._week_products("sp3", "/", {"start": "2020-01-01", "end": "2020-01-02"}, False)
+            self.assertEqual({"done": ["2020-01-01"], "no_exists": ["2020-01-02"], "no_found_dates": []}, result)
+            self.assertTrue(mock_files_check.called)
+            mock_files_check.reset_mock()
 
     def test_get_precise_orbits(self):
         cddis_cli = CDDISClient(False)
@@ -432,12 +459,12 @@ class TestCddisClient(TestCase):
             res = cddis_cli.get_precise_orbits(None, None, None)
 
         cddis_cli._week_products = MagicMock()
-        cddis_cli._week_products.return_value = {"done": [], "error": []}
+        cddis_cli._week_products.return_value = {"done": [], "no_exists": [], "no_found_dates": []}
 
         query = {"start": "2020-01-01", "end": "2020-01-03"}
         res = cddis_cli.get_precise_orbits("/", query)
 
-        self.assertEqual({"done": [], "error": []}, res)
+        self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, res)
         self.assertEqual(('sp3', '/', {'start': '2020-01-01', 'end': '2020-01-03'}, True),
                          cddis_cli._week_products.call_args_list[0].args)
 
@@ -447,12 +474,12 @@ class TestCddisClient(TestCase):
             res = cddis_cli.get_clock_30s(None, None, None)
 
         cddis_cli._week_products = MagicMock()
-        cddis_cli._week_products.return_value = {"done": [], "error": []}
+        cddis_cli._week_products.return_value = {"done": [], "no_exists": [], "no_found_dates": []}
 
         query = {"start": "2020-01-01", "end": "2020-01-03"}
         res = cddis_cli.get_clock_30s("/", query)
 
-        self.assertEqual({"done": [], "error": []}, res)
+        self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, res)
         self.assertEqual(('clk_30s', '/', {'start': '2020-01-01', 'end': '2020-01-03'}, True),
                          cddis_cli._week_products.call_args_list[0].args)
 
@@ -462,12 +489,12 @@ class TestCddisClient(TestCase):
             res = cddis_cli.get_clock_5m(None, None, None)
 
         cddis_cli._week_products = MagicMock()
-        cddis_cli._week_products.return_value = {"done": [], "error": []}
+        cddis_cli._week_products.return_value = {"done": [], "no_exists": [], "no_found_dates": []}
 
         query = {"start": "2020-01-01", "end": "2020-01-03"}
         res = cddis_cli.get_clock_5m("/", query)
 
-        self.assertEqual({"done": [], "error": []}, res)
+        self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, res)
         self.assertEqual(('clk_5m', '/', {'start': '2020-01-01', 'end': '2020-01-03'}, True),
                          cddis_cli._week_products.call_args_list[0].args)
 
@@ -477,12 +504,12 @@ class TestCddisClient(TestCase):
             res = cddis_cli.get_earth_orientation(None, None, None)
 
         cddis_cli._week_products = MagicMock()
-        cddis_cli._week_products.return_value = {"done": [], "error": []}
+        cddis_cli._week_products.return_value = {"done": [], "no_exists": [], "no_found_dates": []}
 
         query = {"start": "2020-01-01", "end": "2020-01-03"}
         res = cddis_cli.get_earth_orientation("/", query)
 
-        self.assertEqual({"done": [], "error": []}, res)
+        self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, res)
         self.assertEqual(('erp', '/', {'start': '2020-01-01', 'end': '2020-01-03'}, True),
                          cddis_cli._week_products.call_args_list[0].args)
 
@@ -581,7 +608,7 @@ class TestCddisClient(TestCase):
             query = {"start": "2020-01-01", "end": "2020-01-03"}
             res = cddis_cli.get_daily_multi_gnss_brd_eph("/", query, False)
             self.assertEqual(['/BRDC00IGS_R_20200010000_01D_MN.rnx.gz',
-                             '/BRDC00IGS_R_20200030000_01D_MN.rnx.gz'], res["error"])
+                             '/BRDC00IGS_R_20200030000_01D_MN.rnx.gz'], res["no_exists"])
 
     def test_get_daily_multi_gnss_brd_eph_unpacks(self):
         cddis_cli = CDDISClient(False)
@@ -596,7 +623,7 @@ class TestCddisClient(TestCase):
             query = {"start": "2020-01-01", "end": "2020-01-02"}
             res = cddis_cli.get_daily_multi_gnss_brd_eph("/", query)
             self.assertEqual(['/BRDC00IGS_R_20200010000_01D_MN.rnx', '/BRDC00IGS_R_20200020000_01D_MN.rnx'],
-                             res["error"])
+                             res["no_exists"])
             self.assertEqual([('/BRDC00IGS_R_20200010000_01D_MN.rnx.gz', 'rb'),
                               ('/BRDC00IGS_R_20200020000_01D_MN.rnx.gz', 'rb')],
                              [mock_gzip_open.call_args_list[0].args,
@@ -624,6 +651,33 @@ class TestCddisClient(TestCase):
 
             self.assertEqual([call('/BRDC00IGS_R_20200010000_01D_MN.rnx.gz',),
                               call('/BRDC00IGS_R_20200020000_01D_MN.rnx.gz',)], mock_remove.call_args_list)
+    
+    def test_get_daily_multi_gnss_brd_eph_output(self):
+        cddis_cli = CDDISClient(False)
+        with (patch("moncenterlib.gnss.cddis_client.FTP_TLS") as mock_ftps,
+              patch("moncenterlib.gnss.cddis_client.files_check") as mock_files_check):
+            instance_mock_ftps = mock_ftps.return_value.__enter__()
+            instance_mock_ftps.size.side_effect = Exception()
+            mock_files_check.return_value = {"done": [], "no_exists": []}
+
+            # check no_found_dates
+            result = cddis_cli.get_daily_multi_gnss_brd_eph("/", {"start": "2020-01-01", "end": "2020-01-02"}, False)
+            self.assertEqual({"done": [], "no_exists": [], "no_found_dates": ["2020-01-01", "2020-01-02"]}, result)
+            self.assertTrue(mock_files_check.called)
+            mock_files_check.reset_mock()
+
+            instance_mock_ftps.size.side_effect = None
+            result = cddis_cli.get_daily_multi_gnss_brd_eph("/", {"start": "2020-01-01", "end": "2020-01-02"}, False)
+            self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, result)
+            self.assertTrue(mock_files_check.called)
+            mock_files_check.reset_mock()
+
+            # check done and no_exists
+            mock_files_check.return_value = {"done": ["2020-01-01"], "no_exists": ["2020-01-02"]}
+            result = cddis_cli.get_daily_multi_gnss_brd_eph("/", {"start": "2020-01-01", "end": "2020-01-02"}, False)
+            self.assertEqual({"done": ["2020-01-01"], "no_exists": ["2020-01-02"], "no_found_dates": []}, result)
+            self.assertTrue(mock_files_check.called)
+            mock_files_check.reset_mock()
 
     def test_get_daily_30s_data_raises(self):
         cddis_cli = CDDISClient(False)
@@ -904,7 +958,7 @@ class TestCddisClient(TestCase):
                      "type": "O"}
 
             res = cddis_cli.get_daily_30s_data("/", query, False)
-            self.assertEqual(['/novm3650.19o.gz', '/novm0020.20o.gz'], res["error"])
+            self.assertEqual(['/novm3650.19o.gz', '/novm0020.20o.gz'], res["no_exists"])
 
     def test_get_daily_30s_data_unpack_with_gz(self):
         cddis_cli = CDDISClient(False)
@@ -931,7 +985,7 @@ class TestCddisClient(TestCase):
 
             res = cddis_cli.get_daily_30s_data("/", query)
             self.assertEqual(['/some_file1', '/some_file3'],
-                             res["error"])
+                             res["no_exists"])
             self.assertEqual([('/some_file1.gz', 'rb'),
                               ('/some_file3.gz', 'rb')],
                              [mock_gzip_open.call_args_list[0].args,
@@ -955,7 +1009,7 @@ class TestCddisClient(TestCase):
                      "rinex_v": "3",
                      "type": "O"}
             res = cddis_cli.get_daily_30s_data("/", query)
-            self.assertEqual(['/some_file1', '/some_file3'], res["error"])
+            self.assertEqual(['/some_file1', '/some_file3'], res["no_exists"])
 
     def test_get_daily_30s_data_unpack_with_Z(self):
         cddis_cli = CDDISClient(False)
@@ -977,7 +1031,7 @@ class TestCddisClient(TestCase):
                      "rinex_v": "3",
                      "type": "O"}
             res = cddis_cli.get_daily_30s_data("/", query)
-            self.assertEqual(['/some_file1', '/some_file3'], res["error"])
+            self.assertEqual(['/some_file1', '/some_file3'], res["no_exists"])
 
             self.assertEqual([('/some_file1', 'wb'),
                               ('/some_file1', 'rb'),
@@ -1029,7 +1083,7 @@ class TestCddisClient(TestCase):
                      "rinex_v": "3",
                      "type": "O"}
             res = cddis_cli.get_daily_30s_data("/", query)
-            self.assertEqual(['/some_file1', '/some_file3'], res["error"])
+            self.assertEqual(['/some_file1', '/some_file3'], res["no_exists"])
 
     def test_get_daily_30s_data_remove(self):
         cddis_cli = CDDISClient(False)
@@ -1052,6 +1106,48 @@ class TestCddisClient(TestCase):
             cddis_cli.get_daily_30s_data("/", query)
 
             self.assertEqual([call('/some_file1.gz'), call('/some_file3.gz')], mock_remove.call_args_list)
+
+    def test_get_daily_30s_output(self):
+        cddis_cli = CDDISClient(False)
+        with (patch("moncenterlib.gnss.cddis_client.FTP_TLS") as mock_ftps,
+              patch("moncenterlib.gnss.cddis_client.files_check") as mock_files_check):
+            instance_mock_ftps = mock_ftps.return_value.__enter__()
+            instance_mock_ftps.size.side_effect = Exception()
+            mock_files_check.return_value = {"done": [], "no_exists": []}
+
+            # check no_found_dates
+            result = cddis_cli.get_daily_30s_data("/", {"start": "2020-01-01",
+                                                        "end": "2020-01-02",
+                                                        "station": "NOVM",
+                                                        "rinex_v": "2",
+                                                        "type": "O"},
+                                                  False)
+            self.assertEqual({"done": [], "no_exists": [], "no_found_dates": ["2020-01-01", "2020-01-02"]}, result)
+            self.assertTrue(mock_files_check.called)
+            mock_files_check.reset_mock()
+
+            instance_mock_ftps.size.side_effect = None
+            result = cddis_cli.get_daily_30s_data("/", {"start": "2020-01-01",
+                                                        "end": "2020-01-02",
+                                                        "station": "NOVM",
+                                                        "rinex_v": "2",
+                                                        "type": "O"},
+                                                  False)
+            self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, result)
+            self.assertTrue(mock_files_check.called)
+            mock_files_check.reset_mock()
+
+            # check done and no_exists
+            mock_files_check.return_value = {"done": ["2020-01-01"], "no_exists": ["2020-01-02"]}
+            result = cddis_cli.get_daily_30s_data("/", {"start": "2020-01-01",
+                                                        "end": "2020-01-02",
+                                                        "station": "NOVM",
+                                                        "rinex_v": "2",
+                                                        "type": "O"},
+                                                  False)
+            self.assertEqual({"done": ["2020-01-01"], "no_exists": ["2020-01-02"], "no_found_dates": []}, result)
+            self.assertTrue(mock_files_check.called)
+            mock_files_check.reset_mock()
 
 
 if __name__ == "__main__":
