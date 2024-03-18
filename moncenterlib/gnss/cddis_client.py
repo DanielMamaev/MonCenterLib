@@ -66,9 +66,10 @@ class CDDISClient:
             ValueError: Start day must be less than or equal to end day.
 
         Returns:
-            dict: The dictionary contains 2 keys. Done and error.
+            dict: The dictionary contains 3 keys. done, no_exists, no_found_dates.
             The done key stores a list of files that have been successfully created.
-            The error key stores a list of files that have not been created.
+            The no_exists key stores a list of files that have not been created.
+            The no_found_dates key stores a list of dates that have not been found.
 
         Examples:
             >>> cddiscli = CDDISClient()
@@ -77,7 +78,8 @@ class CDDISClient:
             >>> res
             {
                 "done": ["file_1", "file_2"],
-                "error": []
+                "no_exists": [],
+                "no_found_dates": []
             }
         """
 
@@ -87,6 +89,7 @@ class CDDISClient:
             raise KeyError("The query must have the start and end keys.")
 
         output_file_list = []
+        no_found_dates = []
 
         start_day = datetime.strptime(query["start"], "%Y-%m-%d")
         end_day = datetime.strptime(query["end"], "%Y-%m-%d")
@@ -124,6 +127,7 @@ class CDDISClient:
                         ftps.size(dir_on_ftp + name_file)
                     except Exception:
                         self.logger.error('File %s not found.', name_file)
+                        no_found_dates.append(date.strftime("%Y-%m-%d"))
                         continue
                     else:
                         nav_gzip = name_file
@@ -157,7 +161,9 @@ class CDDISClient:
                 else:
                     output_file_list.append(output_file_gz)
 
-        return files_check(output_file_list)
+        output_dict = files_check(output_file_list)
+        output_dict["no_found_dates"] = no_found_dates
+        return output_dict
 
     @typechecked
     def _search_daily_30s_data_v2(self, ftps: FTP_TLS, query: dict, num_day: str,
@@ -225,9 +231,10 @@ class CDDISClient:
             ValueError: Unknow rinex version.
 
         Returns:
-            dict: The dictionary contains 2 keys. Done and error.
+            dict: The dictionary contains 3 keys. done, no_exists, no_found_dates.
             The done key stores a list of files that have been successfully created.
-            The error key stores a list of files that have not been created.
+            The no_exists key stores a list of files that have not been created.
+            The no_found_dates key stores a list of dates that have not been found.
 
         Examples:
             >>> cddiscli = CDDISClient()
@@ -236,7 +243,8 @@ class CDDISClient:
             >>> res
             {
                 "done": ["file_1", "file_2"],
-                "error": []
+                "no_exists": [],
+                "no_found_dates": []
             }
         """
 
@@ -251,6 +259,7 @@ class CDDISClient:
             raise KeyError("Invalid query.")
 
         output_file_list = []
+        no_found_dates = []
 
         start_day = datetime.strptime(query["start"], "%Y-%m-%d")
         end_day = datetime.strptime(query["end"], "%Y-%m-%d")
@@ -275,16 +284,19 @@ class CDDISClient:
                 if query["rinex_v"] == "2":
                     name_file = self._search_daily_30s_data_v2(ftps, query, num_day, year_short, dir_on_ftp)
                     if name_file == "":
+                        no_found_dates.append(date.strftime("%Y-%m-%d"))
                         continue
                 elif query["rinex_v"] == "3":
                     name_file = self._search_daily_30s_data_v3(ftps, query, num_day, year, dir_on_ftp)
                     if name_file == "":
+                        no_found_dates.append(date.strftime("%Y-%m-%d"))
                         continue
                 elif query["rinex_v"] == "auto":
                     name_file = self._search_daily_30s_data_v2(ftps, query, num_day, year_short, dir_on_ftp)
                     if name_file == "":
                         name_file = self._search_daily_30s_data_v3(ftps, query, num_day, year, dir_on_ftp)
                         if name_file == "":
+                            no_found_dates.append(date.strftime("%Y-%m-%d"))
                             continue
                 else:
                     raise ValueError("Unknow rinex version.")
@@ -339,7 +351,9 @@ class CDDISClient:
                 else:
                     output_file_list.append(output_file_zip)
 
-        return files_check(output_file_list)
+        output_dict = files_check(output_file_list)
+        output_dict["no_found_dates"] = no_found_dates
+        return output_dict
 
     @typechecked
     def _week_products(self, type_prod: str, output_dir: str, query: dict, unpack=True) -> dict:
@@ -358,9 +372,10 @@ class CDDISClient:
             ValueError: Unknow type of product.
 
         Returns:
-            dict: The dictionary contains 2 keys. Done and error.
+            dict: The dictionary contains 3 keys. done, no_exists, no_found_dates.
             The done key stores a list of files that have been successfully created.
-            The error key stores a list of files that have not been created.
+            The no_exists key stores a list of files that have not been created.
+            The no_found_dates key stores a list of dates that have not been found.
         """
         if not os.path.isdir(output_dir):
             raise ValueError("Path to output_dir is strange.")
@@ -380,6 +395,8 @@ class CDDISClient:
             ftps.set_pasv(True)
 
             output_file_list = []
+            no_found_dates = []
+
             list_dates = self._generate_list_dates(start_day, end_day)
             last_names_erp_files = []
 
@@ -430,6 +447,7 @@ class CDDISClient:
                         ftps.size(dir_on_ftp + temp_name_file_new)
                     except Exception:
                         self.logger.error('File %s not found.', temp_name_file_new)
+                        no_found_dates.append(date.strftime("%Y-%m-%d"))
                         continue
                     else:
                         name_file = temp_name_file_new
@@ -485,7 +503,9 @@ class CDDISClient:
                 else:
                     output_file_list.append(output_file_zip)
 
-        return files_check(output_file_list)
+        output_dict = files_check(output_file_list)
+        output_dict["no_found_dates"] = no_found_dates
+        return output_dict
 
     @typechecked
     def get_precise_orbits(self, output_dir: str, query: dict, unpack=True) -> dict:
@@ -499,9 +519,10 @@ class CDDISClient:
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
-            dict: The dictionary contains 2 keys. Done and error.
+            dict: The dictionary contains 3 keys. done, no_exists, no_found_dates.
             The done key stores a list of files that have been successfully created.
-            The error key stores a list of files that have not been created.
+            The no_exists key stores a list of files that have not been created.
+            The no_found_dates key stores a list of dates that have not been found.
 
         Examples:
             >>> cddiscli = CDDISClient()
@@ -510,7 +531,8 @@ class CDDISClient:
             >>> res
             {
                 "done": ["file_1", "file_2"],
-                "error": []
+                "no_exists": [],
+                "no_found_dates": []
             }
         """
         return self._week_products("sp3", output_dir, query, unpack)
@@ -527,9 +549,10 @@ class CDDISClient:
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
-            dict: The dictionary contains 2 keys. Done and error.
+            dict: The dictionary contains 3 keys. done, no_exists, no_found_dates.
             The done key stores a list of files that have been successfully created.
-            The error key stores a list of files that have not been created.
+            The no_exists key stores a list of files that have not been created.
+            The no_found_dates key stores a list of dates that have not been found.
 
         Examples:
             >>> cddiscli = CDDISClient()
@@ -538,7 +561,8 @@ class CDDISClient:
             >>> res
             {
                 "done": ["file_1", "file_2"],
-                "error": []
+                "no_exists": [],
+                "no_found_dates": []
             }
         """
         return self._week_products("clk_30s", output_dir, query, unpack)
@@ -555,9 +579,10 @@ class CDDISClient:
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
-            dict: The dictionary contains 2 keys. Done and error.
+            dict: The dictionary contains 3 keys. done, no_exists, no_found_dates.
             The done key stores a list of files that have been successfully created.
-            The error key stores a list of files that have not been created.
+            The no_exists key stores a list of files that have not been created.
+            The no_found_dates key stores a list of dates that have not been found.
 
         Examples:
             >>> cddiscli = CDDISClient()
@@ -566,7 +591,8 @@ class CDDISClient:
             >>> res
             {
                 "done": ["file_1", "file_2"],
-                "error": []
+                "no_exists": [],
+                "no_found_dates": []
             }
         """
         return self._week_products("clk_5m", output_dir, query, unpack)
@@ -583,9 +609,10 @@ class CDDISClient:
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
-            dict: The dictionary contains 2 keys. Done and error.
+            dict: The dictionary contains 3 keys. done, no_exists, no_found_dates.
             The done key stores a list of files that have been successfully created.
-            The error key stores a list of files that have not been created.
+            The no_exists key stores a list of files that have not been created.
+            The no_found_dates key stores a list of dates that have not been found.
 
         Examples:
             >>> cddiscli = CDDISClient()
@@ -594,7 +621,8 @@ class CDDISClient:
             >>> res
             {
                 "done": ["file_1", "file_2"],
-                "error": []
+                "no_exists": [],
+                "no_found_dates": []
             }
         """
         return self._week_products("erp", output_dir, query, unpack)
