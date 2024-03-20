@@ -76,20 +76,20 @@ class TestTools(TestCase):
             mock_exists.return_value = True
             files = ["/file1", "/file2", "/file3"]
             result = mcl_tools.files_check(files)
-            self.assertEqual({"done": ["/file1", "/file2", "/file3"], "error": []}, result)
+            self.assertEqual({"done": ["/file1", "/file2", "/file3"], "no_exists": []}, result)
 
             mock_exists.return_value = False
             files = ["/file1", "/file2", "/file3"]
             result = mcl_tools.files_check(files)
-            self.assertEqual({"error": ["/file1", "/file2", "/file3"], "done": []}, result)
+            self.assertEqual({"no_exists": ["/file1", "/file2", "/file3"], "done": []}, result)
 
             mock_exists.side_effect = [False, True, False]
             files = ["/file1", "/file2", "/file3"]
             result = mcl_tools.files_check(files)
-            self.assertEqual({"error": ["/file1", "/file3"], "done": ["/file2"]}, result)
+            self.assertEqual({"no_exists": ["/file1", "/file3"], "done": ["/file2"]}, result)
 
         result = mcl_tools.files_check([])
-        self.assertEqual({'done': [], 'error': []}, result)
+        self.assertEqual({'done': [], 'no_exists': []}, result)
 
     def test_get_files_from_dir(self):
         with (patch("moncenterlib.tools.os.path.isdir") as mock_isdir,

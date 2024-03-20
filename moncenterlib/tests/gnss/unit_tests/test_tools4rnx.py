@@ -405,7 +405,7 @@ class TestTools4Rnx(TestCase):
             list_files = ['/home/file1', '/home/file2']
             res = self.t4r.start(list_files, "/", self.t4r.get_default_config(), False)
             self.assertEqual({"done": [],
-                              "error": ['/file1.o', '/file1.n',
+                              "no_exists": ['/file1.o', '/file1.n',
                                         '/file2.o', '/file2.n', ]}, res)
 
     def test_real_working(self):
