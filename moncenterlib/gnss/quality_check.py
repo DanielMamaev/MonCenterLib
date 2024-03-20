@@ -47,7 +47,7 @@ class Anubis:
             self.logger = mcl_tools.create_simple_logger("Anubis", logger)
 
     @typechecked
-    def scan_dirs(self, input_dir_obs: str, input_dir_nav: str, recursion: bool = False) -> dict[str, list[list[str]]]:
+    def scan_dirs(self, input_dir_obs: str, input_dir_nav: str, recursion: bool = False) -> tuple[dict[str, list[list[str]]], dict[str, list[str]]]:
         """
         This method scans the directory and makes a match list of files for further work of the class.
         The method can also recursively search for files.
@@ -61,8 +61,10 @@ class Anubis:
             ValueError: Please, remove spaces in path.
 
         Returns:
-            dict[str, list[list[str]]]: List of matches. Key is name of station. Value is list of matches.
-            The list of matches contains observation and navigation files matched by date.
+            tuple[dict[str, list[list[str]]], dict[str, list[str]]]: First element of the tuple is a dictionary of matching.
+            Key is name of station. Value is list of matches. The list of matches contains observation and navigation files matched by date.
+            Second element of the tuple is a dictionary of non-matching.
+            The list of matches contains observation files for which no navigation files were found.
 
         Examples:
             >>> anubis = Anubis()
@@ -72,6 +74,8 @@ class Anubis:
             "station2": [["/obs3.txt", "/nav1.txt"], ["/obs4.txt", "/nav4.txt"]]}
         """
         match_list = defaultdict(list)
+        no_match_list = defaultdict(list)
+
         if ' ' in input_dir_obs or ' ' in input_dir_nav:
             self.logger.error("Please, remove spaces in path.")
             raise ValueError("Please, remove spaces in path.")
@@ -109,13 +113,15 @@ class Anubis:
 
             if date_obs in filter_files_nav:
                 match_list[marker_name].append([file_obs, filter_files_nav[date_obs]])
+            else:
+                no_match_list[marker_name] += [file_obs]
 
-        return dict(match_list)
+        return dict(match_list), dict(no_match_list)
 
     @typechecked
     def start(self, input_data: dict | tuple,
               recursion: bool = False,
-              output_dir_xtr: str | None = None) -> dict[str, dict[str, float | int | str | dict]]:
+              output_dir_xtr: str | None = None) -> tuple[dict[str, dict[str, float | int | str | dict]], dict[str, list[str]]]:
         """
         This method starts the process of calculating the quality and quantity of multi-GNSS data.
         The method allows you to upload one or more files for calculation.
@@ -133,7 +139,8 @@ class Anubis:
             ValueError: Path to file or dir is strange.
 
         Returns:
-            dict[str, dict[str, float | int | str | dict]]: Returns a dictionary of metrics for each date found for each station.
+            tuple[dict[str, dict[str, float | int | str | dict]], dict[str, list[str]]]: First element of the tuple is a dictionary of metrics for each date found for each station.
+            Second element of the tuple is a dictionary of observation files for which no navigation files were found.
 
         Examples:
             >>> anubis = Anubis()
@@ -148,6 +155,7 @@ class Anubis:
             }
         """
         match_list = {}
+        no_match_list = {}
         output_list = defaultdict(dict)
 
         if isinstance(input_data, dict):
@@ -161,7 +169,7 @@ class Anubis:
                 match_list = {marker_name: [[input_data[0], input_data[1]]]}
 
             elif os.path.isdir(input_data[0]) and os.path.isdir(input_data[1]):
-                match_list = self.scan_dirs(input_data[0], input_data[1], recursion)
+                match_list, no_match_list = self.scan_dirs(input_data[0], input_data[1], recursion)
             else:
                 raise ValueError("Path to file or dir is strange.")
 
@@ -195,7 +203,7 @@ class Anubis:
 
                 output_list[marker_name][data_metric["date"]] = data_metric
 
-        return dict(output_list)
+        return dict(output_list), no_match_list
 
     @typechecked
     def _create_config(self, match: list, temp_file: str, output_files_xtr: str | None) -> None:
