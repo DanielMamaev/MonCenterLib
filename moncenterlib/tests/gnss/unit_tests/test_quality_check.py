@@ -76,7 +76,7 @@ class TestAnubis(TestCase):
             mock_get_start_date_from_obs.side_effect = ["2020-01-01", "2020-01-02"]
             mock_get_marker_name.return_value = "AAAA"
             result = self.anubis.scan_dirs("/obs", "/nav")
-            self.assertEqual({}, result)
+            self.assertEqual(({}, {'AAAA': ['obs1', 'obs2']}), result)
 
             # no found obs, found nav
             mock_get_files_from_dir.side_effect = [["obs1", "obs2"], ["nav1", "nav2"]]
@@ -84,7 +84,7 @@ class TestAnubis(TestCase):
             mock_get_start_date_from_obs.side_effect = []
             mock_get_marker_name.return_value = "AAAA"
             result = self.anubis.scan_dirs("/obs", "/nav")
-            self.assertEqual({}, result)
+            self.assertEqual(({}, {}), result)
 
             # check continue in nav
             mock_get_files_from_dir.side_effect = [["obs1", "obs2", "obs3"], ["nav1", "nav2", "nav3"]]
@@ -92,7 +92,7 @@ class TestAnubis(TestCase):
             mock_get_start_date_from_obs.side_effect = ["2020-01-01", "2020-01-02", "2020-01-03"]
             mock_get_marker_name.return_value = "AAAA"
             result = self.anubis.scan_dirs("/obs", "/nav")
-            self.assertEqual({"AAAA": [['obs1', 'nav1'], ['obs3', 'nav3']]}, result)
+            self.assertEqual(({"AAAA": [['obs1', 'nav1'], ['obs3', 'nav3']]}, {'AAAA': ['obs2']}), result)
 
             # check continue in obs date
             mock_get_files_from_dir.side_effect = [["obs1", "obs2", "obs3"], ["nav1", "nav2", "nav3"]]
@@ -100,7 +100,7 @@ class TestAnubis(TestCase):
             mock_get_start_date_from_obs.side_effect = ["2020-01-01", Exception(), "2020-01-03"]
             mock_get_marker_name.return_value = "AAAA"
             result = self.anubis.scan_dirs("/obs", "/nav")
-            self.assertEqual({"AAAA": [['obs1', 'nav1'], ['obs3', 'nav3']]}, result)
+            self.assertEqual(({"AAAA": [['obs1', 'nav1'], ['obs3', 'nav3']]}, {}), result)
 
             # check continue in obs marker name
             mock_get_files_from_dir.side_effect = [["obs1", "obs2", "obs3"], ["nav1", "nav2", "nav3"]]
@@ -108,7 +108,7 @@ class TestAnubis(TestCase):
             mock_get_start_date_from_obs.side_effect = ["2020-01-01", "2020-01-02", "2020-01-03"]
             mock_get_marker_name.side_effect = ["AAAA", Exception(), "CCCC"]
             result = self.anubis.scan_dirs("/obs", "/nav")
-            self.assertEqual({"AAAA": [['obs1', 'nav1']], "CCCC": [['obs3', 'nav3']]}, result)
+            self.assertEqual(({"AAAA": [['obs1', 'nav1']], "CCCC": [['obs3', 'nav3']]}, {}), result)
 
             # check if date_obs is not existing in filter_files_nav
             mock_get_files_from_dir.side_effect = [["obs1", "obs2", "obs3"], ["nav1", "nav2", "nav3"]]
@@ -117,7 +117,7 @@ class TestAnubis(TestCase):
             mock_get_marker_name.side_effect = None
             mock_get_marker_name.return_value = "AAAA"
             result = self.anubis.scan_dirs("/obs", "/nav")
-            self.assertEqual({'AAAA': [['obs1', 'nav1'], ['obs2', 'nav2']]}, result)
+            self.assertEqual(({'AAAA': [['obs1', 'nav1'], ['obs2', 'nav2']]}, {'AAAA': ['obs3']}), result)
 
     def test_start_raises(self):
         with self.assertRaises(Exception):
@@ -198,10 +198,10 @@ class TestAnubis(TestCase):
                                             {"date": "None"},
                                             {"date": "None"}]
             mock_scan_dirs = MagicMock()
-            mock_scan_dirs.return_value = {
+            mock_scan_dirs.return_value = ({
                 "station1": [["obs1", "nav1"], ["obs2", "nav2"]],
                 "station2": [["obs3", "nav3"], ["obs4", "nav4"]],
-            }
+            }, {})
             anubis.scan_dirs = mock_scan_dirs
             anubis.start(("/obs", "/nav"))
             self.assertEqual([["obs1", "nav1"],
@@ -219,6 +219,7 @@ class TestAnubis(TestCase):
               patch("moncenterlib.gnss.quality_check.subprocess.run")):
             mock_get_path2bin.side_effect = Exception()
             mock_scan_dirs = MagicMock()
+            mock_scan_dirs.return_value = ({}, {})
             anubis = Anubis(False)
             anubis.scan_dirs = mock_scan_dirs
 
@@ -239,10 +240,10 @@ class TestAnubis(TestCase):
             mock_scan_dirs = MagicMock()
             anubis = Anubis(False)
             anubis.scan_dirs = mock_scan_dirs
-            mock_scan_dirs.return_value = {
+            mock_scan_dirs.return_value = ({
                 "station1": [["obs1", "nav1"], ["obs2", "nav2"]],
                 "station2": [["obs3", "nav3"], ["obs4", "nav4"]],
-            }
+            }, [])
 
             mock_create_config = MagicMock()
             anubis._create_config = mock_create_config
@@ -269,10 +270,10 @@ class TestAnubis(TestCase):
             anubis = Anubis(False)
             mock_scan_dirs = MagicMock()
             anubis.scan_dirs = mock_scan_dirs
-            mock_scan_dirs.return_value = {
+            mock_scan_dirs.return_value = ({
                 "station1": [["obs1", "nav1"], ["obs2", "nav2"]],
                 "station2": [["obs3", "nav3"], ["obs4", "nav4"]],
-            }
+            }, {})
 
             mock_parsing_xtr = MagicMock()
             mock_parsing_xtr.side_effect = [True, Exception()]
@@ -309,10 +310,10 @@ class TestAnubis(TestCase):
 
             mock_scan_dirs = MagicMock()
             anubis.scan_dirs = mock_scan_dirs
-            mock_scan_dirs.return_value = {
+            mock_scan_dirs.return_value = ({
                 "station1": [["/obs1", "/nav1"], ["/obs2", "/nav2"]],
                 "station2": [["/obs3", "/nav3"], ["/obs4", "/nav4"]],
-            }
+            }, {})
             mock_parsing_xtr = MagicMock()
             anubis._parsing_xtr = mock_parsing_xtr
             anubis._create_config = MagicMock()
@@ -351,10 +352,10 @@ class TestAnubis(TestCase):
 
             mock_scan_dirs = MagicMock()
             anubis.scan_dirs = mock_scan_dirs
-            mock_scan_dirs.return_value = {
+            mock_scan_dirs.return_value = ({
                 "station1": [["/obs1"], ["/obs2", "/nav2"]],
                 "station2": [["/obs3", "/nav3"], ["/obs4"]],
-            }
+            }, {})
             mock_parsing_xtr = MagicMock()
             anubis._parsing_xtr = mock_parsing_xtr
             anubis._create_config = MagicMock()
@@ -382,10 +383,10 @@ class TestAnubis(TestCase):
 
             mock_scan_dirs = MagicMock()
             anubis.scan_dirs = mock_scan_dirs
-            mock_scan_dirs.return_value = {
+            mock_scan_dirs.return_value = ({
                 "station1": [["/obs1", "/nav1"], ["/obs2", "/nav2"]],
                 "station2": [["/obs3", "/nav3"], ["/obs4", "/nav4"]],
-            }
+            }, {"station2": ["/obs5", "/obs6"]})
             mock_parsing_xtr = MagicMock()
             mock_parsing_xtr.side_effect = [{"date": "1", "metric1": 1, "metric2": 2},
                                             {"date": "2", "metric3": 3, "metric4": 4},
@@ -395,10 +396,10 @@ class TestAnubis(TestCase):
             anubis._create_config = MagicMock()
 
             result = anubis.start(("/obs", "/nav"), False, "/some_path")
-            self.assertEqual({"station1": {"1": {"date": "1", "metric1": 1, "metric2": 2},
-                                           "2": {"date": "2", "metric3": 3, "metric4": 4}},
+            self.assertEqual(({"station1": {"1": {"date": "1", "metric1": 1, "metric2": 2},
+                                            "2": {"date": "2", "metric3": 3, "metric4": 4}},
                               "station2": {"3": {"date": "3", "metric5": 5, "metric6": 6},
-                                           "4": {"date": "4", "metric7": 7, "metric8": 8}}}, result)
+                                           "4": {"date": "4", "metric7": 7, "metric8": 8}}}, {"station2": ["/obs5", "/obs6"]}), result)
 
     def test__create_config(self):
         # without output_files_xtr
@@ -706,7 +707,7 @@ class TestAnubis(TestCase):
             "data", "quality_check", "Anubis", "BRDC00IGS_R_20220040000_01D_MN.rnx"))
         result = self.anubis.start((input_file_obs, input_file_nav))
         self.assertEqual(
-            {"NOVM": {
+            ({"NOVM": {
                 "2022-01-04 00:00:00": {
                     'date': '2022-01-04 00:00:00',
                     'total_time': 24.0,
@@ -723,7 +724,7 @@ class TestAnubis(TestCase):
                     'sig2noise': {'GPSSS1': 30.29, 'GPSSS2': 30.4, 'GLOSS1': 37.99, 'GLOSS2': 39.18}
                 }
             }
-            }, result)
+            }, {}), result)
 
 
 if __name__ == "__main__":
