@@ -91,8 +91,9 @@ class Anubis:
         for file_nav in files_nav:
             try:
                 date_nav = mcl_gnss_tools.get_start_date_from_nav(file_nav)
-            except Exception:
-                self.logger.error("Something happened to get date from nav file %s.", file_nav, exc_info=True)
+            except Exception as e:
+                self.logger.error("Can't get date from nav file %s", file_nav)
+                self.logger.error(e)
                 continue
             filter_files_nav[date_nav] = file_nav
 
@@ -101,14 +102,16 @@ class Anubis:
             marker_name = ''
             try:
                 date_obs = mcl_gnss_tools.get_start_date_from_obs(file_obs)
-            except Exception:
-                self.logger.error("Something happened to get date from obs file %s.", file_obs, exc_info=True)
+            except Exception as e:
+                self.logger.error("Can't get date from obs file %s", date_obs)
+                self.logger.error(e)
                 continue
 
             try:
                 marker_name = mcl_gnss_tools.get_marker_name(file_obs)
-            except Exception:
-                self.logger.error("Something happened to get marker name from obs file %s.", file_obs, exc_info=True)
+            except Exception as e:
+                self.logger.error("Can't get marker name from obs file %s", date_obs)
+                self.logger.error(e)
                 continue
 
             if date_obs in filter_files_nav:
