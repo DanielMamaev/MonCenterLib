@@ -8,7 +8,7 @@ Some description
 |---|---|---|---|---|
 |gnss |tools4rnx|RtkLibConvbin|This class is based on the RTKLib software package. Convert RTCM, receiver raw data log and RINEX file to RINEX and SBAS/LEX message file. SBAS message file complies with RTKLIB SBAS/LEX message format. See more about RTKLIB here: https://rtklib.com/| Ready|
 | |postprocessing|RtkLibPost| |Dev|
-| |quality_check|Anubis|This module is designed for monitoring the quality and quantity of multi—GNSS data.See more about G-Nut/Anubis here: https://gnutsoftware.com/software/anubis |Dev|
+| |quality_check|Anubis|This module is designed for monitoring the quality and quantity of multi—GNSS data.See more about G-Nut/Anubis here: https://gnutsoftware.com/software/anubis |Ready|
 | |cddis_client|CDDISClient|This module is designed to download one or more GNSS files from the CDDIS archive https://cddis.nasa.gov/ . |Ready|
 | |rgs_client|RGSClient|This module allows you to download various GNSS files from the service https://rgs-centre.ru |Ready|
 | |gnss_time_series|| |Soon|
