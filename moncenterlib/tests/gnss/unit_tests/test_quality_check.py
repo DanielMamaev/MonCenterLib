@@ -725,6 +725,30 @@ class TestAnubis(TestCase):
                 }
             }
             }, {}), result)
+    
+    def test_space_in_path2file(self):
+        anubis = Anubis(False)
+        anubis.scan_dirs = MagicMock()
+        anubis._create_config = MagicMock()
+        anubis._create_config.side_effect = Exception()
+
+        with (patch("moncenterlib.gnss.quality_check.os.path.isdir") as mock_isdir):
+            mock_isdir.return_value = True
+
+            anubis.scan_dirs.return_value = ({"AAAA": [["path 1", "path2"], ["path1", "path2"]]}, [])
+            try:
+                res = anubis.start(("", ""))
+            except Exception:
+                pass
+            self.assertEqual(["path1", "path2"], anubis._create_config.call_args_list[0].args[0])
+
+            anubis._create_config.reset_mock()
+            anubis.scan_dirs.return_value = ({"AAAA": [["path1", "path 2"], ["path1", "path2"]]}, [])
+            try:
+                res = anubis.start(("", ""))
+            except Exception:
+                pass
+            self.assertEqual(["path1", "path2"], anubis._create_config.call_args_list[0].args[0])
 
 
 if __name__ == "__main__":
