@@ -64,7 +64,7 @@ def create_simple_logger(name: str, disable_output: bool) -> Logger:
     return logger
 
 
-def get_files_from_dir(input_dir: str, recursion: bool) -> list[str]:
+def get_files_from_dir(input_dir: str, recursion: bool) -> list:
     output_files = []
     if os.path.isdir(input_dir):
         if recursion:
