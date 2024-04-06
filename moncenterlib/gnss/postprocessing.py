@@ -1,14 +1,24 @@
+from collections import defaultdict
+from datetime import datetime, timedelta
 import os
-import string
-import random
-from pathlib import Path
+from logging import Logger
 import subprocess
-from progress.bar import IncrementalBar
+import tempfile
+from typeguard import typechecked
+from gps_time import GPSTime
+import moncenterlib.tools as mcl_tools
+import moncenterlib.gnss.tools as mcl_gnss_tools
 
 
 class RtkLibPost:
-    def __init__(self):
-        self.__path_conf = ''
+
+    @typechecked
+    def __init__(self, logger: bool | Logger | None = None):
+        self.logger = logger
+
+        if self.logger in [None, False]:
+            self.logger = mcl_tools.create_simple_logger("RtkLibPost", logger)
+
         self.__default_config = {
             'pos1-posmode': '0',
             'pos1-frequency':  '2',
@@ -130,234 +140,229 @@ class RtkLibPost:
             'file-tracefile':  ''
         }
 
-    @property
-    def DEFAULT_CONFIG(self):
+    def get_default_config(self) -> dict:
+        """
+        Return variable __default_config. Default config isn't editable.
+        In the future, you will manually configure this config and send it to the start method.
+        See documentation RTKLIB, how to configuration.
+
+        Returns:
+            dict: default config for convbin of RTKLib
+        """
         return self.__default_config.copy()
 
-    def __check_type(self, arg: object, type_check: object, name: str) -> None:
-        if not isinstance(arg, type_check):
-            raise TypeError(
-                f"The type of the '{name}' variable should be {type_check}")
-
-    def __check_files(self, files: list) -> dict:
-        output_check = {
-            'done': [],
-            'error': []
-        }
-
-        for file in files:
-            direct = Path(file)
-            if direct.exists():
-                output_check['done'].append(file)
-            else:
-                output_check['error'].append(file)
-
-        return output_check
-
-    def scan_dir(self, input_rnx: dict, recursion: bool = False) -> list:
-        type_files = ['rover', 'base', 'nav', 'sp3', 'clk']
-        for k, v in input_rnx.items():
+    @typechecked
+    def scan_dirs(self, input_rnx: dict[str, str], recursion: bool = False) -> dict[str, list[str]]:
+        self.logger.info("Scanning directories...")
+        type_files = ['rover', 'base', 'nav', 'sp3', 'clk', 'erp']
+        for k in input_rnx.keys():
             if k not in type_files:
                 raise ValueError(f"Unidentified key {k}")
-            self.__check_type(v, str, v)
 
         scan_dirs = dict()
         for key, directory in input_rnx.items():
-            if recursion:
-                for root, _, files in os.walk(directory):
-                    for file in files:
-                        path = os.path.join(root, file)
-                        if key in scan_dirs:
-                            scan_dirs[key].append(path)
-                        else:
-                            scan_dirs[key] = [path]
-            else:
-                temp_lst = []
-                for file in os.listdir(directory):
-                    if os.path.isfile(os.path.join(directory, file)):
-                        temp_lst.append(os.path.join(directory, file))
-                scan_dirs[key] = temp_lst
+            list_files = mcl_tools.get_files_from_dir(directory, recursion)
+            scan_dirs[key] = list_files
         return scan_dirs
 
-    def start(self, input_rnx: dict, output: str, config: dict, timeint: int = 0,
-              recursion: bool = False, show_progress: bool = True):
+    @typechecked
+    def _get_start_date_from_sp3(self, file: str) -> str:
+        date = ""
+        with open(file, 'r', encoding="utf-8") as f:
+            line = f.readline()
+            sp3_version = line[:2]
+            if sp3_version != '#c':
+                raise Exception(f'Invalid sp3 version {sp3_version}')
 
-        # check type
-        self.__check_type(input_rnx, dict, 'inputs')
-        self.__check_type(config, dict, 'config')
-        self.__check_type(output, str, 'output')
-        self.__check_type(timeint, int, 'timeint')
-        for k, v in config.items():
-            self.__check_type(v, str, k)
+            date = line[3:].split()[:3]
+            date[1] = date[1].zfill(2)
+            date[2] = date[2].zfill(2)
+            date = '-'.join(date)
+        return date
+
+    @typechecked
+    def _get_start_date_from_clk(self, file: str) -> str:
+        date = ""
+        with open(file, 'r', encoding="utf-8") as f:
+            lines = f.readlines()
+            for line in lines:
+                if 'RINEX VERSION' in line:
+                    rinex_v = line.split()[0]
+                    if not (rinex_v.startswith("2") or rinex_v.startswith("3")):
+                        raise Exception(f"Unknown version rinex {rinex_v}")
+
+                if 'GPS week' in line:
+                    line = line.split()
+                    gps_week = int(line[2])
+                    day = int(line[4])
+                    gps_time = GPSTime(gps_week, day * 24 * 60 * 60)
+                    date = gps_time.to_datetime().strftime("%Y-%m-%d")
+                    break
+        return date
+
+    @typechecked
+    def _get_dates_from_erp(self, file: str) -> list:
+        dates = []
+        with open(file, 'r', encoding="utf-8") as f:
+            lines = f.readlines()
+            erp_version = lines[0].split()[1]
+            if erp_version != "2":
+                raise Exception(f"Unknown version erp {lines[0].split()[1]}")
+
+            for line in lines[4:]:
+                mjd = float(line.split()[0])
+                # Offset between MJD 0 and Unix epoch (January 1, 1970)
+                mjd_epoch_offset = 40587
+                days_since_epoch = int(mjd) - mjd_epoch_offset
+                date = datetime(1970, 1, 1) + timedelta(days=days_since_epoch)
+                date = date.strftime("%Y-%m-%d")
+                dates.append(date)
+        return dates
+
+    @typechecked
+    def start(self, input_rnx: dict[str, str | list[str]], output: str, config: dict[str, str] | str,
+              erp_from_config: bool = False, timeint: int = 0, recursion: bool = False,
+              show_info_rtklib: bool = True) -> dict[str, list]:
+
+        # - ionex https://cddis.nasa.gov/archive/gnss/products/ionex/ - все ок, добавляем, но не понятно работает или нет
+        # - DСB https://cddis.nasa.gov/archive/gnss/products/bias/ - под вопросом, использовать полу допилинную версию или нет, хотя мб для обработки фагс пригодится
+        # - fcb - в rtklib это не робит
+        # - sbas - пока забываем про это
+
+        if not os.path.isdir(output):
+            self.logger.error("Output directory does not exist")
+            raise ValueError("Output directory does not exist")
+
+        if isinstance(config, str) and not os.path.isfile(config):
+            self.logger.error("Config file does not exist")
+            raise ValueError("Config file does not exist")
 
         inputs = dict()
         for k, v in input_rnx.items():
             if isinstance(v, str) and os.path.isfile(v):
                 inputs[k] = [v]
             elif isinstance(v, str) and os.path.isdir(v):
-                inputs = self.scan_dir(input_rnx, recursion)
+                inputs = self.scan_dirs(input_rnx, recursion)
             elif isinstance(v, list):
                 inputs = input_rnx
-            else:
-                raise TypeError("You must first use the scan_dirs function and then pass the result to the start \
-                                 function. Or specify the paths to a specific file.")
 
-        match_list = dict()
+        self.logger.info("Starting match files")
+        match_list = defaultdict(dict)
         for file in inputs.get('rover', []):
-            with open(file, 'r', encoding="utf-8") as f:
-                for _, line in enumerate(f, 1):
-                    if 'TIME OF FIRST OBS' in line:
-                        date = line.split()[:3]
-                        date[1] = date[1].zfill(2)
-                        date[2] = date[2].zfill(2)
-                        date = '/'.join(date)
-
-                        if date in match_list:
-                            match_list[date] += [file]
-                        else:
-                            match_list[date] = [file]
-                        break
-                    elif 'END OF HEADER' in line:
-                        break
+            try:
+                date = mcl_gnss_tools.get_start_date_from_obs(file)
+            except Exception as e:
+                self.logger.error("Can't get date from rover file %s", file)
+                self.logger.error(e)
+                continue
+            if "rovers" in match_list[date]:
+                match_list[date]["rovers"] += [file]
+            else:
+                match_list[date]["rovers"] = [file]
 
         for file in inputs.get('base', []):
-            with open(file, 'r', encoding="utf-8") as f:
-                for _, line in enumerate(f, 1):
-                    if 'TIME OF FIRST OBS' in line:
-                        date = line.split()[:3]
-                        date[1] = date[1].zfill(2)
-                        date[2] = date[2].zfill(2)
-                        date = '/'.join(date)
-
-                        if date in match_list:
-                            match_list[date] += [file]
-                        else:
-                            match_list[date] = [file]
-                        break
-                    elif 'END OF HEADER' in line:
-                        break
+            try:
+                date = mcl_gnss_tools.get_start_date_from_obs(file)
+            except Exception as e:
+                self.logger.error("Can't get date from base file %s", file)
+                self.logger.error(e)
+                continue
+            match_list[date]["base"] = file
 
         for file in inputs.get('nav', []):
-            flag_end = False
-            with open(file, 'r', encoding="utf-8") as f:
-                for _, line in enumerate(f, 1):
-                    if 'END OF HEADER' in line:
-                        flag_end = True
-                    elif flag_end:
-                        date = line.split()[1:4]
-                        date[1] = date[1].zfill(2)
-                        date[2] = date[2].zfill(2)
-                        date[0] = '20' + \
-                            date[0] if not len(date[0]) == 4 else date[0]
-                        date = '/'.join(date)
-
-                        if date in match_list:
-                            match_list[date] += [file]
-                        else:
-                            match_list[date] = [file]
-                        break
+            try:
+                date = mcl_gnss_tools.get_start_date_from_nav(file)
+            except Exception as e:
+                self.logger.error("Can't get date from nav file %s", file)
+                self.logger.error(e)
+                continue
+            match_list[date]["nav"] = file
 
         for file in inputs.get('sp3', []):
-            with open(file, 'r', encoding="utf-8") as f:
-                for _, line in enumerate(f, 1):
-                    if line[0] == "*":
-                        date = line.split()[1:4]
-                        date[1] = date[1].zfill(2)
-                        date[2] = date[2].zfill(2)
-                        date[0] = '20' + \
-                            date[0] if not len(date[0]) == 4 else date[0]
-                        date = '/'.join(date)
-
-                        if date in match_list:
-                            match_list[date] += [file]
-                        else:
-                            match_list[date] = [file]
-                        break
+            try:
+                date = self._get_start_date_from_sp3(file)
+            except Exception as e:
+                self.logger.error("Can't get date from sp3 file %s", file)
+                self.logger.error(e)
+                continue
+            match_list[date]["sp3"] = file
 
         for file in inputs.get('clk', []):
-            flag_end = False
-            with open(file, 'r', encoding="utf-8") as f:
-                for _, line in enumerate(f, 1):
-                    if 'END OF HEADER' in line:
-                        flag_end = True
-                    elif flag_end:
-                        date = line.split()[2:5]
-                        date[1] = date[1].zfill(2)
-                        date[2] = date[2].zfill(2)
-                        date[0] = '20' + \
-                            date[0] if not len(date[0]) == 4 else date[0]
-                        date = '/'.join(date)
+            try:
+                date = self._get_start_date_from_clk(file)
+            except Exception as e:
+                self.logger.error("Can't get date from clk file %s", file)
+                self.logger.error(e)
+                continue
+            match_list[date]["clk"] = file
 
-                        if date in match_list:
-                            match_list[date] += [file]
-                        else:
-                            match_list[date] = [file]
-                        break
-        # sbas_fcb_ionex
-
-        # создание временного файла конфига
-        self.__path_conf = ''
-        while True:
-            folder_conf = os.path.join(
-                Path(__file__).resolve().parent.parent.parent, 'conf')
-            alphabet = string.ascii_letters + string.digits
-            name_conf = ''.join(random.choice(alphabet) for i in range(6))
-            self.__path_conf = os.path.join(folder_conf, name_conf) + '.conf'
-            direct = Path(self.__path_conf)
-            if not direct.exists():
-                break
-
-        f = open(self.__path_conf, 'w', encoding="utf-8")
-        for key, val in config.items():
-            f.write(key + '=' + val + '\n')
-        f.close()
+        for file in inputs.get('erp', []):
+            try:
+                dates = self._get_dates_from_erp(file)
+            except Exception as e:
+                self.logger.error("Can't get dates from erp file %s", file)
+                self.logger.error(e)
+                continue
+            for date in dates:
+                match_list[date]["erp"] = file
 
         pos_paths = []
-        inc_bar = IncrementalBar('Progress', max=len(
-            match_list), suffix='%(percent).d%% - %(index)d/%(max)d - %(elapsed)ds')
-        if not show_progress:
-            def nothing():
-                pass
-            inc_bar.start = nothing
-            inc_bar.next = nothing
-            inc_bar.finish = nothing
-        
-        inc_bar.start()
+        no_match = []
+        with tempfile.NamedTemporaryFile() as temp_file:
+            for path_files in match_list.values():
+                if len(path_files) != len(input_rnx):
+                    no_match.append(path_files)
+                    continue
 
-        for _, value in match_list.items():
-            cmd = list()
+                # make configuration
+                self.logger.info("Starting make configuration")
+                with open(temp_file.name, 'w', encoding="utf-8") as config_temp_file:
 
-            path_bin = str(Path(__file__).resolve().parent.parent.parent)
-            path_bin += "/bin/RTKLIB-2.4.3-b34/app/consapp/rnx2rtkp/gcc/rnx2rtkp"
-            cmd += [path_bin]
+                    if isinstance(config, str):
+                        with open(config, "r", encoding="utf-8") as config_file:
+                            if erp_from_config:
+                                config_temp_file.write(config_file.read())
+                            else:
+                                text = config_file.readlines()
+                                for i, line in enumerate(text):
+                                    if "file-eopfile" in line:
+                                        text[i] = f'file-eopfile={path_files.get("erp", "")}'
+                                        config_temp_file.write(text[i] + '\n')
+                                    else:
+                                        config_temp_file.write(line + '\n')
 
-            cmd += ["-ti", str(timeint)]
-            cmd += ["-k", self.__path_conf]
+                    elif isinstance(config, dict):
+                        config["file-eopfile"] = path_files.get("erp", "")
 
-            for path_file in value:
-                cmd += [path_file]
+                        for key, val in config.items():
+                            config_temp_file.write(key + '=' + val + '\n')
 
-            path_end = os.path.join(output, os.path.basename(value[0]))
-            cmd += ["-o", path_end + ".pos"]
+                # make command
+                for rvr in path_files.get("rovers", []):
+                    cmd = [mcl_tools.get_path2bin("rnx2rtkp")]
 
-            pos_paths.append(
-                f"{os.path.join(output, os.path.basename(value[0]))}.pos")
+                    cmd += ["-ti", str(timeint)]
+                    cmd += ["-k", temp_file.name]
 
-            # print(cmd)
-            subprocess.run(cmd, stderr=subprocess.DEVNULL, check=False)
+                    cmd += [rvr]
+                    cmd += [path_files.get("base", "")]
+                    cmd += [path_files.get("nav", "")]
+                    cmd += [path_files.get("sp3", "")]
+                    cmd += [path_files.get("clk", "")]
 
-            inc_bar.next()
+                    cmd = [i for i in cmd if i != ""]
 
-        inc_bar.finish()
+                    path_end = os.path.join(output, os.path.basename(rvr)) + ".pos"
+                    cmd += ["-o", path_end]
 
-        try:
-            os.remove(self.__path_conf)
-        except FileNotFoundError:
-            pass
-        return self.__check_files(pos_paths)
+                    pos_paths.append(path_end)
 
-    def __del__(self):
-        try:
-            os.remove(self.__path_conf)
-        except FileNotFoundError:
-            pass
+                    self.logger.info("Run postprocessing %s", rvr)
+                    if show_info_rtklib:
+                        subprocess.run(cmd, check=False, stdout=subprocess.DEVNULL)
+                    else:
+                        subprocess.run(cmd, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        output_dict = mcl_tools.files_check(pos_paths)
+        output_dict["no_match"] = no_match
+        return output_dict
