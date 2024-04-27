@@ -144,7 +144,8 @@ class RtkLibPost:
         """
         Return variable __default_config. Default config isn't editable.
         In the future, you will manually configure this config and send it to the start method.
-        See documentation RTKLIB, how to configuration.
+        See documentation RTKLIB (manual_2.4.2, page 34-49), how to configuration.
+        Also you can see how to configure in example code.
 
         Returns:
             dict: default config for convbin of RTKLib
@@ -154,7 +155,7 @@ class RtkLibPost:
     @typechecked
     def scan_dirs(self, input_rnx: dict[str, str], recursion: bool = False) -> dict[str, list[str]]:
         self.logger.info("Scanning directories...")
-        type_files = ['rover', 'base', 'nav', 'sp3', 'clk', 'erp']
+        type_files = ['rover', 'base', 'nav', 'sp3', 'clk', 'erp', 'dcb', 'ionex']
         for k in input_rnx.keys():
             if k not in type_files:
                 raise ValueError(f"Unidentified key {k}")
@@ -220,12 +221,45 @@ class RtkLibPost:
         return dates
 
     @typechecked
+    def _get_start_date_from_ionex(self, file: str) -> str:
+        date = ""
+        ionex_ver_list = ["1.0"]
+        with open(file, 'r', encoding="utf-8") as f:
+            lines = f.readlines()
+            for line in lines:
+                if 'IONEX VERSION' in line:
+                    rinex_v = line.split()[0]
+                    if rinex_v not in ionex_ver_list:
+                        raise Exception(f"Unknown version ionex {rinex_v}")
+
+                if "EPOCH OF FIRST MAP" in line:
+                    date = line.split()[:3]
+                    date[1] = date[1].zfill(2)
+                    date[2] = date[2].zfill(2)
+                    date = '-'.join(date)
+        return date
+
+    @typechecked
+    def _get_start_date_from_dcb(self, file: str) -> str:
+        date = ""
+        dcb_ver_list = ["0.01", "1.00"]
+        with open(file, 'r', encoding="utf-8") as f:
+            line = f.readline()
+            dcb_version = line.split()[1]
+            if dcb_version not in dcb_ver_list:
+                raise Exception(f'Unknown version dcb {dcb_version}')
+
+            date = line.split()[5].split(":")[:2]
+            date[0] = "20" + date[0] if len(date[0]) == 2 else date[0]
+            date = datetime.strptime("-".join(date), "%Y-%j")
+            date = date.strftime("%Y-%m-%d")
+        return date
+
+    @typechecked
     def start(self, input_rnx: dict[str, str | list[str]], output: str, config: dict[str, str] | str,
               erp_from_config: bool = False, timeint: int = 0, recursion: bool = False,
               show_info_rtklib: bool = True) -> dict[str, list]:
 
-        # - ionex https://cddis.nasa.gov/archive/gnss/products/ionex/ - все ок, добавляем, но не понятно работает или нет
-        # - DСB https://cddis.nasa.gov/archive/gnss/products/bias/ - под вопросом, использовать полу допилинную версию или нет, хотя мб для обработки фагс пригодится
         # - fcb - в rtklib это не робит
         # - sbas - пока забываем про это
 
@@ -306,6 +340,24 @@ class RtkLibPost:
             for date in dates:
                 match_list[date]["erp"] = file
 
+        for file in inputs.get('dcb', []):
+            try:
+                date = self._get_start_date_from_dcb(file)
+            except Exception as e:
+                self.logger.error("Can't get date from dcb file %s", file)
+                self.logger.error(e)
+                continue
+            match_list[date]["dcb"] = file
+
+        for file in inputs.get('ionex', []):
+            try:
+                date = self._get_start_date_from_ionex(file)
+            except Exception as e:
+                self.logger.error("Can't get date from ionex file %s", file)
+                self.logger.error(e)
+                continue
+            match_list[date]["ionex"] = file
+
         pos_paths = []
         no_match = []
         with tempfile.NamedTemporaryFile() as temp_file:
@@ -349,6 +401,8 @@ class RtkLibPost:
                     cmd += [path_files.get("nav", "")]
                     cmd += [path_files.get("sp3", "")]
                     cmd += [path_files.get("clk", "")]
+                    cmd += [path_files.get("dcb", "")]
+                    cmd += [path_files.get("ionex", "")]
 
                     cmd = [i for i in cmd if i != ""]
 
