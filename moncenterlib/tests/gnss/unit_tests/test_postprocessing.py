@@ -161,6 +161,8 @@ class TestRtkLibPostPost(TestCase):
 
     def test_scan_dirs(self):
         rtklibpost = RtkLibPost(False)
+
+        # raises
         with self.assertRaises(Exception):
             rtklibpost.scan_dirs("")
 
@@ -213,6 +215,17 @@ class TestRtkLibPostPost(TestCase):
             res = rtklibpost.scan_dirs({"rover": "some_dir", "nav": "some_dir", "sp3": "some_dir"}, True)
             self.assertEqual({'rover': ['file1', 'file2'], 'sp3': ['file5', 'file6'], "nav": []}, res)
             self.assertEqual(("some_dir", True), mock_get_files.call_args.args)
+
+    def test_scan_dirs_update_dcb_ionex(self):
+        rtklibpost = RtkLibPost(False)
+        with patch("moncenterlib.tools.get_files_from_dir") as mock_get_files:
+            # check types of files
+            mock_get_files.side_effect = [["file1", "file2"],
+                                          ["file3", "file4"]]
+            res = rtklibpost.scan_dirs({'dcb': "some_dir", 'ionex': "some_dir"})
+
+            self.assertEqual({'dcb': ['file1', 'file2'], 'ionex': ['file3', 'file4']}, res)
+            self.assertEqual(("some_dir", False), mock_get_files.call_args.args)
 
     def test__get_start_date_from_sp3(self):
         rtklibpost = RtkLibPost(False)
@@ -365,6 +378,95 @@ class TestRtkLibPostPost(TestCase):
 
             with self.assertRaises(IndexError):
                 res = rtklibpost._get_dates_from_erp(temp_file.name)
+
+    def test__get_start_date_from_ionex(self):
+
+        rtklibpost = RtkLibPost(False)
+        # invalid version ionex
+        with tempfile.NamedTemporaryFile() as temp_file:
+            text = ("     2.0            IONOSPHERE MAPS     MIX                 IONEX VERSION / TYPE\n"
+                    "cmpcmb v1.2          GRL/UWM             6-aug-23 18:02     PGM / RUN BY / DATE \n")
+
+            with open(temp_file.name, "w", encoding="utf-8") as f:
+                f.write(text)
+
+            with self.assertRaises(Exception) as e:
+                rtklibpost._get_start_date_from_ionex(temp_file.name)
+            self.assertEqual(str(e.exception), "Unknown version ionex 2.0")
+
+        # valid version erp
+        with tempfile.NamedTemporaryFile() as temp_file:
+            text = ("     1.0            IONOSPHERE MAPS     MIX                 IONEX VERSION / TYPE\n"
+                    "cmpcmb v1.2          GRL/UWM             6-aug-23 18:02     PGM / RUN BY / DATE \n"
+                    "  2023     7    18     0     0     0                        EPOCH OF FIRST MAP  \n"
+                    "  2023     7    19     0     0     0                        EPOCH OF LAST MAP \n")
+
+            with open(temp_file.name, "w", encoding="utf-8") as f:
+                f.write(text)
+
+            res = rtklibpost._get_start_date_from_ionex(temp_file.name)
+            self.assertEqual("2023-07-18", res)
+
+        # empty date
+        with tempfile.NamedTemporaryFile() as temp_file:
+            text = ""
+
+            with open(temp_file.name, "w", encoding="utf-8") as f:
+                f.write(text)
+
+            res = rtklibpost._get_start_date_from_ionex(temp_file.name)
+            self.assertEqual("", res)
+
+    def test__get_start_date_from_dcb(self):
+        rtklibpost = RtkLibPost(False)
+        # invalid version dcb
+        with tempfile.NamedTemporaryFile() as temp_file:
+            text = ("%=BIA 2.00 CAS 19:004:48470   CAS 2019:001:00000 2019:002:00000 R 00003488      \n"
+                    "*-------------------------------------------------------------------------------\n"
+                    "* Bias Solution INdependent EXchange Format (Bias-SINEX)                        \n"
+                    "*-------------------------------------------------------------------------------\n")
+
+            with open(temp_file.name, "w", encoding="utf-8") as f:
+                f.write(text)
+
+            with self.assertRaises(Exception) as e:
+                rtklibpost._get_start_date_from_dcb(temp_file.name)
+            self.assertEqual(str(e.exception), "Unknown version dcb 2.00")
+
+        # valid version erp
+        with tempfile.NamedTemporaryFile() as temp_file:
+            text = ("%=BIA 1.00 CAS 19:004:48470   CAS 2019:001:00000 2019:002:00000 R 00003488      \n"
+                    "*-------------------------------------------------------------------------------\n"
+                    "* Bias Solution INdependent EXchange Format (Bias-SINEX)                        \n"
+                    "*-------------------------------------------------------------------------------\n")
+
+            with open(temp_file.name, "w", encoding="utf-8") as f:
+                f.write(text)
+
+            res = rtklibpost._get_start_date_from_dcb(temp_file.name)
+            self.assertEqual("2019-01-01", res)
+
+        with tempfile.NamedTemporaryFile() as temp_file:
+            text = ("%=BIA 0.01 IGG 15:278:77362 IGG 15:001:00000 15:002:00000 P 00000 0\n"
+                    "*-------------------------------------------------------------------------------\n"
+                    "* Bias Solution INdependent EXchange Format (Bias-SINEX)                        \n"
+                    "*-------------------------------------------------------------------------------\n")
+
+            with open(temp_file.name, "w", encoding="utf-8") as f:
+                f.write(text)
+
+            res = rtklibpost._get_start_date_from_dcb(temp_file.name)
+            self.assertEqual("2015-01-01", res)
+
+        # empty date
+        with tempfile.NamedTemporaryFile() as temp_file:
+            text = ""
+
+            with open(temp_file.name, "w", encoding="utf-8") as f:
+                f.write(text)
+
+            with self.assertRaises(IndexError):
+                res = rtklibpost._get_start_date_from_dcb(temp_file.name)
 
     def test_start_input_args(self):
         rtklib = RtkLibPost(False)
@@ -523,6 +625,24 @@ class TestRtkLibPostPost(TestCase):
             self.assertEqual({'erp': 'path2file_erp_2'}, mock_len.call_args_list[4].args[0])
             self.assertEqual({'erp': 'path2file_erp_2'}, mock_len.call_args_list[6].args[0])
 
+            # dcb, several days
+            mock_len.reset_mock()
+            rtklibpost._get_start_date_from_dcb = MagicMock()
+            rtklibpost._get_start_date_from_dcb.side_effect = ["2020-01-01", "2020-01-02"]
+            input_rnx = {"dcb": ["path2file_dcb_1", "path2file_dcb_2"]}
+            rtklibpost.start(input_rnx, "/", {"": ""}, show_info_rtklib=False)
+            self.assertEqual({'dcb': 'path2file_dcb_1'}, mock_len.call_args_list[0].args[0])
+            self.assertEqual({'dcb': 'path2file_dcb_2'}, mock_len.call_args_list[2].args[0])
+
+            # ionex, several days
+            mock_len.reset_mock()
+            rtklibpost._get_start_date_from_ionex = MagicMock()
+            rtklibpost._get_start_date_from_ionex.side_effect = ["2020-01-01", "2020-01-02"]
+            input_rnx = {"ionex": ["path2file_ionex_1", "path2file_ionex_2"]}
+            rtklibpost.start(input_rnx, "/", {"": ""}, show_info_rtklib=False)
+            self.assertEqual({'ionex': 'path2file_ionex_1'}, mock_len.call_args_list[0].args[0])
+            self.assertEqual({'ionex': 'path2file_ionex_2'}, mock_len.call_args_list[2].args[0])
+
             # CHECK EXCEPTIONS, continue
             # rover, several days
             mock_len.reset_mock()
@@ -586,6 +706,24 @@ class TestRtkLibPostPost(TestCase):
             self.assertEqual({'erp': 'path2file_erp_3'}, mock_len.call_args_list[4].args[0])
             self.assertEqual({'erp': 'path2file_erp_3'}, mock_len.call_args_list[6].args[0])
 
+            # dcb, several days
+            mock_len.reset_mock()
+            rtklibpost._get_start_date_from_dcb = MagicMock()
+            rtklibpost._get_start_date_from_dcb.side_effect = ["2020-01-01", Exception(), "2020-01-02"]
+            input_rnx = {"dcb": ["path2file_dcb1", "path2file_dcb2", "path2file_dcb3"]}
+            rtklibpost.start(input_rnx, "/", {"": ""}, show_info_rtklib=False)
+            self.assertEqual({'dcb': 'path2file_dcb1'}, mock_len.call_args_list[0].args[0])
+            self.assertEqual({'dcb': 'path2file_dcb3'}, mock_len.call_args_list[2].args[0])
+
+            # ionex, several days
+            mock_len.reset_mock()
+            rtklibpost._get_start_date_from_ionex = MagicMock()
+            rtklibpost._get_start_date_from_ionex.side_effect = ["2020-01-01", Exception(), "2020-01-02"]
+            input_rnx = {"ionex": ["path2file_ionex_1", "path2file_ionex_2", "path2file_ionex_3"]}
+            rtklibpost.start(input_rnx, "/", {"": ""}, show_info_rtklib=False)
+            self.assertEqual({'ionex': 'path2file_ionex_1'}, mock_len.call_args_list[0].args[0])
+            self.assertEqual({'ionex': 'path2file_ionex_3'}, mock_len.call_args_list[2].args[0])
+
             # all types
             mock_len.reset_mock()
             input_rnx = {"rover": ["path2file_obs1", "path2file_obs2"],
@@ -593,7 +731,10 @@ class TestRtkLibPostPost(TestCase):
                          "nav": ["path2file_nav1", "path2file_nav2"],
                          "sp3": ["path2file_sp3_1", "path2file_sp3_2"],
                          "clk": ["path2file_clk_1", "path2file_clk_2"],
-                         "erp": ["path2file_erp_1", "path2file_erp_2"]}
+                         "erp": ["path2file_erp_1", "path2file_erp_2"],
+                         "dcb": ["path2file_dcb_1", "path2file_dcb_2"],
+                         "ionex": ["path2file_ionex_1", "path2file_ionex_2"]
+                         }
 
             mock_get_start_date_from_obs.side_effect = ["2020-01-01",
                                                         "2020-01-02",
@@ -603,19 +744,27 @@ class TestRtkLibPostPost(TestCase):
             rtklibpost._get_start_date_from_sp3.side_effect = ["2020-01-01", "2020-01-02"]
             rtklibpost._get_start_date_from_clk.side_effect = ["2020-01-01", "2020-01-02"]
             rtklibpost._get_dates_from_erp.side_effect = [["2020-01-01", "2020-01-02"]]
+            rtklibpost._get_start_date_from_dcb.side_effect = ["2020-01-01", "2020-01-02"]
+            rtklibpost._get_start_date_from_ionex.side_effect = ["2020-01-01", "2020-01-02"]
             rtklibpost.start(input_rnx, "/", {"": ""}, show_info_rtklib=False)
             self.assertEqual({'rovers': ['path2file_obs1'],
                               'base': 'path2file_obs_base1',
                               'nav': 'path2file_nav1',
                               'sp3': 'path2file_sp3_1',
                               'clk': 'path2file_clk_1',
-                              'erp': 'path2file_erp_1'}, mock_len.call_args_list[0].args[0])
+                              'erp': 'path2file_erp_1',
+                              'dcb': 'path2file_dcb_1',
+                              'ionex': 'path2file_ionex_1',
+                              }, mock_len.call_args_list[0].args[0])
             self.assertEqual({'rovers': ['path2file_obs2'],
                               'base': 'path2file_obs_base2',
                               'nav': 'path2file_nav2',
                               'sp3': 'path2file_sp3_2',
                               'clk': 'path2file_clk_2',
-                              'erp': 'path2file_erp_1'}, mock_len.call_args_list[2].args[0])
+                              'erp': 'path2file_erp_1',
+                              'dcb': 'path2file_dcb_2',
+                              'ionex': 'path2file_ionex_2'
+                              }, mock_len.call_args_list[2].args[0])
 
     def test_start_make_config(self):
         rtklibpost = RtkLibPost(False)
@@ -821,9 +970,6 @@ class TestRtkLibPostPost(TestCase):
                                    show_info_rtklib=True,
                                    )
             self.assertEqual({'check': False, 'stdout': -3}, mock_run_subprocess.mock_calls[0].kwargs)
-
-    def test_start_output(self):
-        pass
 
 
 if __name__ == '__main__':
