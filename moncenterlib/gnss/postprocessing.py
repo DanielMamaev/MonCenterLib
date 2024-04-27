@@ -1,3 +1,17 @@
+"""
+The module for standard and precise positioning with GNSS (global navigation satellite system).
+
+- Post‐Processing Analysis;
+- Soon.
+
+The module has the following classes:
+- RtkLibPost;
+- Soon.
+
+Learn more about the specific class.
+"""
+
+
 from collections import defaultdict
 from datetime import datetime, timedelta
 import os
@@ -11,9 +25,26 @@ import moncenterlib.gnss.tools as mcl_gnss_tools
 
 
 class RtkLibPost:
-
+    """
+    This class is based on the RTKLib software package.
+    RTKLIB contains a post processing analysis AP RTKPOST. RTKPOST inputs the standard RINEX 2.10, 2.11,
+    2.12, 3.00, 3.01, 3.02 (draft) observation data and navigation message files (GPS, GLONASS, Galileo, QZSS,
+    BeiDou and SBAS) and can computes the positioning solutions by various positioning modes including
+    Single‐point, DGPS/DGNSS, Kinematic, Static, PPP‐Kinematic and PPP‐Static.
+    See more about RTKLIB here: https://rtklib.com/
+    This class can postprocessing one or more files.
+    See code usage examples in the examples folder.
+    """
     @typechecked
     def __init__(self, logger: bool | Logger | None = None):
+        """
+        Args:
+            logger (bool | Logger, optional): if the logger is None, a logger will be created inside the default class.
+                If the logger is False, then no information will be output.
+                If you pass an instance of your logger, the information output will be implemented according to your logger.
+                Defaults to None.
+        """
+
         self.logger = logger
 
         if self.logger in [None, False]:
@@ -142,18 +173,59 @@ class RtkLibPost:
 
     def get_default_config(self) -> dict:
         """
-        Return variable __default_config. Default config isn't editable.
+        Return variable __default_config. __default_config isn't editable.
         In the future, you will manually configure this config and send it to the start method.
         See documentation RTKLIB (manual_2.4.2, page 34-49), how to configuration.
-        Also you can see how to configure in example code.
+        Also you can see in example code how to configure.
 
         Returns:
-            dict: default config for convbin of RTKLib
+            dict: default config for rnx2rtkp of RTKLib
+
+        Examples:
+            >>> from moncenterlib.gnss.postprocessing import RtkLibPost
+            >>> rtk_post = RtkLibPost()
+            >>> rtk_post.get_default_config()
+            {
+                'pos1-posmode': '0',
+                'pos1-frequency':  '2',
+                'pos1-soltype':  '0',
+                'pos1-elmask':  '15',
+                'pos1-snrmask_r':  'off',
+                'pos1-snrmask_b':  'off',
+                ...
+            }
         """
         return self.__default_config.copy()
 
     @typechecked
     def scan_dirs(self, input_rnx: dict[str, str], recursion: bool = False) -> dict[str, list[str]]:
+        """This method scans the directories and makes a list of files for further work of the class.
+        The method can also recursively search for files.
+
+        Args:
+            input_rnx (dict[str, str]): input_rnx must be a dictionary.
+                Key is the type of file. Value is the path to the directory.
+                This is a list of keys that you can use. ['rover', 'base', 'nav', 'sp3', 'clk', 'erp', 'dcb', 'ionex'].
+            recursion (bool, optional): Recursively search for files. Defaults to False.
+
+        Raises:
+            ValueError: Unidentified key.
+
+        Returns:
+            dict[str, list[str]]: Return a dict of files.
+
+        Examples:
+            >>> from moncenterlib.gnss.postprocessing import RtkLibPost
+            >>> rtk_post = RtkLibPost()
+            >>> paths = {'rover': '/path/to/rover', 'base': '/path/to/base', 'nav': '/path/to/nav'}
+            >>> rtk_post.scan_dirs(paths, True)
+            {
+                'rover': ['file1.rnx', 'file2.rnx'],
+                'base': ['file1.rnx', 'file2.rnx'],
+                'nav': ['file1.rnx', 'file2.rnx']
+            }
+        """
+
         self.logger.info("Scanning directories...")
         type_files = ['rover', 'base', 'nav', 'sp3', 'clk', 'erp', 'dcb', 'ionex']
         for k in input_rnx.keys():
@@ -259,6 +331,45 @@ class RtkLibPost:
     def start(self, input_rnx: dict[str, str | list[str]], output: str, config: dict[str, str] | str,
               erp_from_config: bool = False, timeint: int = 0, recursion: bool = False,
               show_info_rtklib: bool = True) -> dict[str, list]:
+        """The method starts the postprocessing.
+
+        Args:
+            input_rnx (dict[str, str  |  list[str]]): The dictionary where keys are a type of file and
+                values are a list of path to the files or path to directory or path to one file.
+            output (str): The path to the directory where the files will be saved.
+            config (dict[str, str] | str): Dictionary with configuration.
+                You can get the configuration by calling the get_default_config() method.
+            erp_from_config (bool, optional): This flag indicates where to get the files from.erp for post-processing.
+                True if the file .erp is taken from the configuration file.
+                False if taken from the dictionary. Defaults to False.
+            timeint (int, optional): Time interval. Defaults to 0.
+            recursion (bool, optional): If you put a path to dir in arg input_rnx, recursively search for files.
+                Defaults to False.
+            show_info_rtklib (bool, optional): This flag indicates whether to display the output of the rnx2rtkp program.
+                True to display. False is not displayed. Defaults to True.
+
+        Raises:
+            ValueError: Output directory does not exist.
+            ValueError: Config file does not exist.
+
+        Returns:
+            dict[str, list]: The dictionary contains 3 keys. done, no_exists, no_match.
+            The done key stores a list of files that have been successfully created.
+            The no_exists key stores a list of files that have not been created.
+            The no_match key stores a list of no match files.
+
+        Examples:
+            >>> from moncenterlib.gnss.postprocessing import RtkLibPost
+            >>> rtk_post = RtkLibPost()
+            >>> paths = {'rover': '/path/to/rover', 'base': '/path/to/base', 'nav': '/path/to/nav'}
+            >>> config = rtk_post.get_default_config()
+            >>> rtk_post.start(paths, '/path/to/output', config, erp_from_config=False, timeint=1, recursion=False, show_info_rtklib=True)
+            {
+                "done": ["path2pos1", "path2pos2"],
+                "error": ["path2pos3", "path2pos4"],
+                "no_match": [{"base": "path2file1"}, {"erp": "path2file2"}]
+            }
+        """
 
         # - fcb - в rtklib это не робит
         # - sbas - пока забываем про это
