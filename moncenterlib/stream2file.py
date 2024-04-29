@@ -94,7 +94,7 @@ class Stream2File:
             name (str): Name of the connection.
             param (dict[str, str]): Dictionary of parameters.
             output_dir (str): Path to the output directory where the file will be saved.
-            on_start (str, optional): Command that will be send to host when the connection starts. 
+            on_start (str, optional): Command that will be send to host when the connection starts.
 
         Raises:
             ValueError: Path 'output_dir' to dir is strange.
