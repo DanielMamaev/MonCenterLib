@@ -83,7 +83,7 @@ class Stream2File:
                     raise KeyError(msg)
 
     @typechecked
-    def add_connection(self, name: str, param: dict[str, str], output_dir: str) -> None:
+    def add_connection(self, name: str, param: dict[str, str], output_dir: str, on_start: str = "") -> None:
         """
         This method is used to add a connection. Data of connection stored in variable 'connections'.
 
@@ -94,6 +94,7 @@ class Stream2File:
             name (str): Name of the connection.
             param (dict[str, str]): Dictionary of parameters.
             output_dir (str): Path to the output directory where the file will be saved.
+            on_start (str, optional): Command that will be send to host when the connection starts. 
 
         Raises:
             ValueError: Path 'output_dir' to dir is strange.
@@ -107,7 +108,7 @@ class Stream2File:
             >>> from moncenterlib.gnss.stream2file import Stream2File
             >>> s2f = Stream2File()
             >>> your_param = {"type": "..."}
-            >>> s2f.add_connection("test_connect", your_param, "/some_output_dir")
+            >>> s2f.add_connection("test_connect", your_param, "/some_output_dir", on_start="some_cmd")
 
         """
         self.logger.info("Adding connection %s.", name)
@@ -120,9 +121,10 @@ class Stream2File:
             self.logger.error(msg)
             raise ValueError(msg)
 
-        self.connections[name] = {"param": None, "temp_file": None, "process": None}
+        self.connections[name] = {"param": None, "temp_file": None, "temp_file_on_start": None, "process": None}
         self.connections[name]["param"] = parameters
         self.connections[name]["param"]["output_dir"] = output_dir
+        self.connections[name]["param"]["on_start"] = on_start
 
     @typechecked
     def remove_connection(self, name: str) -> None:
@@ -255,7 +257,15 @@ class Stream2File:
         output_file = Path(param["output_dir"]).joinpath(f"{name}_{date}.log")
         cmd += ["-out", f'file://{output_file}']
 
+        if param.get("on_start", "") != "":
+            temp_file_on_start = tempfile.NamedTemporaryFile()
+            temp_file_on_start.write(param["on_start"].encode("utf-8"))
+            temp_file_on_start.seek(0)
+            cmd += ["-c", temp_file_on_start.name]
+            self.connections[name]["temp_file_on_start"] = temp_file_on_start
+
         process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
         self.connections[name]["temp_file"] = temp_file
         self.connections[name]["process"] = process
 
@@ -286,6 +296,8 @@ class Stream2File:
             self.connections[name]["process"].kill()
         if self.connections[name]["temp_file"] is not None:
             self.connections[name]["temp_file"].close()
+        if self.connections[name]["temp_file_on_start"] is not None:
+            self.connections[name]["temp_file_on_start"].close()
 
     def start_all(self) -> list[str]:
         """
@@ -330,4 +342,5 @@ class Stream2File:
         self.stop_all()
 
     def __del__(self):
-        self.stop_all()
+        if hasattr(self, 'logger') and hasattr(self, 'connections'):
+            self.stop_all()

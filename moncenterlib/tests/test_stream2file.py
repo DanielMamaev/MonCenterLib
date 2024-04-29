@@ -1,22 +1,22 @@
 import datetime
 from logging import Logger
 import logging
-from pathlib import Path
 import subprocess
 import tempfile
 from unittest import TestCase, main
 from unittest.mock import MagicMock, patch, call
 from moncenterlib.stream2file import Stream2File
+import typeguard
 
 
 class TestStream2File(TestCase):
     def setUp(self) -> None:
-        self.str2file = Stream2File(False)
+        # self.str2file = Stream2File(False)
         return super().setUp()
 
     def test_init_raises(self):
-        with self.assertRaises(Exception):
-            str2file = Stream2File("False")
+        with self.assertRaises((typeguard.TypeCheckError)) as e:
+            str2file = Stream2File("bla")
 
     def test_init_with_enable_logger(self):
         str2file = Stream2File()
@@ -54,14 +54,15 @@ class TestStream2File(TestCase):
         self.assertEqual(str(msg.exception), "Unknown name of connection 'test'.")
 
     def test__check_param_raises(self):
+        str2file = Stream2File(False)
         param = {}
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Not found key \'type\' in param."')
 
         param = {"type": "some_type"}
         with self.assertRaises(ValueError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), "Unknown type \'some_type\' in param.")
 
         param = {"type": "serial",
@@ -73,7 +74,7 @@ class TestStream2File(TestCase):
                  "fctr": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'port\' in param."')
 
         param = {"type": "serial",
@@ -85,7 +86,7 @@ class TestStream2File(TestCase):
                  "fctr": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'brate\' in param."')
 
         param = {"type": "serial",
@@ -97,7 +98,7 @@ class TestStream2File(TestCase):
                  "fctr": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'bsize\' in param."')
 
         param = {"type": "serial",
@@ -109,7 +110,7 @@ class TestStream2File(TestCase):
                  "fctr": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'parity\' in param."')
 
         param = {"type": "serial",
@@ -121,7 +122,7 @@ class TestStream2File(TestCase):
                  "fctr": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'stopb\' in param."')
 
         param = {"type": "serial",
@@ -133,7 +134,7 @@ class TestStream2File(TestCase):
                  #  "fctr": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'fctr\' in param."')
 
         param = {"type": "tcpcli",
@@ -141,7 +142,7 @@ class TestStream2File(TestCase):
                  "port": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'addr\' in param."')
 
         param = {"type": "tcpcli",
@@ -149,7 +150,7 @@ class TestStream2File(TestCase):
                  #  "port": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'port\' in param."')
 
         param = {"type": "ntrip",
@@ -160,7 +161,7 @@ class TestStream2File(TestCase):
                  "mntpnt": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'user\' in param."')
 
         param = {"type": "ntrip",
@@ -171,7 +172,7 @@ class TestStream2File(TestCase):
                  "mntpnt": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'passwd\' in param."')
 
         param = {"type": "ntrip",
@@ -182,7 +183,7 @@ class TestStream2File(TestCase):
                  "mntpnt": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'addr\' in param."')
 
         param = {"type": "ntrip",
@@ -193,7 +194,7 @@ class TestStream2File(TestCase):
                  "mntpnt": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'port\' in param."')
 
         param = {"type": "ntrip",
@@ -204,7 +205,7 @@ class TestStream2File(TestCase):
                  #  "mntpnt": ""
                  }
         with self.assertRaises(KeyError) as msg:
-            self.str2file._check_param(param)
+            str2file._check_param(param)
         self.assertEqual(str(msg.exception), '"Missing key \'mntpnt\' in param."')
 
     def test_add_connection(self):
@@ -225,8 +226,9 @@ class TestStream2File(TestCase):
             exp = {
                 'TEST':
                 {
-                    'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/some_dir'},
+                    'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/some_dir', 'on_start': ""},
                     'temp_file': None,
+                    'temp_file_on_start': None,
                     'process': None
                 }
             }
@@ -235,13 +237,15 @@ class TestStream2File(TestCase):
             str2file.add_connection("TEST2", param, "/some_dir2")
             exp = {
                 'TEST': {
-                    'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/some_dir'},
+                    'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/some_dir', 'on_start': ""},
                     'temp_file': None,
+                    'temp_file_on_start': None,
                     'process': None
                 },
                 'TEST2': {
-                    'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/some_dir2'},
+                    'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/some_dir2', 'on_start': ""},
                     'temp_file': None,
+                    'temp_file_on_start': None,
                     'process': None
                 }
             }
@@ -258,8 +262,9 @@ class TestStream2File(TestCase):
                  }
         str2file.add_connection("TEST", param, "/")
         self.assertEqual(str2file.connections, {"TEST": {
-                         'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/'},
+                         'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/', 'on_start': ''},
                          'temp_file': None,
+                         'temp_file_on_start': None,
                          'process': None}
         })
 
@@ -277,6 +282,7 @@ class TestStream2File(TestCase):
         str2file.connections = {"TEST": {
             'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/'},
             'temp_file': temp_file,
+            'temp_file_on_start': temp_file,
             'process': None}
         }
         # check raise and method _check_name_in_connections
@@ -329,6 +335,7 @@ class TestStream2File(TestCase):
         str2file.connections = {"TEST": {
             'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/'},
             'temp_file': None,
+            'temp_file_on_start': None,
             'process': None}
         }
         # check before condition
@@ -352,6 +359,7 @@ class TestStream2File(TestCase):
             str2file.connections = {"TEST": {
                 'param': {"type": "serial", 'port': 'COM1', "brate": "115200", "bsize": "1024", "parity": "N", "stopb": "1", "fctr": "1", "output_dir": "/output_dir"},
                 'temp_file': None,
+                'temp_file_on_start': None,
                 'process': None,
             }
             }
@@ -382,6 +390,7 @@ class TestStream2File(TestCase):
             str2file.connections = {"TEST": {
                 'param': {"type": "tcpcli", "output_dir": "/output_dir", "addr": "1.2.3.4", "port": "123"},
                 'temp_file': None,
+                'temp_file_on_start': None,
                 'process': None,
             }
             }
@@ -412,6 +421,7 @@ class TestStream2File(TestCase):
             str2file.connections = {"TEST": {
                 'param': {"type": "ntrip", "output_dir": "/output_dir", "user": "u", "passwd": "123", "addr": "1.2.3.4", "port": "123", "mntpnt": "QWER"},
                 'temp_file': None,
+                'temp_file_on_start': None,
                 'process': None,
             }
             }
@@ -441,13 +451,16 @@ class TestStream2File(TestCase):
         str2file = Stream2File(False)
         str2file._check_name_in_connections = MagicMock()
         with (patch("moncenterlib.stream2file.subprocess.Popen") as mock_subprocess,
-              patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file):
+              patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
+              patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file_on_start):
 
             # temo_file and process are not None
             str2file.connections = {"TEST": {
                 'param': {},
                 'temp_file': mock_temp_file,
+                'temp_file_on_start': mock_temp_file_on_start,
                 'process': mock_subprocess,
+
             }
             }
 
@@ -455,13 +468,16 @@ class TestStream2File(TestCase):
             self.assertEqual(("TEST", ), str2file._check_name_in_connections.call_args_list[0].args)
             self.assertTrue(mock_subprocess.kill.called)
             self.assertTrue(mock_temp_file.close.called)
+            self.assertTrue(mock_temp_file_on_start.close.called)
 
             # temo_file and process are None
             mock_subprocess.reset_mock()
             mock_temp_file.reset_mock()
+            mock_temp_file_on_start.reset_mock()
             str2file.connections = {"TEST": {
                 'param': {},
                 'temp_file': None,
+                'temp_file_on_start': None,
                 'process': None,
             }
             }
@@ -470,6 +486,7 @@ class TestStream2File(TestCase):
             self.assertEqual(("TEST", ), str2file._check_name_in_connections.call_args_list[0].args)
             self.assertFalse(mock_subprocess.kill.called)
             self.assertFalse(mock_temp_file.close.called)
+            self.assertFalse(mock_temp_file_on_start.close.called)
 
     def test_start_all(self):
         str2file = Stream2File(False)
@@ -478,11 +495,13 @@ class TestStream2File(TestCase):
             "TEST": {
                 'param': {},
                 'temp_file': None,
+                'temp_file_on_start': None,
                 'process': None,
             },
             "TEST2": {
                 'param': {},
                 'temp_file': None,
+                'temp_file_on_start': None,
                 'process': None,
             }
         }
@@ -549,6 +568,39 @@ class TestStream2File(TestCase):
             output_files = str2file.start_all()
             self.assertEqual(['/output_dir/TEST_19700101_010203.log',
                              '/output_dir/TEST2_19700101_010203.log'], output_files)
+
+    def test_add_connection_check_on_start(self):
+        param = {"type": "tcpcli",
+                 "addr": "1.2.3.4",
+                 "port": "123"
+                 }
+
+        with (Stream2File(False) as str2file,
+              patch("moncenterlib.stream2file.os.path.isdir") as mock_isdir,
+              patch("moncenterlib.stream2file.subprocess.Popen") as mock_subprocess,
+              patch("moncenterlib.tools.get_path2bin") as mock_get_path,
+              patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
+              patch("moncenterlib.stream2file.datetime") as mock_datetime
+              ):
+            mock_utcnow = mock_datetime.utcnow
+            mock_utcnow.return_value = datetime.datetime(1970, 1, 1, 1, 2, 3)
+            mock_isdir.return_value = True
+            mock_get_path.return_value = "/path2bin/str2str"
+            mock_temp_file.return_value.name = "tempfile"
+
+            str2file.add_connection("TEST", param, '', "Some cmd")
+
+            str2file.start("TEST")
+
+            self.assertEqual(['/path2bin/str2str',
+                              '-outstat', 'tempfile',
+                              '-in', 'tcpcli://1.2.3.4:123',
+                              '-out', 'file://TEST_19700101_010203.log',
+                              '-c', 'tempfile'], mock_subprocess.mock_calls[0].args[0])
+            self.assertIsNotNone(str2file.connections['TEST']["temp_file_on_start"])
+            self.assertEqual(str2file.connections['TEST']["temp_file_on_start"].name, "tempfile")
+            self.assertEqual(str2file.connections['TEST']["temp_file_on_start"].mock_calls, [
+                             call.write(b'Some cmd'), call.seek(0)])
 
 
 if __name__ == "__main__":
