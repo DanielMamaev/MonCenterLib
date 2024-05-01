@@ -2,6 +2,7 @@ from collections import defaultdict
 from pathlib import Path
 from typeguard import typechecked
 
+
 @typechecked
 def get_start_date_from_nav(file_nav: str) -> str:
     date_nav: list[str] = []
@@ -47,6 +48,7 @@ def get_start_date_from_obs(file_obs: str) -> str:
                 date_obs = '-'.join(date_obs)
     return date_obs
 
+
 @typechecked
 def get_marker_name(file: str) -> str:
     marker_name = ""
@@ -65,7 +67,7 @@ def get_marker_name(file: str) -> str:
 
 
 @typechecked
-def parse_pos_file(path2file: str, sep: str | None = None) -> tuple[dict[list], list[list[str]]]:
+def parse_pos_file(path2file: str, sep: str | None = None) -> tuple[dict[str, list], list[list[str]]]:
     header = defaultdict(list)
     data = list()
 
