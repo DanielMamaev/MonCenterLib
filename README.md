@@ -53,6 +53,6 @@ Authors:
 - Mamaev D.S. – mamaev.s.d@gmail.com
 - Mareev A.V. – mareevavssugt@gmail.com
 
-![](ssugt.png)
+![](img/ssugt.png)
 
 Site RU: [https://sgugit.ru/](https://sgugit.ru/) - Site EN: [https://sgugit.ru/en/](https://sgugit.ru/en/)
