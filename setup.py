@@ -14,7 +14,7 @@ def read_requirements() -> list:
 if __name__ == '__main__':
     setup(
         name='moncenterlib',
-        version='0.1',
+        version='1.0.0',
         packages=find_packages(),
         install_requires=read_requirements(),
         include_package_data=True,
