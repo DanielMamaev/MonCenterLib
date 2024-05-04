@@ -1,8 +1,6 @@
 moncenterlib.gnss package
 =========================
 
-Submodules
-----------
 
 moncenterlib.gnss.cddis\_client module
 --------------------------------------
@@ -44,13 +42,6 @@ moncenterlib.gnss.rgs\_client module
    :undoc-members:
    :show-inheritance:
 
-moncenterlib.gnss.tools module
-------------------------------
-
-.. automodule:: moncenterlib.gnss.tools
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 moncenterlib.gnss.tools4rnx module
 ----------------------------------

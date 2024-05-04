@@ -8,10 +8,7 @@ Subpackages
    :maxdepth: 4
 
    moncenterlib.gnss
-   moncenterlib.tests
 
-Submodules
-----------
 
 moncenterlib.stream2file module
 -------------------------------
@@ -21,13 +18,6 @@ moncenterlib.stream2file module
    :undoc-members:
    :show-inheritance:
 
-moncenterlib.tools module
--------------------------
-
-.. automodule:: moncenterlib.tools
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Module contents
 ---------------
