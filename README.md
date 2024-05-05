@@ -1,6 +1,33 @@
 # MonCenterLib
 
-Some description
+MonCenterLib is a python library for geodetic monitoring. The library contains a set of programs, methods and tools designed to collect, process, analyze and visualize data for geodetic monitoring.
+
+The library is being developed based on the following concepts:
+* open source code;
+* the main programming language is Python;
+* an object-oriented approach to programming;
+* the program code is executed on Linux (soon Winwows) operating system devices;
+* the library's software modules are intended for use in software environments such as Jupiter Notebook, for example, Google Colaboratory.
+
+The following functions are implemented in the library:
+* module for connection to GNSS receivers, vertical movement sensor and video inclinometer;
+* module for converting a set of homogeneous data into file-sharing formats;
+* module for processing multiple GNSS measurements in the geodetic monitoring network;
+* module for checking quality of GNSS measurements;
+* module for downloading files from the CDDIS online archive (board and precise ephemerides, clock corrections, orbit parameters, observation files from stations);
+* module for downloading files from the RGS Centre web service (observation files from stations, obtaining information about stations of the FAGS network);
+* detailed documentation and examples of using the program code.
+
+The MonCenterLib library needs to be supplemented with the following modules:
+* support for Windows system;
+* module for the formation of time series of coordinates of points in the geodetic network;
+* module for processing measurement results performed using the (VIM) video inclinometer in real time and in post-processing;
+* module for the formation of time series of changes in the angles of inclination of controlled elements in the geodetic network;
+* module for processing measurement results using the projected vertical movement sensor (VMS) in real time and in post-processing;
+* module for the formation of time series of changes in the vertical coordinates of geodetic monitoring points;
+* module for interaction with the geodetic monitoring database;
+* module for tracking acceptable values of deviations of geodetic monitoring parameters;
+* module for processing time series of the geodetic network in order to obtain estimates of the condition of the monitoring object.
 
 ## Modules
 
@@ -34,9 +61,9 @@ Some description
 2. Move to MonCenterLib directory and run `!cd MonCenterLib && pip install .`
 3. Ready to use.
 
-## Usage example
-
-See examples code [here](examples/README.md)
+## Documentation and usage example
+* See documentation [here](https://moncenterlib.readthedocs.io/)
+* See examples code [here](examples/README.md)
 
 ## Release History
 
