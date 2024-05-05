@@ -76,9 +76,9 @@ Official e-mail:
 + support@moncenter.ru
 
 Authors:
-- Karpik A. P. - rektorat@ssga.ru
 - Mamaev D.S. – mamaev.s.d@gmail.com
 - Mareev A.V. – mareevavssugt@gmail.com
+- Karpik A. P. - rektorat@ssga.ru
 
 ![](img/ssugt.png)
 
