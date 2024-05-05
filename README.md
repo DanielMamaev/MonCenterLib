@@ -1,5 +1,7 @@
 # MonCenterLib
 
+![](img/Moncenter.svg)
+
 MonCenterLib is a python library for geodetic monitoring. The library contains a set of programs, methods and tools designed to collect, process, analyze and visualize data for geodetic monitoring.
 
 The library is being developed based on the following concepts:
