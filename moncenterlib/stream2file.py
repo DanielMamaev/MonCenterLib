@@ -212,7 +212,7 @@ class Stream2File:
         4. It follows from the 3rd point that if you want connections to be constantly active, you need the program to work constantly.
         For example, you can use an infinite loop or something else.
 
-        5. When you start a connection which is constantly active connections will be stopped and started again.
+        5. When you start a connection which is constantly active connection will be stopped and started again.
 
         See code usage examples in the examples folder.
 
