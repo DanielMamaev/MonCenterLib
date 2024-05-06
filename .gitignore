@@ -13,3 +13,6 @@ output
 build
 dist
 moncenterlib.egg-info
+
+.coverage
+coverage.txt
