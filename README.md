@@ -82,6 +82,6 @@ Authors:
 - Mareev A.V. – mareevavssugt@gmail.com
 - Karpik A. P. - rektorat@ssga.ru
 
-<img src="img/ssugt.png" width="400"/>
+<img src="https://github.com/DanielMamaev/MonCenterLib/blob/main/img/ssugt.png?raw=true" width="400"/>
 
 Site RU: [https://sgugit.ru/](https://sgugit.ru/) - Site EN: [https://sgugit.ru/en/](https://sgugit.ru/en/)
