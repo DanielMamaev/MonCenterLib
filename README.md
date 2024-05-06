@@ -1,6 +1,6 @@
 # MonCenterLib
 
-![](img/Moncenter.svg)
+<img src="https://raw.githubusercontent.com/DanielMamaev/MonCenterLib/main/img/Moncenter.svg" alt="drawing" width="500"/>
 
 MonCenterLib is a python library for geodetic monitoring. The library contains a set of programs, methods and tools designed to collect, process, analyze and visualize data for geodetic monitoring.
 
@@ -82,6 +82,6 @@ Authors:
 - Mareev A.V. – mareevavssugt@gmail.com
 - Karpik A. P. - rektorat@ssga.ru
 
-![](img/ssugt.png)
+<img src="img/ssugt.png" width="400"/>
 
 Site RU: [https://sgugit.ru/](https://sgugit.ru/) - Site EN: [https://sgugit.ru/en/](https://sgugit.ru/en/)
