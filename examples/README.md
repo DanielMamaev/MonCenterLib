@@ -1,7 +1,7 @@
 Examples folder: https://drive.google.com/drive/folders/1L2ALYwWAvDieR1V1rESOQrYKcA8TG5Yy?usp=sharing
 
 
-+ roor 
++ root 
     - stream2file
         * Stream2File: https://colab.research.google.com/drive/1JYgXbwzvn4dNKsvND-noJ1NOFgTsYduM?usp=sharing
 + gnss
