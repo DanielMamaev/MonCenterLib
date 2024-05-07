@@ -2,40 +2,39 @@
 
 <img src="https://raw.githubusercontent.com/DanielMamaev/MonCenterLib/main/img/Moncenter.svg" alt="drawing" width="500"/>
 
-MonCenterLib is a python library for geodetic monitoring. The library contains a set of programs, methods and tools designed to collect, process, analyze and visualize data for geodetic monitoring.
+MonCenterLib is a python library for geodetic monitoring. The library contains programs, designed to collect, process, analyze and visualize data for geodetic time series.
 
-The library is being developed based on the following concepts:
+The library is being developed by the following concepts:
 * open source code;
-* the main programming language is Python;
-* an object-oriented approach to programming;
-* the program code is executed on Linux (soon Winwows) operating system devices;
-* the library's software modules are intended for use in software environments such as Jupiter Notebook, for example, Google Colaboratory.
+* python programming language;
+* an object-oriented programming;
+* the program code is executed on Linux (soon Windows) operating system;
+* the library's software modules are able to use in Jupiter Notebook, Google Colaboratory.
 
 The following functions are implemented in the library:
-* module for connection to GNSS receivers, vertical movement sensor and video inclinometer;
-* module for converting a set of homogeneous data into file-sharing formats;
-* module for processing multiple GNSS measurements in the geodetic monitoring network;
-* module for checking quality of GNSS measurements;
-* module for downloading files from the CDDIS online archive (board and precise ephemerides, clock corrections, orbit parameters, observation files from stations);
-* module for downloading files from the RGS Centre web service (observation files from stations, obtaining information about stations of the FAGS network);
-* detailed documentation and examples of using the program code.
+* connection to GNSS receivers, vertical movement sensor (VMS) and video inclinometer (VIM);
+* converting gnss measurements to RINEX and other formats;
+* processing multiple GNSS measurements files in the geodetic monitoring network;
+* checking quality of GNSS measurements;
+* downloading files from the CDDIS online archive (boardcost and precise ephemerides, clock corrections, orbit parameters, observation files);
+* downloading files from the RGS Centre web service (observation files, obtaining information about stations of the FAGS network);
+* documentation and examples of using the program code.
 
 The MonCenterLib library needs to be supplemented with the following modules:
-* support for Windows system;
-* module for the formation of time series of coordinates of points in the geodetic network;
-* module for processing measurement results performed using the (VIM) video inclinometer in real time and in post-processing;
-* module for the formation of time series of changes in the angles of inclination of controlled elements in the geodetic network;
-* module for processing measurement results using the projected vertical movement sensor (VMS) in real time and in post-processing;
-* module for the formation of time series of changes in the vertical coordinates of geodetic monitoring points;
-* module for interaction with the geodetic monitoring database;
-* module for tracking acceptable values of deviations of geodetic monitoring parameters;
-* module for processing time series of the geodetic network in order to obtain estimates of the condition of the monitoring object.
+* supporting for Windows system;
+* formation of time series of points in the geodetic network;
+* processing  of measurement results of the VIM in real time and in post-processing;
+* construction of time series inclination for controlling elements in the geodetic network;
+* processing measurement results using the projected VMS in real time and in post-processing;
+* interaction with the geodetic monitoring database;
+* tracking acceptable values of deviations of geodetic monitoring parameters;
+* processing time series of the geodetic network to estimate of the structural stability of the monitoring object.
 
 ## Modules
 
 |Package|Module|Class|Description|Status|
 |---|---|---|---|---|
-|root |stream2file|Stream2File |This class is used to convert a stream to a file. You can choose type of connections: serial and tcpcli and NTRIP. |Ready |
+|root |stream2file|Stream2File |This class is used to convert a stream to a file. You can choose type of connections: serial, TCP client and NTRIP. |Ready |
 |gnss |tools4rnx|RtkLibConvbin|This class is based on the RTKLib software package. Convert RTCM, receiver raw data log and RINEX file to RINEX and SBAS/LEX message file. SBAS message file complies with RTKLIB SBAS/LEX message format. See more about RTKLIB here: https://rtklib.com/| Ready|
 |     |postprocessing|RtkLibPost| RTKLIB contains a post processing analysis AP RTKPOST. RTKPOST inputs the standard RINEX 2.10, 2.11, 2.12, 3.00, 3.01, 3.02 (draft) observation data and navigation message files (GPS, GLONASS, Galileo, QZSS, BeiDou and SBAS) and can computes the positioning solutions by various positioning modes including Single‐point, DGPS/DGNSS, Kinematic, Static, PPP‐Kinematic and PPP‐Static. See more about RTKLIB here: https://rtklib.com/ |Ready|
 |     |quality_check|Anubis|This module is designed for monitoring the quality and quantity of multi-GNSS data.See more about G-Nut/Anubis here: https://gnutsoftware.com/software/anubis |Ready|
@@ -50,18 +49,15 @@ The MonCenterLib library needs to be supplemented with the following modules:
 ## How to install
 ### Basic install
 
-1. Download and unpack repository;
-2. Move to directory MonCenterLib;
-3. Don't forget to enable the python virtual environment;
-4. Run `pip install .`
-5. Ready to use.
+1. Don't forget to enable the python virtual environment;
+2. Run `pip3 install moncenterlib`
+3. Ready to use.
 
 
 ### Install in Google Colab
 
-1. Download repository. `!git clone https://github.com/DanielMamaev/MonCenterLib.git`
-2. Move to MonCenterLib directory and run `!cd MonCenterLib && pip install .`
-3. Ready to use.
+1. Run `!pip3 install moncenterlib`
+2. Ready to use.
 
 ## Documentation and usage example
 * See documentation [here](https://moncenterlib.readthedocs.io/)
