@@ -50,14 +50,29 @@ The MonCenterLib library needs to be supplemented with the following modules:
 ### Basic install
 
 1. Don't forget to enable the python virtual environment;
-2. Run `pip3 install moncenterlib`
+2. Run `python -m pip3 install moncenterlib`
 3. Ready to use.
 
 
 ### Install in Google Colab
 
-1. Run `!pip3 install moncenterlib`
+1. Run `!python -m pip3 install moncenterlib`
 2. Ready to use.
+
+### Get the Source Code
+MonCenterLib is actively developed on GitHub, where the code is [always available](https://github.com/DanielMamaev/MonCenterLib).
+
+1. You can clone the public repository:
+```
+git clone https://github.com/DanielMamaev/MonCenterLib
+```
+
+2. Once you have a copy of the source, you can embed it in your own Python package, or install it into your site-packages easily:
+
+```
+cd moncenterlib
+python -m pip install .
+```
 
 ## Documentation and usage example
 * See documentation [here](https://moncenterlib.readthedocs.io/)
