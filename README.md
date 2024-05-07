@@ -81,7 +81,7 @@ python -m pip install .
 ## Release History
 
 * 1.0.0
-    * Work in progress
+    * First release
 
 ## Contacts
 Official e-mail:
