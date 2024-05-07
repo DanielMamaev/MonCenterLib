@@ -35,11 +35,12 @@ if __name__ == '__main__':
                                             str(PATH_BASE.joinpath("moncenterlib", "gnss", "conf", "*"))]},
         classifiers=[
             'Programming Language :: Python :: 3.10',
-            'Operating System :: OS Independent'
+            'Operating System :: POSIX :: Linux'
         ],
         keywords='python',
         project_urls={
-            'Documentation': 'https://moncenterlib.readthedocs.io/'
+            'Documentation': 'https://moncenterlib.readthedocs.io/',
+            'Source': 'https://github.com/DanielMamaev/MonCenterLib',
         },
         python_requires='>=3.10'
     )
