@@ -22,8 +22,8 @@ if __name__ == '__main__':
         version='1.0.0',
         author='Daniel Mamaev',
         author_email='moncenter@moncenter.ru',
-        description=('MonCenterLib is a python library for geodetic monitoring. The library contains a set of programs,'
-                     'methods and tools designed to collect, process, analyze and visualize data for geodetic monitoring.'),
+        description=('MonCenterLib is a python library for geodetic monitoring. The library contains programs,'
+                     'designed to collect, process, analyze and visualize data for geodetic time series.'),
         long_description=readme(),
         long_description_content_type='text/markdown',
         url='https://github.com/DanielMamaev/MonCenterLib',
