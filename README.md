@@ -13,11 +13,11 @@ The library is being developed by the following concepts:
 
 The following functions are implemented in the library:
 * connection to GNSS receivers, vertical movement sensor (VMS) and video inclinometer (VIM);
-* converting gnss measurements to RINEX and other formats;
+* converting GNSS measurements to RINEX and other formats;
 * processing multiple GNSS measurements files in the geodetic monitoring network;
 * checking quality of GNSS measurements;
-* downloading files from the CDDIS online archive (boardcost and precise ephemerides, clock corrections, orbit parameters, observation files);
-* downloading files from the RGS Centre web service (observation files, obtaining information about stations of the FAGS network);
+* downloading files from the CDDIS online archive (boardcast and precise ephemerides, clock corrections, orbit parameters, observation files);
+* downloading files from the RGS Centre web service (observation files, obtaining information about stations of the FAGN);
 * documentation and examples of using the program code.
 
 The MonCenterLib library needs to be supplemented with the following modules:
