@@ -16,3 +16,5 @@ moncenterlib.egg-info
 
 .coverage
 coverage.txt
+
+.venv
