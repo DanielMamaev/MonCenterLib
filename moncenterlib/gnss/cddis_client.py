@@ -97,7 +97,7 @@ class CDDISClient:
             raise ValueError("Start day must be less than or equal to end day.")
 
         self.logger.info('Connect to CDDIS FTP.')
-        with FTP_TLS('gdc.cddis.eosdis.nasa.gov') as ftps:
+        with FTP_TLS('gdc.cddis.eosdis.nasa.gov', timeout=300) as ftps:
             ftps.login(user='anonymous', passwd='anonymous')
             ftps.prot_p()
             ftps.set_pasv(True)
