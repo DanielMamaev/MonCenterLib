@@ -178,18 +178,18 @@ class Anubis:
 
         for marker_name, matchs in match_list.items():
             for match in matchs:
-        
+
                 if len(match) != 2:
                     self.logger.error("Some file is missing %s.", match)
                     continue
-                
+
                 if ' ' in match[0]:
                     self.logger.error("Please, remove spaces in path %s.", match[0])
                     continue
                 if ' ' in match[1]:
                     self.logger.error("Please, remove spaces in path %s.", match[1])
                     continue
-                
+
                 cmd = [mcl_tools.get_path2bin("anubis")]
 
                 # создание временного файла конфига
@@ -212,7 +212,8 @@ class Anubis:
                 self.logger.info("Start parsing file Anubis %s", output_file_xtr)
                 data_metric = self._parsing_xtr(output_file_xtr)
 
-                output_list[marker_name][data_metric["date"]] = data_metric
+                if data_metric is not None:
+                    output_list[marker_name][data_metric["date"]] = data_metric
 
         return dict(output_list), no_match_list
 
