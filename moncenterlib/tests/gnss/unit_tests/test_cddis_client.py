@@ -183,7 +183,7 @@ class TestCddisClient(TestCase):
 
             cddis_cli._week_products("sp3", "/", query)
 
-            self.assertEqual(call('gdc.cddis.eosdis.nasa.gov'), mock_ftps.call_args)
+            self.assertEqual(call('gdc.cddis.eosdis.nasa.gov', timeout=300), mock_ftps.call_args)
             self.assertEqual([call(user='anonymous', passwd='anonymous')], instance_mock_ftps.login.mock_calls)
             self.assertTrue(instance_mock_ftps.prot_p.called)
             self.assertEqual([call(True)], instance_mock_ftps.set_pasv.mock_calls)
@@ -553,7 +553,7 @@ class TestCddisClient(TestCase):
 
             cddis_cli.get_daily_multi_gnss_brd_eph("/", query)
 
-            self.assertEqual(call('gdc.cddis.eosdis.nasa.gov'), mock_ftps.call_args)
+            self.assertEqual(call('gdc.cddis.eosdis.nasa.gov', timeout=300), mock_ftps.call_args)
             self.assertEqual([call(user='anonymous', passwd='anonymous')], instance_mock_ftps.login.mock_calls)
             self.assertTrue(instance_mock_ftps.prot_p.called)
             self.assertEqual([call(True)], instance_mock_ftps.set_pasv.mock_calls)
@@ -746,7 +746,7 @@ class TestCddisClient(TestCase):
 
             cddis_cli.get_daily_30s_data("/", query)
 
-            self.assertEqual(call('gdc.cddis.eosdis.nasa.gov'), mock_ftps.call_args)
+            self.assertEqual(call('gdc.cddis.eosdis.nasa.gov', timeout=300), mock_ftps.call_args)
             self.assertEqual([call(user='anonymous', passwd='anonymous')], instance_mock_ftps.login.mock_calls)
             self.assertTrue(instance_mock_ftps.prot_p.called)
             self.assertEqual([call(True)], instance_mock_ftps.set_pasv.mock_calls)

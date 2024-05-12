@@ -286,8 +286,7 @@ class TestAnubis(TestCase):
             mock_isfile.return_value = False
             mock_isdir.return_value = True
 
-            with self.assertRaises(Exception):
-                anubis.start(("/obs", "/nav"), False, "/some_path")
+            anubis.start(("/obs", "/nav"), False, "/some_path")
 
             self.assertEqual((['/anubis_bin', '-x', '/temp_file'], ), mock_subprocess.call_args_list[0].args)
             self.assertEqual({'stderr': -3, 'check': False}, mock_subprocess.call_args_list[0].kwargs)

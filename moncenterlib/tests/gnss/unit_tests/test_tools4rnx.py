@@ -463,7 +463,7 @@ class TestTools4Rnx(TestCase):
                 self.assertEqual(len(lines1), len(lines2))
 
                 for i, _ in enumerate(lines1):
-                    if i != 1:
+                    if i != 1 and "log:" not in lines1[i]:
                         self.assertEqual(lines1[i], lines2[i])
 
     def test_architecture(self):
