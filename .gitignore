@@ -18,3 +18,4 @@ moncenterlib.egg-info
 coverage.txt
 
 .venv
+test_scripts
