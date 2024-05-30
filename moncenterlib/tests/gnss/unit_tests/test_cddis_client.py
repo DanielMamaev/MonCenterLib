@@ -453,6 +453,19 @@ class TestCddisClient(TestCase):
             self.assertTrue(mock_files_check.called)
             mock_files_check.reset_mock()
 
+    def test__week_products_check_input_list(self):
+        cddis_cli = CDDISClient(False)
+        with patch("moncenterlib.gnss.cddis_client.FTP_TLS") as mock_ftps:
+            instance_mock_ftps = mock_ftps.return_value.__enter__()
+            instance_mock_ftps.size.side_effect = [Exception(), True]
+
+            query = ["2020-01-01", "2020-01-02"]
+            cddis_cli._week_products("sp3", "/", query)
+            self.assertEqual([('/gnss/products/2086/IGS0OPSFIN_20200010000_01D_15M_ORB.SP3.gz',),
+                              ('/gnss/products/2086/IGS0OPSFIN_20200020000_01D_15M_ORB.SP3.gz',)],
+                             [instance_mock_ftps.size.call_args_list[1].args,
+                              instance_mock_ftps.size.call_args_list[3].args])
+
     def test_get_precise_orbits(self):
         cddis_cli = CDDISClient(False)
         with self.assertRaises(Exception):
@@ -466,6 +479,19 @@ class TestCddisClient(TestCase):
 
         self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, res)
         self.assertEqual(('sp3', '/', {'start': '2020-01-01', 'end': '2020-01-03'}, True),
+                         cddis_cli._week_products.call_args_list[0].args)
+
+        with self.assertRaises(Exception):
+            res = cddis_cli.get_precise_orbits(None, None, None)
+
+        cddis_cli._week_products = MagicMock()
+        cddis_cli._week_products.return_value = {"done": [], "no_exists": [], "no_found_dates": []}
+
+        query = ["2020-01-01", "2020-01-03"]
+        res = cddis_cli.get_precise_orbits("/", query)
+
+        self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, res)
+        self.assertEqual(('sp3', '/', ["2020-01-01", "2020-01-03"], True),
                          cddis_cli._week_products.call_args_list[0].args)
 
     def test_get_clock_30s(self):
@@ -483,6 +509,19 @@ class TestCddisClient(TestCase):
         self.assertEqual(('clk_30s', '/', {'start': '2020-01-01', 'end': '2020-01-03'}, True),
                          cddis_cli._week_products.call_args_list[0].args)
 
+        with self.assertRaises(Exception):
+            res = cddis_cli.get_clock_30s(None, None, None)
+
+        cddis_cli._week_products = MagicMock()
+        cddis_cli._week_products.return_value = {"done": [], "no_exists": [], "no_found_dates": []}
+
+        query = ["2020-01-01", "2020-01-03"]
+        res = cddis_cli.get_clock_30s("/", query)
+
+        self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, res)
+        self.assertEqual(('clk_30s', '/', ["2020-01-01", "2020-01-03"], True),
+                         cddis_cli._week_products.call_args_list[0].args)
+
     def test_get_clock_5m(self):
         cddis_cli = CDDISClient(False)
         with self.assertRaises(Exception):
@@ -498,6 +537,19 @@ class TestCddisClient(TestCase):
         self.assertEqual(('clk_5m', '/', {'start': '2020-01-01', 'end': '2020-01-03'}, True),
                          cddis_cli._week_products.call_args_list[0].args)
 
+        with self.assertRaises(Exception):
+            res = cddis_cli.get_clock_5m(None, None, None)
+
+        cddis_cli._week_products = MagicMock()
+        cddis_cli._week_products.return_value = {"done": [], "no_exists": [], "no_found_dates": []}
+
+        query = ["2020-01-01", "2020-01-03"]
+        res = cddis_cli.get_clock_5m("/", query)
+
+        self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, res)
+        self.assertEqual(('clk_5m', '/', ["2020-01-01", "2020-01-03"], True),
+                         cddis_cli._week_products.call_args_list[0].args)
+
     def test_get_earth_orientation(self):
         cddis_cli = CDDISClient(False)
         with self.assertRaises(Exception):
@@ -511,6 +563,19 @@ class TestCddisClient(TestCase):
 
         self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, res)
         self.assertEqual(('erp', '/', {'start': '2020-01-01', 'end': '2020-01-03'}, True),
+                         cddis_cli._week_products.call_args_list[0].args)
+
+        with self.assertRaises(Exception):
+            res = cddis_cli.get_earth_orientation(None, None, None)
+
+        cddis_cli._week_products = MagicMock()
+        cddis_cli._week_products.return_value = {"done": [], "no_exists": [], "no_found_dates": []}
+
+        query = ["2020-01-01", "2020-01-03"]
+        res = cddis_cli.get_earth_orientation("/", query)
+
+        self.assertEqual({"done": [], "no_exists": [], "no_found_dates": []}, res)
+        self.assertEqual(('erp', '/', ["2020-01-01", "2020-01-03"], True),
                          cddis_cli._week_products.call_args_list[0].args)
 
     def test_get_daily_multi_gnss_brd_eph_raises(self):
@@ -651,7 +716,7 @@ class TestCddisClient(TestCase):
 
             self.assertEqual([call('/BRDC00IGS_R_20200010000_01D_MN.rnx.gz',),
                               call('/BRDC00IGS_R_20200020000_01D_MN.rnx.gz',)], mock_remove.call_args_list)
-    
+
     def test_get_daily_multi_gnss_brd_eph_output(self):
         cddis_cli = CDDISClient(False)
         with (patch("moncenterlib.gnss.cddis_client.FTP_TLS") as mock_ftps,
@@ -679,6 +744,26 @@ class TestCddisClient(TestCase):
             self.assertTrue(mock_files_check.called)
             mock_files_check.reset_mock()
 
+            # check done
+            mock_files_check.return_value = {"done": ["2020-01-01"], "no_exists": ["2020-01-02"]}
+            result = cddis_cli.get_daily_multi_gnss_brd_eph("/", ["2020-01-01", "2020-01-02"], False)
+            self.assertEqual({"done": ["2020-01-01"], "no_exists": ["2020-01-02"], "no_found_dates": []}, result)
+            self.assertTrue(mock_files_check.called)
+            mock_files_check.reset_mock()
+
+    def test_get_daily_multi_gnss_brd_eph_check_input_list(self):
+        cddis_cli = CDDISClient(False)
+        with patch("moncenterlib.gnss.cddis_client.FTP_TLS") as mock_ftps:
+            instance_mock_ftps = mock_ftps.return_value.__enter__()
+            instance_mock_ftps.size.side_effect = [Exception(), True]
+
+            query = ["2020-01-01", "2020-01-02"]
+            cddis_cli.get_daily_multi_gnss_brd_eph("/", query)
+            self.assertEqual([('gnss/data/daily/2020/brdc/BRDM00DLR_S_20200010000_01D_MN.rnx.gz',),
+                              ('gnss/data/daily/2020/brdc/BRDM00DLR_S_20200020000_01D_MN.rnx.gz',)],
+                             [instance_mock_ftps.size.call_args_list[1].args,
+                              instance_mock_ftps.size.call_args_list[3].args])
+
     def test_get_daily_30s_data_raises(self):
         cddis_cli = CDDISClient(False)
         with self.assertRaises(Exception):
@@ -693,53 +778,67 @@ class TestCddisClient(TestCase):
         self.assertEqual(str(msg.exception), "'Invalid query.'")
 
         with self.assertRaises(KeyError) as msg:
-            cddis_cli.get_daily_30s_data("/", {"start": 1})
+            cddis_cli.get_daily_30s_data("/", {"dates": 1})
         self.assertEqual(str(msg.exception), "'Invalid query.'")
 
         with self.assertRaises(KeyError) as msg:
-            cddis_cli.get_daily_30s_data("/", {"end": 1})
+            cddis_cli.get_daily_30s_data("/", {"dates": {"start": 1}})
         self.assertEqual(str(msg.exception), "'Invalid query.'")
 
         with self.assertRaises(KeyError) as msg:
-            cddis_cli.get_daily_30s_data("/", {"start": 1, "end": 1})
+            cddis_cli.get_daily_30s_data("/", {"dates": {"end": 1}})
         self.assertEqual(str(msg.exception), "'Invalid query.'")
 
         with self.assertRaises(KeyError) as msg:
-            cddis_cli.get_daily_30s_data("/", {"start": 1, "end": 1, "station": 1})
+            cddis_cli.get_daily_30s_data("/", {"dates": {"start": 1, "end": 1}, "station": 1})
         self.assertEqual(str(msg.exception), "'Invalid query.'")
 
         with self.assertRaises(KeyError) as msg:
-            cddis_cli.get_daily_30s_data("/", {"start": 1, "end": 1, "station": 1, "rinex_v": 1})
+            cddis_cli.get_daily_30s_data("/", {"dates": {"start": 1, "end": 1}, "station": 1, "rinex_v": 1})
         self.assertEqual(str(msg.exception), "'Invalid query.'")
 
         with self.assertRaises(KeyError) as msg:
-            cddis_cli.get_daily_30s_data("/", {"start": 1, "end": 1, "station": 1, "type": 1})
+            cddis_cli.get_daily_30s_data("/", {"dates": {"start": 1, "end": 1}, "station": 1, "type": 1})
         self.assertEqual(str(msg.exception), "'Invalid query.'")
 
         with self.assertRaises(ValueError) as msg:
             cddis_cli.get_daily_30s_data(
-                "/", {"start": "2020-01-02", "end": "2020-01-01", "station": 1, "rinex_v": 1, "type": 1})
+                "/", {"dates": {"start": "2020-01-02", "end": "2020-01-01"}, "station": 1, "rinex_v": 1, "type": 1})
         self.assertEqual(str(msg.exception), "Start day must be less than or equal to end day.")
 
         with self.assertRaises(Exception) as msg:
-            cddis_cli.get_daily_30s_data("/", {"start": "aaa", "end": "2020-01-01"})
+            cddis_cli.get_daily_30s_data(
+                "/", {"dates": {"start": "aaa", "end": "2020-01-01"}, "station": 1, "rinex_v": 1, "type": 1})
 
         with self.assertRaises(Exception) as msg:
-            cddis_cli.get_daily_30s_data("/", {"start": "2020-01-02", "end": "aaa"})
+            cddis_cli.get_daily_30s_data(
+                "/", {"dates": {"start": "2020-01-02", "end": "aaa"}, "station": 1, "rinex_v": 1, "type": 1})
 
         with (self.assertRaises(ValueError) as msg,
               patch("moncenterlib.gnss.cddis_client.FTP_TLS")):
-            cddis_cli.get_daily_30s_data("/", {"start": "2020-01-01", "end": "2020-01-02",
+            cddis_cli.get_daily_30s_data("/", {"dates": {"start": "2020-01-01", "end": "2020-01-02"},
                                          "station": "1", "rinex_v": "1", "type": "1"})
         self.assertEqual(str(msg.exception), "Unknow rinex version.")
+
+        with self.assertRaises(KeyError) as msg:
+            cddis_cli.get_daily_30s_data("/", {"dates": {"end": "2020-01-02"},
+                                               "station": "1",
+                                               "type": "1",
+                                               "rinex_v": "1"})
+        self.assertEqual(str(msg.exception), "'Invalid query.'")
+        with self.assertRaises(KeyError) as msg:
+            cddis_cli.get_daily_30s_data("/", {"dates": {"start": "2020-01-01"},
+                                               "station": "1",
+                                               "type": "1",
+                                               "rinex_v": "1"})
+        self.assertEqual(str(msg.exception), "'Invalid query.'")
 
     def test_get_daily_30s_data_connection2ftp(self):
         cddis_cli = CDDISClient(False)
         with patch("moncenterlib.gnss.cddis_client.FTP_TLS") as mock_ftps:
             instance_mock_ftps = mock_ftps.return_value.__enter__()
 
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-01",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-01"},
                      "station": "NOVM",
                      "rinex_v": "3",
                      "type": "O"}
@@ -760,8 +859,7 @@ class TestCddisClient(TestCase):
             # rinex v2
             mock_search_daily_30s_data_v2 = MagicMock()
             cddis_cli._search_daily_30s_data_v2 = mock_search_daily_30s_data_v2
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-01",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-01"},
                      "station": "NOVM",
                      "rinex_v": "2",
                      "type": "O"}
@@ -783,8 +881,7 @@ class TestCddisClient(TestCase):
             # rinex v3
             mock_search_daily_30s_data_v3 = MagicMock()
             cddis_cli._search_daily_30s_data_v3 = mock_search_daily_30s_data_v3
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-01",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-01"},
                      "station": "NOVM",
                      "rinex_v": "3",
                      "type": "O"}
@@ -804,8 +901,7 @@ class TestCddisClient(TestCase):
             mock_search_daily_30s_data_v3.reset_mock()
 
             # rinex auto, find v2
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-01",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-01"},
                      "station": "NOVM",
                      "rinex_v": "auto",
                      "type": "O"}
@@ -825,8 +921,7 @@ class TestCddisClient(TestCase):
 
             # rinex auto, find v3
             mock_search_daily_30s_data_v2.return_value = ""
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-01",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-01"},
                      "station": "NOVM",
                      "rinex_v": "auto",
                      "type": "O"}
@@ -858,8 +953,7 @@ class TestCddisClient(TestCase):
 
             instance_mock_ftps.retrbinary.side_effect = [Exception(), Exception(), Exception()]
 
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-02",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-02"},
                      "station": "NOVM",
                      "rinex_v": "2",
                      "type": "O"}
@@ -878,8 +972,7 @@ class TestCddisClient(TestCase):
 
             instance_mock_ftps.retrbinary.side_effect = [Exception(), Exception(), Exception()]
 
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-02",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-02"},
                      "station": "NOVM",
                      "rinex_v": "3",
                      "type": "O"}
@@ -896,8 +989,8 @@ class TestCddisClient(TestCase):
             mock_search_daily_30s_data_v3.side_effect = ["some_file_v3"]
             instance_mock_ftps.retrbinary.side_effect = [Exception(), Exception(), Exception()]
 
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-02",
+            query = {"dates": {"start": "2019-12-31",
+                     "end": "2020-01-02"},
                      "station": "NOVM",
                      "rinex_v": "auto",
                      "type": "O"}
@@ -917,8 +1010,7 @@ class TestCddisClient(TestCase):
             mock_search_daily_30s_data_v3.side_effect = ["", "", ""]
             instance_mock_ftps.retrbinary.side_effect = [Exception(), Exception(), Exception()]
 
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-02",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-02"},
                      "station": "NOVM",
                      "rinex_v": "auto",
                      "type": "O"}
@@ -932,8 +1024,7 @@ class TestCddisClient(TestCase):
               patch("moncenterlib.gnss.cddis_client.open") as mock_open):
             instance_mock_ftps = mock_ftps.return_value.__enter__()
 
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-01",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-01"},
                      "station": "NOVM",
                      "rinex_v": "2",
                      "type": "O"}
@@ -951,8 +1042,7 @@ class TestCddisClient(TestCase):
             # check continue
             instance_mock_ftps.retrbinary.side_effect = [True, Exception(), True]
 
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-02",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-02"},
                      "station": "NOVM",
                      "rinex_v": "2",
                      "type": "O"}
@@ -977,8 +1067,7 @@ class TestCddisClient(TestCase):
             mock_search_daily_30s_data_v3.side_effect = ["some_file1.gz", "", "some_file3.gz"]
             cddis_cli._search_daily_30s_data_v3 = mock_search_daily_30s_data_v3
 
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-02",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-02"},
                      "station": "NOVM",
                      "rinex_v": "3",
                      "type": "O"}
@@ -1003,8 +1092,7 @@ class TestCddisClient(TestCase):
             # and check continue
             mock_search_daily_30s_data_v3.side_effect = ["some_file1.gz", "some_file2.gz", "some_file3.gz"]
             mock_gzip_open.side_effect = [MagicMock(), Exception(), MagicMock()]
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-02",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-02"},
                      "station": "NOVM",
                      "rinex_v": "3",
                      "type": "O"}
@@ -1025,8 +1113,7 @@ class TestCddisClient(TestCase):
             mock_search_daily_30s_data_v3.side_effect = ["some_file1.Z", "", "some_file3.Z"]
             cddis_cli._search_daily_30s_data_v3 = mock_search_daily_30s_data_v3
 
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-02",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-02"},
                      "station": "NOVM",
                      "rinex_v": "3",
                      "type": "O"}
@@ -1054,8 +1141,7 @@ class TestCddisClient(TestCase):
             # unpack if file ending with .Z, encoding unknow
             mock_open.reset_mock()
             mock_detect.return_value = {"encoding": "unknow"}
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-02",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-02"},
                      "station": "NOVM",
                      "rinex_v": "3",
                      "type": "O"}
@@ -1077,8 +1163,7 @@ class TestCddisClient(TestCase):
             # check except - continue
             mock_subproc.side_effect = [True, Exception(), True]
             mock_search_daily_30s_data_v3.side_effect = ["some_file1.Z", "some_file2.Z", "some_file3.Z"]
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-02",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-02"},
                      "station": "NOVM",
                      "rinex_v": "3",
                      "type": "O"}
@@ -1097,8 +1182,7 @@ class TestCddisClient(TestCase):
             mock_search_daily_30s_data_v3.side_effect = ["some_file1.gz", "", "some_file3.gz"]
             cddis_cli._search_daily_30s_data_v3 = mock_search_daily_30s_data_v3
 
-            query = {"start": "2019-12-31",
-                     "end": "2020-01-02",
+            query = {"dates": {"start": "2019-12-31", "end": "2020-01-02"},
                      "station": "NOVM",
                      "rinex_v": "3",
                      "type": "O"}
@@ -1116,8 +1200,7 @@ class TestCddisClient(TestCase):
             mock_files_check.return_value = {"done": [], "no_exists": []}
 
             # check no_found_dates
-            result = cddis_cli.get_daily_30s_data("/", {"start": "2020-01-01",
-                                                        "end": "2020-01-02",
+            result = cddis_cli.get_daily_30s_data("/", {"dates": {"start": "2020-01-01", "end": "2020-01-02"},
                                                         "station": "NOVM",
                                                         "rinex_v": "2",
                                                         "type": "O"},
@@ -1127,8 +1210,7 @@ class TestCddisClient(TestCase):
             mock_files_check.reset_mock()
 
             instance_mock_ftps.size.side_effect = None
-            result = cddis_cli.get_daily_30s_data("/", {"start": "2020-01-01",
-                                                        "end": "2020-01-02",
+            result = cddis_cli.get_daily_30s_data("/", {"dates": {"start": "2020-01-01", "end": "2020-01-02"},
                                                         "station": "NOVM",
                                                         "rinex_v": "2",
                                                         "type": "O"},
@@ -1139,8 +1221,7 @@ class TestCddisClient(TestCase):
 
             # check done and no_exists
             mock_files_check.return_value = {"done": ["2020-01-01"], "no_exists": ["2020-01-02"]}
-            result = cddis_cli.get_daily_30s_data("/", {"start": "2020-01-01",
-                                                        "end": "2020-01-02",
+            result = cddis_cli.get_daily_30s_data("/", {"dates": {"start": "2020-01-01", "end": "2020-01-02"},
                                                         "station": "NOVM",
                                                         "rinex_v": "2",
                                                         "type": "O"},
@@ -1148,6 +1229,23 @@ class TestCddisClient(TestCase):
             self.assertEqual({"done": ["2020-01-01"], "no_exists": ["2020-01-02"], "no_found_dates": []}, result)
             self.assertTrue(mock_files_check.called)
             mock_files_check.reset_mock()
+
+    def test_get_daily_30s_check_input_list(self):
+        cddis_cli = CDDISClient(False)
+        with patch("moncenterlib.gnss.cddis_client.FTP_TLS") as mock_ftps:
+            instance_mock_ftps = mock_ftps.return_value.__enter__()
+            instance_mock_ftps.size.side_effect = [Exception(), True]
+
+            query = {"dates": ["2020-01-01", "2020-01-02"],
+                     "station": "NOVM",
+                     "rinex_v": "2",
+                     "type": "O"
+                     }
+            cddis_cli.get_daily_30s_data("/", query)
+            self.assertEqual([('gnss/data/daily/2020/001/20o/novm0010.20o.Z',),
+                              ('gnss/data/daily/2020/002/20o/novm0020.20o.Z',)],
+                             [instance_mock_ftps.size.call_args_list[1].args,
+                              instance_mock_ftps.size.call_args_list[3].args])
 
 
 if __name__ == "__main__":

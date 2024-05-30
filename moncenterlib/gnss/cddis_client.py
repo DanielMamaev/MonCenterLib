@@ -47,7 +47,7 @@ class CDDISClient:
         return list_days
 
     @typechecked
-    def get_daily_multi_gnss_brd_eph(self, output_dir: str, query: dict, unpack: bool = True) -> dict:
+    def get_daily_multi_gnss_brd_eph(self, output_dir: str, query: dict | list, unpack: bool = True) -> dict:
         """This method allows you to download Daily RINEX V3 GNSS Broadcast Ephemeris Files or Daily Multi-GNSS Broadcast Ephemeris Files.
         These are the format files BRDC00IGS_R_YYYYDDDHHMM_01D_MN.rnx.gz and BRDM00DLR_S_YYYYDDDHHMM_01D_MN.rnx.gz accordingly.
         Daily RINEX V3 GNSS Broadcast Ephemeris Files are downloaded as a priority.
@@ -56,8 +56,9 @@ class CDDISClient:
 
         Args:
             output_dir (str): The path where the files should be saved.
-            query (dict): A request containing a start date and an end date.
-                Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
+            query (dict | list): A request may containing a start date and an end date.
+                Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD.
+                Also you can use list of dates. Example: ["2020-12-30", "2021-12-31"]
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Raises:
@@ -74,6 +75,7 @@ class CDDISClient:
         Examples:
             >>> cddiscli = CDDISClient()
             >>> query = {"start": "2020-12-30", "end": "2021-01-02"}
+            >>> # or query = ["2020-12-30", "2024-05-05"]
             >>> res = cddiscli.get_daily_multi_gnss_brd_eph("/output_dir", query)
             >>> res
             {
@@ -85,24 +87,28 @@ class CDDISClient:
 
         if not os.path.isdir(output_dir):
             raise ValueError("Path to output_dir is strange.")
-        if not query.get("start", None) or not query.get("end", None):
-            raise KeyError("The query must have the start and end keys.")
 
+        list_dates = []
         output_file_list = []
         no_found_dates = []
 
-        start_day = datetime.strptime(query["start"], "%Y-%m-%d")
-        end_day = datetime.strptime(query["end"], "%Y-%m-%d")
-        if start_day > end_day:
-            raise ValueError("Start day must be less than or equal to end day.")
+        if isinstance(query, dict):
+            if not query.get("start", None) or not query.get("end", None):
+                raise KeyError("The query must have the start and end keys.")
+
+            start_day = datetime.strptime(query["start"], "%Y-%m-%d")
+            end_day = datetime.strptime(query["end"], "%Y-%m-%d")
+            if start_day > end_day:
+                raise ValueError("Start day must be less than or equal to end day.")
+            list_dates = self._generate_list_dates(start_day, end_day)
+        elif isinstance(query, list):
+            list_dates = [datetime.strptime(date, "%Y-%m-%d") for date in query]
 
         self.logger.info('Connect to CDDIS FTP.')
         with FTP_TLS('gdc.cddis.eosdis.nasa.gov', timeout=300) as ftps:
             ftps.login(user='anonymous', passwd='anonymous')
             ftps.prot_p()
             ftps.set_pasv(True)
-
-            list_dates = self._generate_list_dates(start_day, end_day)
 
             for date in list_dates:
                 year = date.strftime("%Y")
@@ -219,8 +225,9 @@ class CDDISClient:
 
         Args:
             output_dir (str): The path where the files should be saved.
-            query (dict): The dictionary should contain the following keys. "start" - start date,
-                "end"- end date, "station" - station name, "type" - file type, "rinex_v" - RINEX version (2, 3, auto).
+            query (dict): The dictionary should contain the following keys. 
+            "dates" - range of dates or list of dates, "station" - station name,
+            "type" - file type, "rinex_v" - RINEX version (2, 3, auto).
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Raises:
@@ -238,7 +245,8 @@ class CDDISClient:
 
         Examples:
             >>> cddiscli = CDDISClient()
-            >>> query = {"start": "2020-12-30", "end": "2021-01-02", "station": "NOVM", "type": "o", "rinex_v": "2"}
+            >>> query = {"dates": {"start": "2020-12-30", "end": "2021-01-02"}, "station": "NOVM", "type": "o", "rinex_v": "2"}
+            >>> # or query = {"dates": ["2020-12-12", "2024-05-05"], "station": "NOVM", "type": "o", "rinex_v": "2"}
             >>> res = cddiscli.get_daily_30s_data("/output_path", query))
             >>> res
             {
@@ -251,28 +259,33 @@ class CDDISClient:
         if not os.path.isdir(output_dir):
             raise ValueError("Path to output_dir is strange.")
 
-        if (not query.get("start", None) or
-            not query.get("end", None) or
+        if (not query.get("dates", None) or
             not query.get("station", None) or
             not query.get("rinex_v", None) or
                 not query.get("type", None)):
             raise KeyError("Invalid query.")
+        
 
+        list_dates = []
         output_file_list = []
         no_found_dates = []
 
-        start_day = datetime.strptime(query["start"], "%Y-%m-%d")
-        end_day = datetime.strptime(query["end"], "%Y-%m-%d")
-        if start_day > end_day:
-            raise ValueError("Start day must be less than or equal to end day.")
+        if isinstance(query["dates"], dict):
+            if (not query["dates"].get("start", None) or not query["dates"].get("end", None)):
+                raise KeyError("Invalid query.")
+            start_day = datetime.strptime(query["dates"]["start"], "%Y-%m-%d")
+            end_day = datetime.strptime(query["dates"]["end"], "%Y-%m-%d")
+            if start_day > end_day:
+                raise ValueError("Start day must be less than or equal to end day.")
+            list_dates = self._generate_list_dates(start_day, end_day)
+        elif isinstance(query["dates"], list):
+            list_dates = [datetime.strptime(date, "%Y-%m-%d") for date in query["dates"]]
 
         self.logger.info('Connect to CDDIS FTP.')
         with FTP_TLS('gdc.cddis.eosdis.nasa.gov', timeout=300) as ftps:
             ftps.login(user='anonymous', passwd='anonymous')
             ftps.prot_p()
             ftps.set_pasv(True)
-
-            list_dates = self._generate_list_dates(start_day, end_day)
 
             for date in list_dates:
                 year = date.strftime("%Y")
@@ -356,12 +369,12 @@ class CDDISClient:
         return output_dict
 
     @typechecked
-    def _week_products(self, type_prod: str, output_dir: str, query: dict, unpack=True) -> dict:
+    def _week_products(self, type_prod: str, output_dir: str, query: dict | list, unpack=True) -> dict:
         """
         Args:
             type_prod (str): Type of product. (sp3, clk_5m, clk_30s, erp).
             output_dir (str): The path where the files should be saved.
-            query (dict): A request containing a start date and an end date.
+            query (dict | list): A request containing a start date and an end date.
                 Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
@@ -380,13 +393,21 @@ class CDDISClient:
         if not os.path.isdir(output_dir):
             raise ValueError("Path to output_dir is strange.")
 
-        if not query.get("start", None) or not query.get("end", None):
-            raise KeyError("The query must have the start and end keys.")
+        list_dates = []
+        output_file_list = []
+        no_found_dates = []
 
-        start_day = datetime.strptime(query["start"], "%Y-%m-%d")
-        end_day = datetime.strptime(query["end"], "%Y-%m-%d")
-        if start_day > end_day:
-            raise ValueError("Start day must be less than or equal to end day.")
+        if isinstance(query, dict):
+            if not query.get("start", None) or not query.get("end", None):
+                raise KeyError("The query must have the start and end keys.")
+
+            start_day = datetime.strptime(query["start"], "%Y-%m-%d")
+            end_day = datetime.strptime(query["end"], "%Y-%m-%d")
+            if start_day > end_day:
+                raise ValueError("Start day must be less than or equal to end day.")
+            list_dates = self._generate_list_dates(start_day, end_day)
+        elif isinstance(query, list):
+            list_dates = [datetime.strptime(date, "%Y-%m-%d") for date in query]
 
         self.logger.info('Connect to CDDIS FTP.')
         with FTP_TLS('gdc.cddis.eosdis.nasa.gov', timeout=300) as ftps:
@@ -394,10 +415,6 @@ class CDDISClient:
             ftps.prot_p()
             ftps.set_pasv(True)
 
-            output_file_list = []
-            no_found_dates = []
-
-            list_dates = self._generate_list_dates(start_day, end_day)
             last_names_erp_files = []
 
             for date in list_dates:
@@ -508,14 +525,15 @@ class CDDISClient:
         return output_dict
 
     @typechecked
-    def get_precise_orbits(self, output_dir: str, query: dict, unpack=True) -> dict:
+    def get_precise_orbits(self, output_dir: str, query: dict | list, unpack=True) -> dict:
         """A method for downloading files of final precise orbits (SP3).
         See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/orbit_products.html
 
         Args:
             output_dir (str): The path where the files should be saved.
-            query (dict): A request containing a start date and an end date.
-                Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
+            query (dict | list): A request may containing a start date and an end date.
+                Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD.
+                Also you can use list of dates. Example: ["2020-12-30", "2021-12-31"]
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
@@ -527,6 +545,7 @@ class CDDISClient:
         Examples:
             >>> cddiscli = CDDISClient()
             >>> query = {"start": "2020-12-30", "end": "2021-01-02"}
+            >>> # or query = ["2020-12-30", "2024-05-05"]
             >>> res = cddiscli.get_precise_orbits("/output_dir", query)
             >>> res
             {
@@ -538,14 +557,15 @@ class CDDISClient:
         return self._week_products("sp3", output_dir, query, unpack)
 
     @typechecked
-    def get_clock_30s(self, output_dir: str, query: dict, unpack=True) -> dict:
+    def get_clock_30s(self, output_dir: str, query: dict | list, unpack=True) -> dict:
         """A method for downloading files of final station clock solutions (CLK 30 seconds).
         See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/clock_products.html
 
         Args:
             output_dir (str): The path where the files should be saved.
-            query (dict): A request containing a start date and an end date.
-                Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
+            query (dict | list): A request may containing a start date and an end date.
+                Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD.
+                Also you can use list of dates. Example: ["2020-12-30", "2021-12-31"]
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
@@ -557,6 +577,7 @@ class CDDISClient:
         Examples:
             >>> cddiscli = CDDISClient()
             >>> query = {"start": "2020-12-30", "end": "2021-01-02"}
+            >>> # or query = ["2020-12-30", "2024-05-05"]
             >>> res = cddiscli.get_clock_30s("/output_dir", query)
             >>> res
             {
@@ -568,14 +589,15 @@ class CDDISClient:
         return self._week_products("clk_30s", output_dir, query, unpack)
 
     @typechecked
-    def get_clock_5m(self, output_dir: str, query: dict, unpack=True) -> dict:
+    def get_clock_5m(self, output_dir: str, query: dict | list, unpack=True) -> dict:
         """A method for downloading files of final station clock solutions (CLK 5 minutes).
         See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/clock_products.html
 
         Args:
             output_dir (str): The path where the files should be saved.
-            query (dict): A request containing a start date and an end date.
-                Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
+            query (dict | list): A request may containing a start date and an end date.
+                Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD.
+                Also you can use list of dates. Example: ["2020-12-30", "2021-12-31"]
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
@@ -587,6 +609,7 @@ class CDDISClient:
         Examples:
             >>> cddiscli = CDDISClient()
             >>> query = {"start": "2020-12-30", "end": "2021-01-02"}
+            >>> # or query = ["2020-12-30", "2024-05-05"]
             >>> res = cddiscli.get_clock_5m("/output_dir", query)
             >>> res
             {
@@ -598,14 +621,15 @@ class CDDISClient:
         return self._week_products("clk_5m", output_dir, query, unpack)
 
     @typechecked
-    def get_earth_orientation(self, output_dir: str, query: dict, unpack=True) -> dict:
+    def get_earth_orientation(self, output_dir: str, query: dict | list, unpack=True) -> dict:
         """A method for downloading files of final Earth rotation parameters (ERP).
         See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/orbit_products.html
 
         Args:
             output_dir (str): The path where the files should be saved.
-            query (dict): A request containing a start date and an end date.
-                Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
+            query (dict | list): A request may containing a start date and an end date.
+                Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD.
+                Also you can use list of dates. Example: ["2020-12-30", "2021-12-31"]
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
@@ -617,6 +641,7 @@ class CDDISClient:
         Examples:
             >>> cddiscli = CDDISClient()
             >>> query = {"start": "2020-12-30", "end": "2021-01-20"}
+            >>> # or query = ["2020-12-30", "2024-05-05"]
             >>> res = cddiscli.get_earth_orientation("/output_dir", query)
             >>> res
             {
