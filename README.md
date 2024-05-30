@@ -79,6 +79,10 @@ python -m pip install .
 * See examples code [here](examples/README.md)
 
 ## Release History
+* 1.0.2
+    * Set timeout for ftps (5m).
+    * Fix class Anubis.
+    * Add new feature for cddis_client (imput range of dates or input list of dates).
 * 1.0.1
     * fix rule for bin files (anubis_2.3_aarch64_linux, convbin_2.4.3-34_aarch64_linux, rnx2rtkp_2.4.3-34_aarch64_linux, str2str_2.4.3-34_aarch64_linux)
     * fix readme file
