@@ -216,37 +216,34 @@ class TestStream2File(TestCase):
                  "addr": "1.2.3.4",
                  "port": "123"
                  }
-        with self.assertRaises(ValueError) as msg:
-            str2file.add_connection("TEST", param, "/some_dir")
-        self.assertEqual(str(msg.exception), "Path '/some_dir' to dir is strange.")
 
         with patch("moncenterlib.stream2file.os.path.isdir") as mock_isdir:
             mock_isdir.return_value = True
-            str2file.add_connection("TEST", param, "/some_dir")
+            str2file.add_connection("TEST", param)
             exp = {
                 'TEST':
                 {
-                    'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/some_dir', 'on_start': ""},
+                    'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'on_start': ""},
                     'temp_file': None,
                     'temp_file_on_start': None,
-                    'process': None
+                    'process': False
                 }
             }
             self.assertEqual(str2file.connections, exp)
 
-            str2file.add_connection("TEST2", param, "/some_dir2")
+            str2file.add_connection("TEST2", param)
             exp = {
                 'TEST': {
-                    'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/some_dir', 'on_start': ""},
+                    'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'on_start': ""},
                     'temp_file': None,
                     'temp_file_on_start': None,
-                    'process': None
+                    'process': False
                 },
                 'TEST2': {
-                    'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/some_dir2', 'on_start': ""},
+                    'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'on_start': ""},
                     'temp_file': None,
                     'temp_file_on_start': None,
-                    'process': None
+                    'process': False
                 }
             }
             self.assertEqual(str2file.connections, exp)
@@ -260,12 +257,12 @@ class TestStream2File(TestCase):
                  "addr": "1.2.3.4",
                  "port": "123"
                  }
-        str2file.add_connection("TEST", param, "/")
+        str2file.add_connection("TEST", param)
         self.assertEqual(str2file.connections, {"TEST": {
-                         'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/', 'on_start': ''},
+                         'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'on_start': ''},
                          'temp_file': None,
                          'temp_file_on_start': None,
-                         'process': None}
+                         'process': False}
         })
 
         str2file.remove_connection("TEST")
@@ -330,18 +327,40 @@ class TestStream2File(TestCase):
 
     def test_start(self):
         str2file = Stream2File(False)
+
+        # raises
+        str2file.connections = {"TEST": {
+            'param': {"type": "serial", 'port': 'COM1', "brate": "115200", "bsize": "1024", "parity": "N", "stopb": "1", "fctr": "1", },
+            'temp_file': None,
+            'temp_file_on_start': None,
+            'process': False,
+        }
+        }
+        with self.assertRaises(Exception) as e:
+            str2file.start("TEST", "bla bla")
+        self.assertEqual(str(e.exception), "Path '' to dir is strange.")
+
+        with self.assertRaises(Exception) as e:
+            str2file.start("TEST", "/aa/ss.log")
+        self.assertEqual(str(e.exception), "Path '/aa' to dir is strange.")
+
         str2file._check_name_in_connections = MagicMock()
         str2file._stop_process = MagicMock()
         str2file.connections = {"TEST": {
-            'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123', 'output_dir': '/'},
+            'param': {'type': 'tcpcli', 'addr': '1.2.3.4', 'port': '123'},
             'temp_file': None,
             'temp_file_on_start': None,
             'process': None}
         }
         # check before condition
         with (patch("moncenterlib.tools.get_path2bin") as mock_tools,
-              patch("moncenterlib.stream2file.subprocess") as mock_subprocess):
-            str2file.start("TEST")
+              patch("moncenterlib.stream2file.subprocess.Popen") as mock_subprocess,
+              patch("moncenterlib.stream2file.os.path.isdir") as mock_isdir):
+            mock_isdir.return_value = True
+            mock_subprocess.side_effect = Exception()
+
+            with self.assertRaises(Exception):
+                str2file.start("TEST", "")
             self.assertEqual(("TEST", ), str2file._check_name_in_connections.call_args_list[0].args)
             self.assertEqual(("TEST", ), str2file._stop_process.call_args_list[0].args)
             self.assertEqual(("str2str", ), mock_tools.call_args_list[0].args)
@@ -350,21 +369,25 @@ class TestStream2File(TestCase):
         with (patch("moncenterlib.tools.get_path2bin") as mock_get_path2bin,
               patch("moncenterlib.stream2file.subprocess.Popen") as mock_subprocess,
               patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
-              patch("moncenterlib.stream2file.datetime") as mock_datetime):
+              patch("moncenterlib.stream2file.datetime") as mock_datetime,
+              patch("moncenterlib.stream2file.os.path.isdir") as mock_isdir):
             mock_utcnow = mock_datetime.utcnow
             mock_utcnow.return_value = datetime.datetime(1970, 1, 1, 1, 2, 3)
             mock_get_path2bin.return_value = "/path2bin/str2str"
             mock_temp_file.return_value.name = "/some_file4stats"
+            mock_isdir.return_value = True
+            mock_subprocess.side_effect = Exception()
 
             str2file.connections = {"TEST": {
-                'param': {"type": "serial", 'port': 'COM1', "brate": "115200", "bsize": "1024", "parity": "N", "stopb": "1", "fctr": "1", "output_dir": "/output_dir"},
+                'param': {"type": "serial", 'port': 'COM1', "brate": "115200", "bsize": "1024", "parity": "N", "stopb": "1", "fctr": "1", },
                 'temp_file': None,
                 'temp_file_on_start': None,
-                'process': None,
+                'process': False,
             }
             }
 
-            str2file.start("TEST")
+            with self.assertRaises(Exception):
+                str2file.start("TEST", "/output_dir/TEST_19700101_010203.log")
             self.assertEqual((['/path2bin/str2str',
                                '-outstat',
                                '/some_file4stats',
@@ -375,27 +398,32 @@ class TestStream2File(TestCase):
             self.assertEqual({"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL},
                              mock_subprocess.call_args_list[0].kwargs)
             self.assertEqual(str2file.connections["TEST"]["temp_file"], mock_temp_file.return_value)
-            self.assertEqual(str2file.connections["TEST"]["process"], mock_subprocess.return_value)
+            self.assertEqual(str2file.connections["TEST"]["process"], True)
 
         # check tcpcli condition
         with (patch("moncenterlib.tools.get_path2bin") as mock_get_path2bin,
               patch("moncenterlib.stream2file.subprocess.Popen") as mock_subprocess,
               patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
-              patch("moncenterlib.stream2file.datetime") as mock_datetime):
+              patch("moncenterlib.stream2file.datetime") as mock_datetime,
+              patch("moncenterlib.stream2file.os.path.isdir") as mock_isdir):
             mock_utcnow = mock_datetime.utcnow
             mock_utcnow.return_value = datetime.datetime(1970, 1, 1, 1, 2, 3)
             mock_get_path2bin.return_value = "/path2bin/str2str"
             mock_temp_file.return_value.name = "/some_file4stats"
 
+            mock_isdir.return_value = True
+            mock_subprocess.side_effect = Exception()
+
             str2file.connections = {"TEST": {
                 'param': {"type": "tcpcli", "output_dir": "/output_dir", "addr": "1.2.3.4", "port": "123"},
                 'temp_file': None,
                 'temp_file_on_start': None,
-                'process': None,
+                'process': False,
             }
             }
 
-            str2file.start("TEST")
+            with self.assertRaises(Exception):
+                str2file.start("TEST", "/output_dir/TEST_19700101_010203.log")
             self.assertEqual((['/path2bin/str2str',
                                '-outstat',
                                '/some_file4stats',
@@ -406,27 +434,31 @@ class TestStream2File(TestCase):
             self.assertEqual({"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL},
                              mock_subprocess.call_args_list[0].kwargs)
             self.assertEqual(str2file.connections["TEST"]["temp_file"], mock_temp_file.return_value)
-            self.assertEqual(str2file.connections["TEST"]["process"], mock_subprocess.return_value)
+            self.assertEqual(str2file.connections["TEST"]["process"], True)
 
         # check ntrip condition
         with (patch("moncenterlib.tools.get_path2bin") as mock_get_path2bin,
               patch("moncenterlib.stream2file.subprocess.Popen") as mock_subprocess,
               patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
-              patch("moncenterlib.stream2file.datetime") as mock_datetime):
+              patch("moncenterlib.stream2file.datetime") as mock_datetime,
+              patch("moncenterlib.stream2file.os.path.isdir") as mock_isdir):
             mock_utcnow = mock_datetime.utcnow
             mock_utcnow.return_value = datetime.datetime(1970, 1, 1, 1, 2, 3)
             mock_get_path2bin.return_value = "/path2bin/str2str"
             mock_temp_file.return_value.name = "/some_file4stats"
+            mock_isdir.return_value = True
+            mock_subprocess.side_effect = Exception()
 
             str2file.connections = {"TEST": {
                 'param': {"type": "ntrip", "output_dir": "/output_dir", "user": "u", "passwd": "123", "addr": "1.2.3.4", "port": "123", "mntpnt": "QWER"},
                 'temp_file': None,
                 'temp_file_on_start': None,
-                'process': None,
+                'process': False,
             }
             }
 
-            str2file.start("TEST")
+            with self.assertRaises(Exception):
+                str2file.start("TEST", "/output_dir/TEST_19700101_010203.log")
             self.assertEqual((['/path2bin/str2str',
                                '-outstat',
                                '/some_file4stats',
@@ -437,7 +469,7 @@ class TestStream2File(TestCase):
             self.assertEqual({"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL},
                              mock_subprocess.call_args_list[0].kwargs)
             self.assertEqual(str2file.connections["TEST"]["temp_file"], mock_temp_file.return_value)
-            self.assertEqual(str2file.connections["TEST"]["process"], mock_subprocess.return_value)
+            self.assertEqual(str2file.connections["TEST"]["process"], True)
 
     def test_stop(self):
         str2file = Stream2File(False)
@@ -466,7 +498,7 @@ class TestStream2File(TestCase):
 
             str2file._stop_process("TEST")
             self.assertEqual(("TEST", ), str2file._check_name_in_connections.call_args_list[0].args)
-            self.assertTrue(mock_subprocess.kill.called)
+            self.assertEqual(False, str2file.connections["TEST"]["process"])
             self.assertTrue(mock_temp_file.close.called)
             self.assertTrue(mock_temp_file_on_start.close.called)
 
@@ -478,119 +510,43 @@ class TestStream2File(TestCase):
                 'param': {},
                 'temp_file': None,
                 'temp_file_on_start': None,
-                'process': None,
+                'process': False,
             }
             }
 
             str2file._stop_process("TEST")
             self.assertEqual(("TEST", ), str2file._check_name_in_connections.call_args_list[0].args)
-            self.assertFalse(mock_subprocess.kill.called)
             self.assertFalse(mock_temp_file.close.called)
             self.assertFalse(mock_temp_file_on_start.close.called)
 
-    def test_start_all(self):
-        str2file = Stream2File(False)
-        str2file.start = MagicMock()
-        str2file.connections = {
-            "TEST": {
-                'param': {},
-                'temp_file': None,
-                'temp_file_on_start': None,
-                'process': None,
-            },
-            "TEST2": {
-                'param': {},
-                'temp_file': None,
-                'temp_file_on_start': None,
-                'process': None,
-            }
-        }
-        str2file.start_all()
-        self.assertEqual(2, str2file.start.call_count)
-        self.assertEqual([call("TEST", ), call("TEST2", )], str2file.start.call_args_list)
-
-    def test_stop_all(self):
-        str2file = Stream2File(False)
-        str2file.stop = MagicMock()
-        str2file.connections = {
-            "TEST": {
-                'param': {},
-                'temp_file': None,
-                'process': None,
-            },
-            "TEST2": {
-                'param': {},
-                'temp_file': None,
-                'process': None,
-            }
-        }
-        str2file.stop_all()
-        self.assertEqual(2, str2file.stop.call_count)
-        self.assertEqual([call("TEST", ), call("TEST2", )], str2file.stop.call_args_list)
-
-    def test_context_manag(self):
-        mock_stop_all = MagicMock()
-        with Stream2File() as str2file:
-            str2file.stop_all = mock_stop_all
-        self.assertTrue(mock_stop_all.called)
-        self.assertEqual(1, mock_stop_all.call_count)
-
-    def test_del(self):
-        str2file = Stream2File(False)
-        mock_stop_all = MagicMock()
-        str2file.stop_all = mock_stop_all
-        del str2file
-        self.assertTrue(mock_stop_all.called)
-        self.assertEqual(1, mock_stop_all.call_count)
-
-    def test_output_files(self):
-        str2file = Stream2File(False)
-        str2file._check_name_in_connections = MagicMock()
-        str2file._stop_process = MagicMock()
-        with (patch("moncenterlib.tools.get_path2bin"),
-              patch("moncenterlib.stream2file.subprocess.Popen"),
-              patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile"),
-              patch("moncenterlib.stream2file.datetime") as mock_datetime,
-              patch("moncenterlib.stream2file.os.path.isdir") as mock_isdir):
-
-            mock_isdir.return_value = True
-            # one file
-            mock_utcnow = mock_datetime.utcnow
-            mock_utcnow.return_value = datetime.datetime(1970, 1, 1, 1, 2, 3)
-            str2file.add_connection("TEST", {"type": "ntrip", "output_dir": "/output_dir", "user": "u", "passwd": "123", "addr": "1.2.3.4", "port": "123", "mntpnt": "QWER"},
-                                    "/output_dir")
-            output_file = str2file.start("TEST")
-            self.assertEqual('/output_dir/TEST_19700101_010203.log', output_file)
-
-            # two files
-            str2file.add_connection("TEST2", {"type": "ntrip", "output_dir": "/output_dir", "user": "u", "passwd": "123", "addr": "1.2.3.4", "port": "123", "mntpnt": "QWER"},
-                                    "/output_dir")
-            output_files = str2file.start_all()
-            self.assertEqual(['/output_dir/TEST_19700101_010203.log',
-                             '/output_dir/TEST2_19700101_010203.log'], output_files)
-
     def test_add_connection_check_on_start(self):
+        str2file = Stream2File(False)
         param = {"type": "tcpcli",
                  "addr": "1.2.3.4",
                  "port": "123"
                  }
 
-        with (Stream2File(False) as str2file,
-              patch("moncenterlib.stream2file.os.path.isdir") as mock_isdir,
-              patch("moncenterlib.stream2file.subprocess.Popen") as mock_subprocess,
-              patch("moncenterlib.tools.get_path2bin") as mock_get_path,
-              patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
-              patch("moncenterlib.stream2file.datetime") as mock_datetime
-              ):
+        with (
+            patch("moncenterlib.stream2file.os.path.isdir") as mock_isdir,
+            patch("moncenterlib.stream2file.subprocess.Popen") as mock_subprocess,
+            patch("moncenterlib.tools.get_path2bin") as mock_get_path,
+            patch("moncenterlib.stream2file.tempfile.NamedTemporaryFile") as mock_temp_file,
+            patch("moncenterlib.stream2file.datetime") as mock_datetime
+        ):
             mock_utcnow = mock_datetime.utcnow
             mock_utcnow.return_value = datetime.datetime(1970, 1, 1, 1, 2, 3)
+
             mock_isdir.return_value = True
+
             mock_get_path.return_value = "/path2bin/str2str"
             mock_temp_file.return_value.name = "tempfile"
 
-            str2file.add_connection("TEST", param, '', "Some cmd")
+            mock_subprocess.side_effect = Exception()
 
-            str2file.start("TEST")
+            str2file.add_connection("TEST", param, "Some cmd")
+
+            with self.assertRaises(Exception):
+                str2file.start("TEST", "TEST_19700101_010203.log")
 
             self.assertEqual(['/path2bin/str2str',
                               '-outstat', 'tempfile',
@@ -601,6 +557,21 @@ class TestStream2File(TestCase):
             self.assertEqual(str2file.connections['TEST']["temp_file_on_start"].name, "tempfile")
             self.assertEqual(str2file.connections['TEST']["temp_file_on_start"].mock_calls, [
                              call.write(b'Some cmd'), call.seek(0)])
+
+    def test_get_connection_names(self):
+        str2file = Stream2File(False)
+        str2file.connections = {"TEST1": {}, "TEST2": {}}
+        self.assertEqual(["TEST1", "TEST2"], str2file.get_connection_names())
+        str2file.connections = {}
+        self.assertEqual([], str2file.get_connection_names())
+
+    def test_create_output_file_name(self):
+        str2file = Stream2File(False)
+        with (patch("moncenterlib.stream2file.datetime") as mock_datetime):
+            mock_utcnow = mock_datetime.utcnow
+            mock_utcnow.return_value = datetime.datetime(1970, 1, 1, 1, 2, 3)
+            output_file = str2file.create_output_file_name("TEST", "/blabla")
+            self.assertEqual("/blabla/TEST_19700101_010203.log", output_file)
 
 
 if __name__ == "__main__":

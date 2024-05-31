@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 import moncenterlib.tools as mcl_tools
 from typeguard import typechecked
 
@@ -15,7 +16,7 @@ class Stream2File:
     You can manage connections. Add and remove connections, start and stop connections.
     Also you can get status of connections.
 
-    This class use binary file of RTKLib library [https://rtklib.com/]. The name of file is str2str. 
+    This class use binary file of RTKLib library https://rtklib.com/. The name of file is str2str.
     This bin file was modified for this class.
 
     See example code in example folder.
@@ -83,7 +84,7 @@ class Stream2File:
                     raise KeyError(msg)
 
     @typechecked
-    def add_connection(self, name: str, param: dict[str, str], output_dir: str, on_start: str = "") -> None:
+    def add_connection(self, name: str, param: dict[str, str], on_start: str = "") -> None:
         """
         This method is used to add a connection. Data of connection stored in variable 'connections'.
 
@@ -93,7 +94,6 @@ class Stream2File:
         Args:
             name (str): Name of the connection.
             param (dict[str, str]): Dictionary of parameters.
-            output_dir (str): Path to the output directory where the file will be saved.
             on_start (str, optional): Command that will be send to host when the connection starts.
 
         Raises:
@@ -108,23 +108,24 @@ class Stream2File:
             >>> from moncenterlib.gnss.stream2file import Stream2File
             >>> s2f = Stream2File()
             >>> your_param = {"type": "..."}
-            >>> s2f.add_connection("test_connect", your_param, "/some_output_dir", on_start="some_cmd")
+            >>> s2f.add_connection("test_connect", your_param, on_start="some_cmd")
 
         """
         self.logger.info("Adding connection %s.", name)
-        parameters = param.copy()
 
-        self._check_param(parameters)
+        self._check_param(param)
 
-        if not os.path.isdir(output_dir):
-            msg = f"Path '{output_dir}' to dir is strange."
-            self.logger.error(msg)
-            raise ValueError(msg)
+        conf = {
+            "param": param.copy(),
+            "temp_file": None,
+            "temp_file_on_start": None,
+            "process": False
+        }
+        conf["param"]["on_start"] = on_start
 
-        self.connections[name] = {"param": None, "temp_file": None, "temp_file_on_start": None, "process": None}
-        self.connections[name]["param"] = parameters
-        self.connections[name]["param"]["output_dir"] = output_dir
-        self.connections[name]["param"]["on_start"] = on_start
+        self.connections[name] = conf
+
+        return None
 
     @typechecked
     def remove_connection(self, name: str) -> None:
@@ -196,54 +197,72 @@ class Stream2File:
         return status
 
     @typechecked
-    def start(self, name: str) -> str:
+    def get_connection_names(self) -> list[str]:
+        """Get name of connections
+
+        Returns:
+            list[str]: List name of connections
         """
-        This method is used to start a connection.
-        Importantly!!!
-        1. You should use a context manager to start a connection.
-        The context manager will allow you to close the connection and write to the file automatically.
-        If this is not done, there is a high risk that the process will not be killed, It will run until the computer is restarted.
+        return list(self.connections.keys())
 
-        2. Every connection have have key 'process'. Value of this key is the subprocess object. if something goes wrong,
-        you will have access to this object, which started the process of connecting and writing to the file.
-
-        3. When your program finished, all processes will be stopped.
-
-        4. It follows from the 3rd point that if you want connections to be constantly active, you need the program to work constantly.
-        For example, you can use an infinite loop or something else.
-
-        5. When you start a connection which is constantly active connection will be stopped and started again.
-
-        See code usage examples in the examples folder.
+    @typechecked
+    def create_output_file_name(self, name_conn: str, output_dir: str) -> str:
+        """Create path to the output file. Format is 'nameConnection_YYYYMMDD_HHMMSS.log'
 
         Args:
-            name (str): Name of the connection.
+            name_conn (str): Name of the connection.
+            output_dir (str): Path to a directory where file will be save.
+
+        Returns:
+            str: Return path to the output file. Format is 'nameConnection_YYYYMMDD_HHMMSS.log'
+        """
+
+        date = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        output_file = Path(output_dir).joinpath(f"{name_conn}_{date}.log")
+
+        return str(output_file)
+
+    @typechecked
+    def start(self, name_con: str, name_file: str) -> None:
+        """
+        This method is used to start a connection.
+        This method is blocking. It uses an infinite loop internally.
+        Use the threading module to solve this problem or other tools.
+        The connection can be stopped using the 'stop' method.
+        See example codes how to use module threading with this method.
+
+        Args:
+            name_con (str): Name of the connection.
+            name_file (str): Path to the output file.
 
         Returns:
             str: Path to output file.
 
-
         Examples:
             >>> from moncenterlib.gnss.stream2file import Stream2File
-            >>> import time
-            >>> with Stream2File() as s2f:
-            ...    s2f.add_connection("TEST",...)
-            ...    s2f.start("TEST")
-            ...    while True:
-            ...        s2f.get_status("TEST")
-            ...        time.sleep(2)
+            >>> s2f = Stream2File()
+            >>> s2f.add_connection("TEST",...)
+            >>> s2f.start("TEST", "path_to_output_file")
         """
-        self.logger.info("Starting connection %s.", name)
 
-        self._check_name_in_connections(name)
+        self.logger.info("Starting connection %s.", name_con)
 
-        self._stop_process(name)
+        # check directory
+        path_dir = os.path.dirname(name_file)
+        if not os.path.isdir(path_dir):
+            msg = f"Path '{path_dir}' to dir is strange."
+            self.logger.error(msg)
+            raise ValueError(msg)
+
+        self._check_name_in_connections(name_con)
+
+        self._stop_process(name_con)
 
         temp_file = tempfile.NamedTemporaryFile()
 
         cmd = [mcl_tools.get_path2bin("str2str"), "-outstat", temp_file.name]
 
-        param = self.connections[name]["param"]
+        param = self.connections[name_con]["param"]
         if param["type"] == "serial":
             cmd += ["-in",
                     f'serial://{param["port"]}:{param["brate"]}:{param["bsize"]}:{param["parity"]}:{param["stopb"]}:{param["fctr"]}']
@@ -253,23 +272,25 @@ class Stream2File:
             cmd += ["-in",
                     f'ntrip://{param["user"]}:{param["passwd"]}@{param["addr"]}:{param["port"]}/{param["mntpnt"]}']
 
-        date = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-        output_file = Path(param["output_dir"]).joinpath(f"{name}_{date}.log")
-        cmd += ["-out", f'file://{output_file}']
+        cmd += ["-out", f'file://{name_file}']
 
         if param.get("on_start", "") != "":
             temp_file_on_start = tempfile.NamedTemporaryFile()
             temp_file_on_start.write(param["on_start"].encode("utf-8"))
             temp_file_on_start.seek(0)
             cmd += ["-c", temp_file_on_start.name]
-            self.connections[name]["temp_file_on_start"] = temp_file_on_start
+            self.connections[name_con]["temp_file_on_start"] = temp_file_on_start
+
+        self.connections[name_con]["process"] = True
+        self.connections[name_con]["temp_file"] = temp_file
 
         process = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        self.connections[name]["temp_file"] = temp_file
-        self.connections[name]["process"] = process
+        while self.connections[name_con]["process"]:
+            time.sleep(0.1)
+        process.kill()
 
-        return str(output_file)
+        return None
 
     @typechecked
     def stop(self, name: str) -> None:
@@ -293,54 +314,8 @@ class Stream2File:
         self._check_name_in_connections(name)
 
         if self.connections[name]["process"] is not None:
-            self.connections[name]["process"].kill()
+            self.connections[name]["process"] = False
         if self.connections[name]["temp_file"] is not None:
             self.connections[name]["temp_file"].close()
         if self.connections[name]["temp_file_on_start"] is not None:
             self.connections[name]["temp_file_on_start"].close()
-
-    def start_all(self) -> list[str]:
-        """
-        This method is used to start all connections.
-
-        Returns:
-            list[str]: List of output files.
-
-        Examples:
-            >>> from moncenterlib.gnss.stream2file import Stream2File
-            >>> s2f = Stream2File()
-            >>> s2f.add_connection("TEST",...)
-            >>> s2f.add_connection("TEST2",...)
-            >>> s2f.start_all()
-        """
-        output_files = []
-        self.logger.info("Starting all connections.")
-        for name in self.connections.keys():
-            output_files.append(self.start(name))
-
-        return output_files
-
-    def stop_all(self) -> None:
-        """
-        This method is used to stop all connections.
-
-        Examples:
-            >>> from moncenterlib.gnss.stream2file import Stream2File
-            >>> s2f = Stream2File()
-            >>> s2f.add_connection("TEST",...)
-            >>> s2f.add_connection("TEST2",...)
-            >>> s2f.stop_all()
-        """
-        self.logger.info("Stopping all connections.")
-        for name in self.connections.keys():
-            self.stop(name)
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.stop_all()
-
-    def __del__(self):
-        if hasattr(self, 'logger') and hasattr(self, 'connections'):
-            self.stop_all()
