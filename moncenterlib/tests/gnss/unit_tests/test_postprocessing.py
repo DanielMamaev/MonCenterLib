@@ -473,45 +473,41 @@ class TestRtkLibPostPost(TestCase):
 
         # test types, raises
         with self.assertRaises(Exception):
-            rtklib.start(None, "", "", False, 0, False, True)
+            rtklib.start(None, "", {}, 0, False, True)
 
         with self.assertRaises(Exception):
-            rtklib.start({"": ""}, None, "", False, 0, False, True)
+            rtklib.start({"": ""}, None, {}, 0, False, True)
 
         with self.assertRaises(Exception):
-            rtklib.start({"": ""}, "", None, False, 0, False, True)
+            rtklib.start({"": ""}, "", None, 0, False, True)
 
         with self.assertRaises(Exception):
-            rtklib.start({"": ""}, "", "", None, 0, False, True)
+            rtklib.start({"": ""}, "", {}, None, False, True)
 
         with self.assertRaises(Exception):
-            rtklib.start({"": ""}, "", "", False, None, False, True)
+            rtklib.start({"": ""}, "", {}, 0, None, True)
 
         with self.assertRaises(Exception):
-            rtklib.start({"": ""}, "", "", False, 0, None, True)
-
-        with self.assertRaises(Exception):
-            rtklib.start({"": ""}, "", "", False, 0, False, None)
+            rtklib.start({"": ""}, "", {}, 0, False, None)
 
         # test input_rnx and config
         with patch("moncenterlib.gnss.postprocessing.os.path.isfile") as mock_isfile:
             mock_isfile.return_value = True
-            res = rtklib.start({"": ""}, "/", "", False, 0, False, True)
+            res = rtklib.start({"": ""}, "/", {}, 0, False, True)
             self.assertEqual({'done': [], 'no_exists': [], 'no_match': []}, res)
 
-            res = rtklib.start({"": [""]}, "/", "", False, 0, False, True)
+            res = rtklib.start({"": [""]}, "/", {}, 0, False, True)
             self.assertEqual({'done': [], 'no_exists': [], 'no_match': []}, res)
 
-            res = rtklib.start({"": [""]}, "/", {"": ""}, False, 0, False, True)
+            res = rtklib.start({"": [""]}, "/", {"": ""}, 0, False, True)
             self.assertEqual({'done': [], 'no_exists': [], 'no_match': []}, res)
 
         with self.assertRaises(ValueError) as e:
-            res = rtklib.start({"": ""}, "blablabla", {"": ""}, False, 0, False, True)
+            res = rtklib.start({"": ""}, "blablabla", {"": ""}, 0, False, True)
         self.assertEqual(str(e.exception), "Output directory does not exist")
 
-        with self.assertRaises(ValueError) as e:
-            res = rtklib.start({"": ""}, "/", "blablabla", False, 0, False, True)
-        self.assertEqual(str(e.exception), "Config file does not exist")
+        with self.assertRaises(Exception) as e:
+            res = rtklib.start({"": ""}, "/", "blablabla", 0, False, True)
 
     def test_start_variants_input_rnx(self):
         rtklibpost = RtkLibPost(False)
@@ -526,7 +522,7 @@ class TestRtkLibPostPost(TestCase):
             mock_isfile.return_value = True
             mock_isdir.side_effect = [True, False]
 
-            rtklibpost.start({"rover": "/path2file_obs"}, "/", {"": ""}, False, 0, False, False)
+            rtklibpost.start({"rover": "/path2file_obs"}, "/", {"": ""}, 0, False, False)
             self.assertEqual(mock_date_obs.call_count, 1)
             self.assertEqual(("/path2file_obs", ), mock_date_obs.call_args.args)
 
@@ -539,7 +535,7 @@ class TestRtkLibPostPost(TestCase):
             mock_isdir.side_effect = [True, True]
             rtklibpost.scan_dirs.return_value = {"rover": ["/path2file1", "/path2file2"]}
 
-            rtklibpost.start({"rover": "/path2dir_obs"}, "/", {"": ""}, False, 0, False, False)
+            rtklibpost.start({"rover": "/path2dir_obs"}, "/", {"": ""}, 0, False, False)
 
             self.assertEqual(({'rover': '/path2dir_obs'}, False), rtklibpost.scan_dirs.call_args.args)
             self.assertEqual([call('/path2file1'), call('/path2file2')], mock_date_obs.call_args_list)
@@ -553,7 +549,7 @@ class TestRtkLibPostPost(TestCase):
             mock_isdir.side_effect = [True, False]
             input_data = {"rover": ["/path2file1", "/path2file2"]}
 
-            rtklibpost.start(input_data, "/", {"": ""}, False, 0, False, False)
+            rtklibpost.start(input_data, "/", {"": ""}, 0, False, False)
 
             self.assertEqual(({'rover': '/path2dir_obs'}, False), rtklibpost.scan_dirs.call_args.args)
             self.assertEqual([call('/path2file1'), call('/path2file2')], mock_date_obs.call_args_list)
@@ -777,6 +773,8 @@ class TestRtkLibPostPost(TestCase):
             rtklibpost._get_start_date_from_sp3 = MagicMock()
             rtklibpost._get_start_date_from_clk = MagicMock()
             rtklibpost._get_dates_from_erp = MagicMock()
+            rtklibpost._get_start_date_from_dcb = MagicMock()
+            rtklibpost._get_start_date_from_ionex = MagicMock()
 
             mock_temp_file().__enter__().name = "my_temp_file"
             # mock_open = mock_open().__enter__()
@@ -830,67 +828,6 @@ class TestRtkLibPostPost(TestCase):
             self.assertEqual('().__enter__().write', mock_open.mock_calls[3][0])
             self.assertEqual(('file-eopfile=path2file_erp_1\n',), mock_open.mock_calls[3][1])
 
-            # make config, config is str, erp_from_config = True
-            mock_open.reset_mock()
-            mock_isfile.return_value = True
-            mock_open_from_config_temp_file = MagicMock()
-            mock_open_from_config_file = MagicMock()
-
-            mock_open.side_effect = [mock_open_from_config_temp_file, mock_open_from_config_file]
-
-            input_rnx = {"rover": ["path2file_obs1"],
-                         "base": ["path2file_obs_base1"],
-                         "nav": ["path2file_nav1"],
-                         "sp3": ["path2file_sp3_1"],
-                         "clk": ["path2file_clk_1"],
-                         "erp": ["path2file_erp_1"]}
-
-            mock_get_start_date_from_obs.side_effect = ["2020-01-01", "2020-01-01"]
-            mock_get_start_date_from_nav.side_effect = ["2020-01-01"]
-            rtklibpost._get_start_date_from_sp3.side_effect = ["2020-01-01"]
-            rtklibpost._get_start_date_from_clk.side_effect = ["2020-01-01"]
-            rtklibpost._get_dates_from_erp.side_effect = [["2020-01-01"]]
-
-            res = rtklibpost.start(input_rnx, "/", "file_config", show_info_rtklib=False, erp_from_config=True)
-            self.assertEqual(call('my_temp_file', 'w', encoding='utf-8'), mock_open.call_args_list[0])
-            self.assertEqual(call('file_config', 'r', encoding='utf-8'), mock_open.call_args_list[1])
-            self.assertEqual('__enter__().read', mock_open_from_config_file.mock_calls[1][0])
-            self.assertEqual('__enter__().write', mock_open_from_config_temp_file.mock_calls[1][0])
-
-            # make config, config is str, erp_from_config = False
-            mock_open.reset_mock()
-            mock_isfile.return_value = True
-            mock_open_from_config_temp_file = MagicMock()
-            mock_open_from_config_file = MagicMock()
-
-            mock_open.side_effect = [mock_open_from_config_temp_file, mock_open_from_config_file]
-            mock_open_from_config_file.__enter__().readlines.return_value = ["par1=val1", "file-eopfile=", "par2=val2"]
-
-            input_rnx = {"rover": ["path2file_obs1"],
-                         "base": ["path2file_obs_base1"],
-                         "nav": ["path2file_nav1"],
-                         "sp3": ["path2file_sp3_1"],
-                         "clk": ["path2file_clk_1"],
-                         "erp": ["path2file_erp_1"]}
-
-            mock_get_start_date_from_obs.side_effect = ["2020-01-01", "2020-01-01"]
-            mock_get_start_date_from_nav.side_effect = ["2020-01-01"]
-            rtklibpost._get_start_date_from_sp3.side_effect = ["2020-01-01"]
-            rtklibpost._get_start_date_from_clk.side_effect = ["2020-01-01"]
-            rtklibpost._get_dates_from_erp.side_effect = [["2020-01-01"]]
-
-            res = rtklibpost.start(input_rnx, "/", "file_config", show_info_rtklib=False, erp_from_config=False)
-
-            self.assertEqual(call('my_temp_file', 'w', encoding='utf-8'), mock_open.call_args_list[0])
-            self.assertEqual(call('file_config', 'r', encoding='utf-8'), mock_open.call_args_list[1])
-            self.assertEqual('__enter__().write', mock_open_from_config_temp_file.mock_calls[1][0])
-            self.assertEqual(('par1=val1\n',), mock_open_from_config_temp_file.mock_calls[1][1])
-            self.assertEqual('__enter__().write', mock_open_from_config_temp_file.mock_calls[2][0])
-            self.assertEqual(('file-eopfile=path2file_erp_1\n',), mock_open_from_config_temp_file.mock_calls[2][1])
-            self.assertEqual('__enter__().write', mock_open_from_config_temp_file.mock_calls[3][0])
-            self.assertEqual(('par2=val2\n',), mock_open_from_config_temp_file.mock_calls[3][1])
-            self.assertEqual('__enter__().readlines', mock_open_from_config_file.mock_calls[2][0])
-
     def test_start_make_command(self):
         rtklibpost = RtkLibPost(False)
         input_rnx = {"rover": ["path2file_obs1", "path2file_obs2"],
@@ -898,7 +835,9 @@ class TestRtkLibPostPost(TestCase):
                      "nav": ["path2file_nav1"],
                      "sp3": ["path2file_sp3_1"],
                      "clk": ["path2file_clk_1"],
-                     "erp": ["path2file_erp_1"]}
+                     "erp": ["path2file_erp_1"],
+                     "dcb": ["path2file_dcb_1"],
+                     "ionex": ["path2file_ionex_1"]}
 
         with (patch("moncenterlib.gnss.postprocessing.mcl_gnss_tools.get_start_date_from_obs") as mock_get_start_date_from_obs,
               patch("moncenterlib.gnss.postprocessing.mcl_gnss_tools.get_start_date_from_nav") as mock_get_start_date_from_nav,
@@ -914,17 +853,20 @@ class TestRtkLibPostPost(TestCase):
             rtklibpost._get_start_date_from_sp3 = MagicMock()
             rtklibpost._get_start_date_from_clk = MagicMock()
             rtklibpost._get_dates_from_erp = MagicMock()
+            rtklibpost._get_start_date_from_dcb = MagicMock()
+            rtklibpost._get_start_date_from_ionex = MagicMock()
 
             mock_get_start_date_from_obs.side_effect = ["2020-01-01", "2020-01-01", "2020-01-01"]  # called 2 times
             mock_get_start_date_from_nav.side_effect = ["2020-01-01"]
             rtklibpost._get_start_date_from_sp3.side_effect = ["2020-01-01"]
             rtklibpost._get_start_date_from_clk.side_effect = ["2020-01-01"]
+            rtklibpost._get_start_date_from_dcb.side_effect = ["2020-01-01"]
+            rtklibpost._get_start_date_from_ionex.side_effect = ["2020-01-01"]
             rtklibpost._get_dates_from_erp.side_effect = [["2020-01-01", "2020-01-02"]]
 
             res = rtklibpost.start(input_rnx,
                                    "/",
                                    {"": ""},
-                                   erp_from_config=False,
                                    timeint=5,
                                    show_info_rtklib=False,
                                    )
@@ -938,6 +880,7 @@ class TestRtkLibPostPost(TestCase):
                               'path2file_nav1',
                               'path2file_sp3_1',
                               'path2file_clk_1',
+                              'path2file_ionex_1',
                               '-o', '/path2file_obs1.pos'], mock_run_subprocess.mock_calls[0].args[0])
             self.assertEqual({'check': False, 'stdout': -3, 'stderr': -3}, mock_run_subprocess.mock_calls[0].kwargs)
             self.assertEqual(['path2bin',
@@ -948,6 +891,7 @@ class TestRtkLibPostPost(TestCase):
                               'path2file_nav1',
                               'path2file_sp3_1',
                               'path2file_clk_1',
+                              'path2file_ionex_1',
                               '-o', '/path2file_obs2.pos'], mock_run_subprocess.mock_calls[1].args[0])
             self.assertEqual({'check': False, 'stdout': -3, 'stderr': -3}, mock_run_subprocess.mock_calls[1].kwargs)
             self.assertEqual({"done": [],
@@ -961,15 +905,53 @@ class TestRtkLibPostPost(TestCase):
             rtklibpost._get_start_date_from_sp3.side_effect = ["2020-01-01"]
             rtklibpost._get_start_date_from_clk.side_effect = ["2020-01-01"]
             rtklibpost._get_dates_from_erp.side_effect = [["2020-01-01", "2020-01-02"]]
+            rtklibpost._get_start_date_from_dcb.side_effect = ["2020-01-01"]
+            rtklibpost._get_start_date_from_ionex.side_effect = ["2020-01-01"]
 
             res = rtklibpost.start(input_rnx,
                                    "/",
                                    {"": ""},
-                                   erp_from_config=False,
                                    timeint=5,
                                    show_info_rtklib=True,
                                    )
             self.assertEqual({'check': False, 'stdout': -3}, mock_run_subprocess.mock_calls[0].kwargs)
+
+    def test_confing2dict(self):
+        rtklibpost = RtkLibPost(False)
+
+        # raises
+        with self.assertRaises(Exception):
+            rtklibpost.confing2dict(None)
+
+        with self.assertRaises(ValueError) as e:
+            rtklibpost.confing2dict("/blablalba/")
+        self.assertEqual(str(e.exception), "Path to path2conf is strange.")
+
+        with tempfile.NamedTemporaryFile() as temp_file:
+            text = ("# rtkpost options (v.2.4.3 b34)\n"
+                    "pos1-posmode       =single     # Positioning Mode (0:single,1:dgps,2:kinematic,3:static,4:movingbase,5:fixed,6:ppp-kine,7:ppp-static,8:ppp-fixed)\n"
+                    "pos1-frequency     =l1+2       # Frequencies (1:l1,2:l1+2,3:l1+2+3,4:l1+2+3+4,5:l1+2+3+4+5)\n"
+                    "pos1-soltype       =forward    # Filter Type (0:forward,1:backward,2:combined)\n"
+                    "pos1-elmask        =15         # Elevation Mask (deg)\n"
+                    "pos1-snrmask_r     =off        # SNR Mask (0:off,1:on)\n"
+                    "pos1-snrmask_b     =off        # SNR Mask (0:off,1:on)\n"
+                    "pos1-snrmask_L1    =0,0,0,0,0,0,0,0,0 # SNR Mask\n"
+                    "pos1-snrmask_L2    =0,0,0,0,0,0,0,0,0 # SNR Mask\n"
+                    )
+
+            with open(temp_file.name, "w", encoding="utf-8") as f:
+                f.write(text)
+
+            res = rtklibpost.confing2dict(temp_file.name)
+            self.assertEqual({'pos1-posmode': 'single',
+                              'pos1-frequency': 'l1+2',
+                              'pos1-soltype': 'forward',
+                              'pos1-elmask': '15',
+                              'pos1-snrmask_r': 'off',
+                              'pos1-snrmask_b': 'off',
+                              'pos1-snrmask_L1': '0,0,0,0,0,0,0,0,0',
+                              'pos1-snrmask_L2': '0,0,0,0,0,0,0,0,0'
+                              }, res)
 
 
 if __name__ == '__main__':

@@ -328,8 +328,36 @@ class RtkLibPost:
         return date
 
     @typechecked
-    def start(self, input_rnx: dict[str, str | list[str]], output: str, config: dict[str, str] | str,
-              erp_from_config: bool = False, timeint: int = 0, recursion: bool = False,
+    def confing2dict(self, path2conf: str) -> dict:
+        """This method is used to convert file configuration to dictionary.
+
+        Args:
+            path2conf (str): The path to the file configuration
+
+        Raises:
+            ValueError: Path to path2conf is strange.
+
+        Returns:
+            dict: Return dictionary of configuration.
+        """
+
+        if not os.path.isfile(path2conf):
+            raise ValueError("Path to path2conf is strange.")
+
+        config_dict = {}
+        with open(path2conf, 'r', encoding="utf-8") as f:
+            lines = f.readlines()
+            for line in lines:
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    value = value.split('#', 1)[0]  # remove comment
+                    config_dict[key.strip()] = value.strip()
+
+        return config_dict
+
+    @typechecked
+    def start(self, input_rnx: dict[str, str | list[str]], output: str, config: dict[str, str],
+              timeint: int = 0, recursion: bool = False,
               show_info_rtklib: bool = True) -> dict[str, list]:
         """The method starts the postprocessing.
 
@@ -337,11 +365,8 @@ class RtkLibPost:
             input_rnx (dict[str, str  |  list[str]]): The dictionary where keys are a type of file and
                 values are a list of path to the files or path to directory or path to one file.
             output (str): The path to the directory where the files will be saved.
-            config (dict[str, str] | str): Dictionary with configuration.
+            config (dict[str, str]): Dictionary with configuration.
                 You can get the configuration by calling the get_default_config() method.
-            erp_from_config (bool, optional): This flag indicates where to get the files from.erp for post-processing.
-                True if the file .erp is taken from the configuration file.
-                False if taken from the dictionary. Defaults to False.
             timeint (int, optional): Time interval. Defaults to 0.
             recursion (bool, optional): If you put a path to dir in arg input_rnx, recursively search for files.
                 Defaults to False.
@@ -377,10 +402,6 @@ class RtkLibPost:
         if not os.path.isdir(output):
             self.logger.error("Output directory does not exist")
             raise ValueError("Output directory does not exist")
-
-        if isinstance(config, str) and not os.path.isfile(config):
-            self.logger.error("Config file does not exist")
-            raise ValueError("Config file does not exist")
 
         inputs = dict()
         for k, v in input_rnx.items():
@@ -481,24 +502,11 @@ class RtkLibPost:
                 self.logger.info("Starting make configuration")
                 with open(temp_file.name, 'w', encoding="utf-8") as config_temp_file:
 
-                    if isinstance(config, str):
-                        with open(config, "r", encoding="utf-8") as config_file:
-                            if erp_from_config:
-                                config_temp_file.write(config_file.read())
-                            else:
-                                text = config_file.readlines()
-                                for i, line in enumerate(text):
-                                    if "file-eopfile" in line:
-                                        text[i] = f'file-eopfile={path_files.get("erp", "")}'
-                                        config_temp_file.write(text[i] + '\n')
-                                    else:
-                                        config_temp_file.write(line + '\n')
+                    config["file-eopfile"] = path_files.get("erp", "")
+                    config["file-dcbfile"] = path_files.get("dcb", "")
 
-                    elif isinstance(config, dict):
-                        config["file-eopfile"] = path_files.get("erp", "")
-
-                        for key, val in config.items():
-                            config_temp_file.write(key + '=' + val + '\n')
+                    for key, val in config.items():
+                        config_temp_file.write(key + '=' + val + '\n')
 
                 # make command
                 for rvr in path_files.get("rovers", []):
@@ -512,7 +520,6 @@ class RtkLibPost:
                     cmd += [path_files.get("nav", "")]
                     cmd += [path_files.get("sp3", "")]
                     cmd += [path_files.get("clk", "")]
-                    cmd += [path_files.get("dcb", "")]
                     cmd += [path_files.get("ionex", "")]
 
                     cmd = [i for i in cmd if i != ""]
