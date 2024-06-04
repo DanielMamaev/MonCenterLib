@@ -10,6 +10,7 @@ The module has the following classes:
 Learn more about the specific class.
 """
 
+from collections import defaultdict
 import datetime
 from logging import Logger
 import os
@@ -220,9 +221,10 @@ class RtkLibConvbin:
             ValueError: Path to output dir is strange.
 
         Returns:
-            dict: The dictionary contains 2 keys. Done and error.
+            dict: A dictionary contains list of output files. A key is type of file.
+            A value contains a dictionary. The dictionary contains two keys. Done and no_exists.
             The done key stores a list of files that have been successfully created.
-            The error key stores a list of files that have not been created.
+            The no_exists key stores a list of files that have not been created.
 
         Examples:
             >>> t4r = RtkLibConvib()
@@ -232,8 +234,8 @@ class RtkLibConvbin:
             >>> res = t4r.start(list_files, "/some_output_dir", config, True)
             >>> res
             {
-                'done': ["file_1", "file_2"],
-                'error': ["file_3"]
+                'o': {"done": ["file_1"], "no_exists": ["file_2"]},
+                'n': {"done": [], "no_exists": ["file_3"]}
             }
         """
         self.logger.info("Checking config")
@@ -256,7 +258,8 @@ class RtkLibConvbin:
             raise ValueError("Path to output dir is strange.")
 
         # запуск конвертации
-        output_files = []
+        output_files = defaultdict(list)
+
         for file in input_files:
             self.logger.info("Start converting %s", file)
             cmd = []
@@ -291,7 +294,7 @@ class RtkLibConvbin:
                 if config[f'output_{t}'] == '1':
                     temp_path = os.path.join(output, f"{namef}.{t}")
                     cmd += [f"-{t}", temp_path]
-                    output_files.append(os.path.join(output, f"{namef}.{t}"))
+                    output_files[t].append(os.path.join(output, f"{namef}.{t}"))
 
             other_type = ['od', 'os', 'oi', 'ot', 'ol', 'halfc']
             for t in other_type:
@@ -313,4 +316,9 @@ class RtkLibConvbin:
             cmd += [file]
 
             subprocess.run(cmd, stderr=subprocess.DEVNULL, check=False)
-        return files_check(output_files)
+
+        return_files = {}
+        for type_file, files in output_files.items():
+            return_files[type_file] = files_check(files)
+
+        return return_files

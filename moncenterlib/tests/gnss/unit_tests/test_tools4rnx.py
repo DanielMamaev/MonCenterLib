@@ -13,7 +13,7 @@ from moncenterlib.tools import get_path2bin
 class TestTools4Rnx(TestCase):
     def setUp(self) -> None:
         self.t4r = RtkLibConvbin(False)
-    
+
     def test_init_raises(self):
         with self.assertRaises(Exception):
             convbin = RtkLibConvbin("None")
@@ -404,9 +404,8 @@ class TestTools4Rnx(TestCase):
         with patch('moncenterlib.gnss.tools4rnx.subprocess'):
             list_files = ['/home/file1', '/home/file2']
             res = self.t4r.start(list_files, "/", self.t4r.get_default_config(), False)
-            self.assertEqual({"done": [],
-                              "no_exists": ['/file1.o', '/file1.n',
-                                        '/file2.o', '/file2.n', ]}, res)
+            self.assertEqual({"o": {"done": [], "no_exists": ["/file1.o", "/file2.o"]},
+                              "n": {"done": [], "no_exists": ["/file1.n", "/file2.n"]}}, res)
 
     def test_real_working(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -455,7 +454,7 @@ class TestTools4Rnx(TestCase):
             res = self.t4r.start(input_file, temp_dir, config)
 
             with (open(input_file.replace(".ubx", ".o"), "r", encoding="utf-8") as file1,
-                  open(res["done"][0], "r", encoding="utf-8") as file2):
+                  open(res["o"]["done"][0], "r", encoding="utf-8") as file2):
 
                 lines1 = file1.readlines()
                 lines2 = file2.readlines()
