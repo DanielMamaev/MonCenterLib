@@ -79,6 +79,10 @@ python -m pip install .
 * See examples code [here](examples/README.md)
 
 ## Release History
+* 1.0.3
+    * Remake class Stream2File.
+    * New output data from 'start' method of class RtkLibConvbin. Update docstring and tests.
+    * Fix several bugs. Add new method 'config2dict'. Update tests and docstrings.
 * 1.0.2
     * Set timeout for ftps (5m).
     * Fix class Anubis.
