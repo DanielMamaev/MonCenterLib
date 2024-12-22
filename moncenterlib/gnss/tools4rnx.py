@@ -420,7 +420,3 @@ class RtkLibConvbin:
             "stdout": self.stdout_log,
             "stderr": self.stderr_log
         }
-
-conv = RtkLibConvbin()
-print(conv.get_full_status())
-print(conv.get_last_status())
