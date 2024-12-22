@@ -16,6 +16,7 @@ from logging import Logger
 import os
 import subprocess
 from pathlib import Path
+import threading
 from typeguard import typechecked
 from moncenterlib.tools import files_check, create_simple_logger, get_files_from_dir, get_path2bin
 
@@ -85,6 +86,10 @@ class RtkLibConvbin:
 
         if self.logger in [None, False]:
             self.logger = create_simple_logger("RtkLibConvbin", logger)
+        
+        self.__process = None
+        self.stdout_log = []
+        self.stderr_log = []
 
     def get_default_config(self) -> dict:
         """
@@ -315,10 +320,107 @@ class RtkLibConvbin:
 
             cmd += [file]
 
-            subprocess.run(cmd, stderr=subprocess.DEVNULL, check=False)
+            self.stdout_log = []
+            self.stderr_log = []
 
+            self.__process = subprocess.Popen(
+                cmd,
+                stderr=subprocess.PIPE,  
+                stdout=subprocess.PIPE,  
+                text=True,               
+                bufsize=1,               
+                universal_newlines=True
+            )
+
+            def read_output(stream):
+                for line in stream:
+                    self.stdout_log += [line.strip()]
+
+            def read_error(stream):
+                for line in stream:
+                    self.stderr_log += [line.strip()]
+
+            stdout_thread = threading.Thread(target=read_output, args=(self.__process.stdout,))
+            stderr_thread = threading.Thread(target=read_error, args=(self.__process.stderr,))
+
+            stdout_thread.start()
+            stderr_thread.start()
+
+            
         return_files = {}
         for type_file, files in output_files.items():
             return_files[type_file] = files_check(files)
 
         return return_files
+    
+    @typechecked
+    def get_last_status(self) -> dict[str, str | bool]:
+        """Returns the last line of processing status information.
+
+        Returns:
+            dict[str, str | bool]: The dictionary contains 3 keys. stderr, stdout, isStop.
+            The stderr key stores the last line of error information.
+            The stdout key stores the last line of information.
+            The isStop key stores a boolean value. True if the process has stopped, False otherwise.
+        
+        Examples:
+            >>> t4r = RtkLibConvib()
+            >>> t4r.start(list_files, "/some_output_dir", config, True)
+            >>> While True:
+            >>>     status = t4r.get_last_status()
+            >>>     if status["isStop"]:
+            >>>         break
+            >>>     time.sleep(1)
+            >>>     print(status)
+            {
+                "isStop": False,
+                "stdout": "some info",
+                "stderr": ""
+            }
+        
+        """
+        isStop = False 
+        
+        if self.__process is not None:
+            if self.__process.poll() is not None:
+                isStop = True
+        
+        output_status = {
+            "isStop": isStop,
+            "stdout": "",
+            "stderr": ""
+        }
+
+        if self.stderr_log != []:
+            output_status["stderr"] = self.stderr_log[-1]
+        if self.stdout_log != []:
+            output_status["stdout"] = self.stdout_log[-1]
+        return output_status
+    
+    @typechecked
+    def get_full_status(self) -> dict[str, list[str]]:
+        """Returns the full lines of processing status information.
+
+        Returns:
+            dict[str, list[str]]: The dictionary contains 2 keys. stderr, stdout.
+            The stderr key stores the list lines of error information.
+            The stdout key stores the list lines of information.
+        
+        Examples:
+            >>> t4r = RtkLibConvib()
+            >>> t4r.start(list_files, "/some_output_dir", config, True)
+            >>> print(t4r.get_full_status())
+            {
+                "stdout": ["some info", "blabla"]
+                "stderr": []
+            }
+            
+        """
+        return {
+            "stdout": self.stdout_log,
+            "stderr": self.stderr_log
+        }
+
+conv = RtkLibConvbin()
+print(conv.get_full_status())
+print(conv.get_last_status())
