@@ -225,9 +225,9 @@ class CDDISClient:
 
         Args:
             output_dir (str): The path where the files should be saved.
-            query (dict): The dictionary should contain the following keys. 
-            "dates" - range of dates or list of dates, "station" - station name,
-            "type" - file type, "rinex_v" - RINEX version (2, 3, auto).
+            query (dict): The dictionary should contain the following keys.
+            "dates" - range of dates or list of dates, "station" - station name (list or str),
+            "type" - file type (list or str), "rinex_v" - RINEX version (2, 3, auto).
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Raises:
@@ -264,7 +264,6 @@ class CDDISClient:
             not query.get("rinex_v", None) or
                 not query.get("type", None)):
             raise KeyError("Invalid query.")
-        
 
         list_dates = []
         output_file_list = []
@@ -280,6 +279,24 @@ class CDDISClient:
             list_dates = self._generate_list_dates(start_day, end_day)
         elif isinstance(query["dates"], list):
             list_dates = [datetime.strptime(date, "%Y-%m-%d") for date in query["dates"]]
+        else:
+            raise ValueError("Type of variable of dates should be dict or list.")
+
+        stations = []
+        if isinstance(query["station"], str):
+            stations.append(query["station"])
+        elif isinstance(query["station"], list):
+            stations = query["station"]
+        else:
+            raise ValueError("Type of variable of station should be str or list.")
+
+        types_file = []
+        if isinstance(query["type"], str):
+            types_file.append(query["type"])
+        elif isinstance(query["type"], list):
+            types_file = query["type"]
+        else:
+            raise ValueError("Type of variable of type should be str or list.")
 
         self.logger.info('Connect to CDDIS FTP.')
         with FTP_TLS('gdc.cddis.eosdis.nasa.gov', timeout=300) as ftps:
@@ -292,77 +309,91 @@ class CDDISClient:
                 year_short = date.strftime("%y")
                 num_day = date.strftime("%j")
 
-                dir_on_ftp = f"gnss/data/daily/{year}/{num_day}/{year_short}{query['type'].lower()}/"
-                name_file = ""
-                if query["rinex_v"] == "2":
-                    name_file = self._search_daily_30s_data_v2(ftps, query, num_day, year_short, dir_on_ftp)
-                    if name_file == "":
-                        no_found_dates.append(date.strftime("%Y-%m-%d"))
-                        continue
-                elif query["rinex_v"] == "3":
-                    name_file = self._search_daily_30s_data_v3(ftps, query, num_day, year, dir_on_ftp)
-                    if name_file == "":
-                        no_found_dates.append(date.strftime("%Y-%m-%d"))
-                        continue
-                elif query["rinex_v"] == "auto":
-                    name_file = self._search_daily_30s_data_v2(ftps, query, num_day, year_short, dir_on_ftp)
-                    if name_file == "":
-                        name_file = self._search_daily_30s_data_v3(ftps, query, num_day, year, dir_on_ftp)
-                        if name_file == "":
-                            no_found_dates.append(date.strftime("%Y-%m-%d"))
-                            continue
-                else:
-                    raise ValueError("Unknow rinex version.")
+                for station in stations:
+                    for type_file in types_file:
+                        query_temp = {
+                            "station": station,
+                            "type": type_file,
+                        }
 
-                self.logger.info('File %s downloading', name_file)
-                output_file_zip = os.path.join(output_dir, name_file)
-                try:
-                    ftps.retrbinary(f"RETR {dir_on_ftp}{name_file}", open(output_file_zip, 'wb').write)
-                except Exception as e:
-                    self.logger.error('Something happened to download %s. %s', output_file_zip, e)
-                    continue
+                        dir_on_ftp = f"gnss/data/daily/{year}/{num_day}/{year_short}{query_temp['type'].lower()}/"
+                        name_file = ""
+                        if query["rinex_v"] == "2":
+                            name_file = self._search_daily_30s_data_v2(
+                                ftps,
+                                query_temp,
+                                num_day,
+                                year_short,
+                                dir_on_ftp
+                            )
+                            if name_file == "":
+                                no_found_dates.append(date.strftime("%Y-%m-%d"))
+                                continue
+                        elif query["rinex_v"] == "3":
+                            name_file = self._search_daily_30s_data_v3(ftps, query_temp, num_day, year, dir_on_ftp)
+                            if name_file == "":
+                                no_found_dates.append(date.strftime("%Y-%m-%d"))
+                                continue
+                        elif query["rinex_v"] == "auto":
+                            name_file = self._search_daily_30s_data_v2(
+                                ftps, query_temp, num_day, year_short, dir_on_ftp)
+                            if name_file == "":
+                                name_file = self._search_daily_30s_data_v3(ftps, query_temp, num_day, year, dir_on_ftp)
+                                if name_file == "":
+                                    no_found_dates.append(date.strftime("%Y-%m-%d"))
+                                    continue
+                        else:
+                            raise ValueError("Unknow rinex version.")
 
-                if unpack:
-                    self.logger.info('Start unpack %s', output_file_zip)
-                    output_file_rnx = ""
-                    if name_file.endswith(".gz"):
-                        output_file_rnx = os.path.join(output_dir, name_file[:-3])
+                        self.logger.info('File %s downloading', name_file)
+                        output_file_zip = os.path.join(output_dir, name_file)
                         try:
-                            with gzip.open(output_file_zip, 'rb') as f_in:
-                                with open(output_file_rnx, 'wb') as f_out:
-                                    shutil.copyfileobj(f_in, f_out)
+                            ftps.retrbinary(f"RETR {dir_on_ftp}{name_file}", open(output_file_zip, 'wb').write)
                         except Exception as e:
-                            self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
-                            continue
-                    elif name_file.endswith(".Z"):
-                        output_file_rnx = os.path.join(output_dir, name_file[:-2])
-                        try:
-                            with open(output_file_rnx, 'wb') as f_out:
-                                subprocess.run(['gunzip', '-c', output_file_zip], stdout=f_out, check=True)
-
-                            with open(output_file_rnx, 'rb') as file:
-                                raw_data = file.read(5000)
-                            detected_encoding = charset_normalizer.detect(raw_data)['encoding']
-
-                            if detected_encoding.lower() != 'utf-8':
-                                with open(output_file_rnx, 'r', encoding=detected_encoding) as file:
-                                    file_content = file.read()
-
-                                with open(output_file_rnx, 'w', encoding='utf-8') as file:
-                                    file.write(file_content)
-                        except Exception as e:
-                            self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
+                            self.logger.error('Something happened to download %s. %s', output_file_zip, e)
                             continue
 
-                    output_file_list.append(output_file_rnx)
+                        if unpack:
+                            self.logger.info('Start unpack %s', output_file_zip)
+                            output_file_rnx = ""
+                            if name_file.endswith(".gz"):
+                                output_file_rnx = os.path.join(output_dir, name_file[:-3])
+                                try:
+                                    with gzip.open(output_file_zip, 'rb') as f_in:
+                                        with open(output_file_rnx, 'wb') as f_out:
+                                            shutil.copyfileobj(f_in, f_out)
+                                except Exception as e:
+                                    self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
+                                    continue
+                            elif name_file.endswith(".Z"):
+                                output_file_rnx = os.path.join(output_dir, name_file[:-2])
+                                try:
+                                    with open(output_file_rnx, 'wb') as f_out:
+                                        subprocess.run(['gunzip', '-c', output_file_zip], stdout=f_out, check=True)
 
-                    try:
-                        os.remove(output_file_zip)
-                    except Exception as e:
-                        self.logger.error('Something happened to delete %s. %s', output_file_zip, e)
-                        continue
-                else:
-                    output_file_list.append(output_file_zip)
+                                    with open(output_file_rnx, 'rb') as file:
+                                        raw_data = file.read(5000)
+                                    detected_encoding = charset_normalizer.detect(raw_data)['encoding']
+
+                                    if detected_encoding.lower() != 'utf-8':
+                                        with open(output_file_rnx, 'r', encoding=detected_encoding) as file:
+                                            file_content = file.read()
+
+                                        with open(output_file_rnx, 'w', encoding='utf-8') as file:
+                                            file.write(file_content)
+                                except Exception as e:
+                                    self.logger.error('Something happened to unpack %s. %s', output_file_zip, e)
+                                    continue
+
+                            output_file_list.append(output_file_rnx)
+
+                            try:
+                                os.remove(output_file_zip)
+                            except Exception as e:
+                                self.logger.error('Something happened to delete %s. %s', output_file_zip, e)
+                                continue
+                        else:
+                            output_file_list.append(output_file_zip)
 
         output_dict = files_check(output_file_list)
         output_dict["no_found_dates"] = no_found_dates
