@@ -833,6 +833,21 @@ class TestCddisClient(TestCase):
                                                "rinex_v": "1"})
         self.assertEqual(str(msg.exception), "'Invalid query.'")
 
+        with self.assertRaises(ValueError) as msg:
+            cddis_cli.get_daily_30s_data(
+                "/", {"dates": {"start": "2020-01-01", "end": "2020-01-01"}, "station": 1, "rinex_v": "a", "type": "a"})
+        self.assertEqual(str(msg.exception), "Type of variable of station should be str or list.")
+
+        with self.assertRaises(ValueError) as msg:
+            cddis_cli.get_daily_30s_data(
+                "/", {"dates": {"start": "2020-01-01", "end": "2020-01-01"}, "station": "1", "rinex_v": "a", "type": 1})
+        self.assertEqual(str(msg.exception), "Type of variable of type should be str or list.")
+
+        with self.assertRaises(ValueError) as msg:
+            cddis_cli.get_daily_30s_data(
+                "/", {"dates": 1, "station": "1", "rinex_v": "a", "type": 1})
+        self.assertEqual(str(msg.exception), "Type of variable of dates should be dict or list.")
+
     def test_get_daily_30s_data_connection2ftp(self):
         cddis_cli = CDDISClient(False)
         with patch("moncenterlib.gnss.cddis_client.FTP_TLS") as mock_ftps:
@@ -864,10 +879,15 @@ class TestCddisClient(TestCase):
                      "rinex_v": "2",
                      "type": "O"}
 
+            query_temp = {
+                "station": "NOVM",
+                "type": "O",
+            }
+
             cddis_cli.get_daily_30s_data("/", query)
 
-            exp = [(query, "365", "19", 'gnss/data/daily/2019/365/19o/'),
-                   (query, "001", "20", 'gnss/data/daily/2020/001/20o/')]
+            exp = [(query_temp, "365", "19", 'gnss/data/daily/2019/365/19o/'),
+                   (query_temp, "001", "20", 'gnss/data/daily/2020/001/20o/')]
             res = [mock_search_daily_30s_data_v2.call_args_list[0].args[1:],
                    mock_search_daily_30s_data_v2.call_args_list[1].args[1:]]
             self.assertEqual(exp, res)
@@ -886,10 +906,15 @@ class TestCddisClient(TestCase):
                      "rinex_v": "3",
                      "type": "O"}
 
+            query_temp = {
+                "station": "NOVM",
+                "type": "O",
+            }
+
             cddis_cli.get_daily_30s_data("/", query)
 
-            exp = [(query, "365", "2019", 'gnss/data/daily/2019/365/19o/'),
-                   (query, "001", "2020", 'gnss/data/daily/2020/001/20o/')]
+            exp = [(query_temp, "365", "2019", 'gnss/data/daily/2019/365/19o/'),
+                   (query_temp, "001", "2020", 'gnss/data/daily/2020/001/20o/')]
             res = [mock_search_daily_30s_data_v3.call_args_list[0].args[1:],
                    mock_search_daily_30s_data_v3.call_args_list[1].args[1:]]
             self.assertEqual(exp, res)
@@ -906,10 +931,15 @@ class TestCddisClient(TestCase):
                      "rinex_v": "auto",
                      "type": "O"}
 
+            query_temp = {
+                "station": "NOVM",
+                "type": "O",
+            }
+
             cddis_cli.get_daily_30s_data("/", query)
 
-            exp = [(query, "365", "19", 'gnss/data/daily/2019/365/19o/'),
-                   (query, "001", "20", 'gnss/data/daily/2020/001/20o/')]
+            exp = [(query_temp, "365", "19", 'gnss/data/daily/2019/365/19o/'),
+                   (query_temp, "001", "20", 'gnss/data/daily/2020/001/20o/')]
             res = [mock_search_daily_30s_data_v2.call_args_list[0].args[1:],
                    mock_search_daily_30s_data_v2.call_args_list[1].args[1:]]
             self.assertEqual(exp, res)
@@ -926,10 +956,15 @@ class TestCddisClient(TestCase):
                      "rinex_v": "auto",
                      "type": "O"}
 
+            query_temp = {
+                "station": "NOVM",
+                "type": "O",
+            }
+
             cddis_cli.get_daily_30s_data("/", query)
 
-            exp = [(query, "365", "2019", 'gnss/data/daily/2019/365/19o/'),
-                   (query, "001", "2020", 'gnss/data/daily/2020/001/20o/')]
+            exp = [(query_temp, "365", "2019", 'gnss/data/daily/2019/365/19o/'),
+                   (query_temp, "001", "2020", 'gnss/data/daily/2020/001/20o/')]
             res = [mock_search_daily_30s_data_v3.call_args_list[0].args[1:],
                    mock_search_daily_30s_data_v3.call_args_list[1].args[1:]]
             self.assertEqual(exp, res)
@@ -1230,7 +1265,7 @@ class TestCddisClient(TestCase):
             self.assertTrue(mock_files_check.called)
             mock_files_check.reset_mock()
 
-    def test_get_daily_30s_check_input_list(self):
+    def test_get_daily_30s_check_input_query(self):
         cddis_cli = CDDISClient(False)
         with patch("moncenterlib.gnss.cddis_client.FTP_TLS") as mock_ftps:
             instance_mock_ftps = mock_ftps.return_value.__enter__()
@@ -1244,6 +1279,48 @@ class TestCddisClient(TestCase):
             cddis_cli.get_daily_30s_data("/", query)
             self.assertEqual([('gnss/data/daily/2020/001/20o/novm0010.20o.Z',),
                               ('gnss/data/daily/2020/002/20o/novm0020.20o.Z',)],
+                             [instance_mock_ftps.size.call_args_list[1].args,
+                              instance_mock_ftps.size.call_args_list[3].args])
+
+            # ----------------------------------------------------------------
+            instance_mock_ftps.reset_mock()
+            instance_mock_ftps.size.side_effect = [Exception(), True]
+            query = {"dates": {"start": "2020-01-01", "end": "2020-01-02"},
+                     "station": "NOVM",
+                     "rinex_v": "2",
+                     "type": "O"
+                     }
+            cddis_cli.get_daily_30s_data("/", query)
+            self.assertEqual([('gnss/data/daily/2020/001/20o/novm0010.20o.Z',),
+                              ('gnss/data/daily/2020/002/20o/novm0020.20o.Z',)],
+                             [instance_mock_ftps.size.call_args_list[1].args,
+                              instance_mock_ftps.size.call_args_list[3].args])
+
+            #  ----------------------------------------------------------------
+            instance_mock_ftps.reset_mock()
+            instance_mock_ftps.size.side_effect = [Exception(), True]
+            query = {"dates": {"start": "2020-01-01", "end": "2020-01-01"},
+                     "station": ["NOVM", "NVSK"],
+                     "rinex_v": "2",
+                     "type": "O"
+                     }
+            cddis_cli.get_daily_30s_data("/", query)
+            self.assertEqual([('gnss/data/daily/2020/001/20o/novm0010.20o.Z',),
+                              ('gnss/data/daily/2020/001/20o/nvsk0010.20o.Z',)],
+                             [instance_mock_ftps.size.call_args_list[1].args,
+                              instance_mock_ftps.size.call_args_list[3].args])
+
+            #  ----------------------------------------------------------------
+            instance_mock_ftps.reset_mock()
+            instance_mock_ftps.size.side_effect = [Exception(), True]
+            query = {"dates": {"start": "2020-01-01", "end": "2020-01-01"},
+                     "station": "NOVM",
+                     "rinex_v": "2",
+                     "type": ["O", "N"]
+                     }
+            cddis_cli.get_daily_30s_data("/", query)
+            self.assertEqual([('gnss/data/daily/2020/001/20o/novm0010.20o.Z',),
+                              ('gnss/data/daily/2020/001/20n/novm0010.20n.Z',)],
                              [instance_mock_ftps.size.call_args_list[1].args,
                               instance_mock_ftps.size.call_args_list[3].args])
 
