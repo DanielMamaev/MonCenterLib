@@ -180,7 +180,7 @@ class RtkLibConvbin:
                 self.logger.error("Config. Key: {f'other_%s'}. Unknown value '%s'.", t, config[f'other_{t}'])
                 raise ValueError(f"Config. Key: {f'other_{t}'}. Unknown value '{config[f'other_{t}']}'.")
 
-    def __make_config4convbin(self, filename: str, output_dir: str, config: dict, output_filename=""):
+    def __make_config4convbin(self, filename: str, output_dir: str, config: dict, output_filename: str = ""):
         output_files = dict()
         cmd = []
 
@@ -490,11 +490,11 @@ class RtkLibConvbin:
         return output_status
 
     @typechecked
-    def get_full_status(self) -> dict[str, list[str]]:
+    def get_full_status(self) -> dict[str, dict[str, list]]:
         """Returns the full lines of processing status information.
 
         Returns:
-            dict[str, list[str]]: The dictionary contains 2 keys. stderr, stdout.
+            dict[str, dict[str, list]]: The dictionary contains 2 keys. stderr, stdout.
             The stderr key stores the list lines of error information.
             The stdout key stores the list lines of information.
 
@@ -503,8 +503,14 @@ class RtkLibConvbin:
             >>> t4r.start(list_files, "/some_output_dir", config, True)
             >>> print(t4r.get_full_status())
             {
-                "stdout": ["some info", "blabla"]
-                "stderr": []
+                "/home/file1": {
+                    "stdout": ["Status: Running", "bla bla"],
+                    "stderr": ["Error: File not found", "bum bum"]
+                }
+                "/home/file2": {
+                    "stdout": ["ok"],
+                    "stderr": []
+                }
             }
 
         """
