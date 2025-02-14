@@ -51,8 +51,7 @@ class TestCddisClient(TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             # rinex version 2
             query = {
-                "start": "2022-12-30",
-                "end": "2022-12-30",
+                "dates": {"start": "2022-12-30", "end": "2022-12-30"},
                 "station": "GODN",
                 "type": "N",
                 "rinex_v": "2"
@@ -125,8 +124,7 @@ class TestCddisClient(TestCase):
             result.append(self.cddis_cli.get_daily_multi_gnss_brd_eph(temp_dir, query, unpack=False)["done"][0])
 
             query = {
-                "start": "2022-12-30",
-                "end": "2022-12-30",
+                "dates": {"start": "2022-12-30", "end": "2022-12-30"},
                 "station": "GODN",
                 "type": "O",
                 "rinex_v": "auto"
