@@ -23,8 +23,7 @@ class TestCddisClient(TestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir:
             query = {
-                "start": "2020-12-31",
-                "end": "2021-01-01",
+                "dates": {"start": "2020-12-31", "end": "2021-01-01"},
                 "station": "NOVM",
                 "type": "O",
                 "rinex_v": "auto"
@@ -37,8 +36,7 @@ class TestCddisClient(TestCase):
 
         with tempfile.TemporaryDirectory() as temp_dir:
             query = {
-                "start": "2022-12-30",
-                "end": "2022-12-30",
+                "dates": {"start": "2022-12-30", "end": "2022-12-30"},
                 "station": "GODN",
                 "type": "N",
                 "rinex_v": "3"
