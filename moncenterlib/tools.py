@@ -14,7 +14,7 @@ def get_path2bin(name_bin) -> str:
             raise OSError(f"{bit_info} doesn't support")
     else:
         raise OSError(f"{system} doesn't support")
-    
+
     path_base = Path(__file__).resolve().parent
 
     paths = {
