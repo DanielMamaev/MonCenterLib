@@ -19,7 +19,7 @@ def read_requirements() -> list:
 if __name__ == '__main__':
     setup(
         name='moncenterlib',
-        version='1.0.3',
+        version='1.0.4',
         author='Daniel Mamaev',
         author_email='moncenter@moncenter.ru',
         description=('MonCenterLib is a python library for geodetic monitoring. The library contains programs,'

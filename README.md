@@ -40,7 +40,7 @@ The MonCenterLib library needs to be supplemented with the following modules:
 |     |quality_check|Anubis|This module is designed for monitoring the quality and quantity of multi-GNSS data.See more about G-Nut/Anubis here: https://gnutsoftware.com/software/anubis |Ready|
 |     |cddis_client|CDDISClient|This module is designed to download one or more GNSS files from the CDDIS archive https://cddis.nasa.gov/ |Ready|
 |     |rgs_client|RGSClient|This module allows you to download various GNSS files from the service https://rgs-centre.ru |Ready|
-|     |gnss_time_series|| |Soon|
+|     |gnss_time_series|parse_pos_file|This function for parsing .pos file. The method returns header, name of columns and time series.|Ready|
 |other| vim | |  Video inclinometer|Soon |
 |     | vms | |Vertical movement sensor |Soon |
 |analysis|  | | |Soon |
@@ -79,6 +79,11 @@ python -m pip install .
 * See examples code [here](examples/README.md)
 
 ## Release History
+* 1.0.4
+    * fix parse_pos_file method in gnss_time_series module
+    * Added the ability to run multiple parallel processes. Module tools4rnx, class RtkLibConvbin
+    * Added the ability to run multiple parallel processes. Module postprocessing, class RtkLibPost
+    * New feature for get_daily_30s_data (station can be 'str' or 'list', type of file can be 'str' or 'list')
 * 1.0.3
     * Remake class Stream2File.
     * New output data from 'start' method of class RtkLibConvbin. Update docstring and tests.
@@ -96,9 +101,13 @@ python -m pip install .
 ## Contacts
 Official e-mail:
 + moncenter@moncenter.ru
-+ support@moncenter.ru
 
 ## License
 
 ## About
+
 Project MonCenter - https://github.com/LoSG-GNSS/About-MonCenter
+
+<img src="https://github.com/DanielMamaev/MonCenterLib/blob/main/img/ssugt.png?raw=true" width="400"/>
+
+
