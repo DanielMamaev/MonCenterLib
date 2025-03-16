@@ -16,12 +16,16 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import os
 from logging import Logger
+from pprint import pprint
+import queue
 import subprocess
 import tempfile
+import threading
 from typeguard import typechecked
 from gps_time import GPSTime
 import moncenterlib.tools as mcl_tools
 import moncenterlib.gnss.tools as mcl_gnss_tools
+import moncenterlib.tools as mcl_tools
 
 
 class RtkLibPost:
@@ -34,6 +38,23 @@ class RtkLibPost:
     See more about RTKLIB here: https://rtklib.com/
     This class can postprocessing one or more files.
     See code usage examples in the examples folder.
+
+    Available file types:
+    {
+        "rover": "",
+        "base": "",
+        "nav": "",
+        "sp3": "",
+        "clk": "",
+        "ionex": "",
+        "erp": "",
+        "dcb": "",
+        "fcb": "",
+        "sbas": "",
+        "otl": "",
+        "satant": "",
+        "rcvant": ""
+    }
     """
     @typechecked
     def __init__(self, logger: bool | Logger | None = None):
@@ -171,72 +192,17 @@ class RtkLibPost:
             'file-tracefile':  ''
         }
 
-    def get_default_config(self) -> dict:
-        """
-        Return variable __default_config. __default_config isn't editable.
-        In the future, you will manually configure this config and send it to the start method.
-        See documentation RTKLIB (manual_2.4.2, page 34-49), how to configuration.
-        Also you can see in example code how to configure.
+        self.__create_vars()
 
-        Returns:
-            dict: default config for rnx2rtkp of RTKLib
+    def __create_vars(self):
+        self.__process = defaultdict(None)
 
-        Examples:
-            >>> from moncenterlib.gnss.postprocessing import RtkLibPost
-            >>> rtk_post = RtkLibPost()
-            >>> rtk_post.get_default_config()
-            {
-                'pos1-posmode': '0',
-                'pos1-frequency':  '2',
-                'pos1-soltype':  '0',
-                'pos1-elmask':  '15',
-                'pos1-snrmask_r':  'off',
-                'pos1-snrmask_b':  'off',
-                ...
-            }
-        """
-        return self.__default_config.copy()
-
-    @typechecked
-    def scan_dirs(self, input_rnx: dict[str, str], recursion: bool = False) -> dict[str, list[str]]:
-        """This method scans the directories and makes a list of files for further work of the class.
-        The method can also recursively search for files.
-
-        Args:
-            input_rnx (dict[str, str]): input_rnx must be a dictionary.
-                Key is the type of file. Value is the path to the directory.
-                This is a list of keys that you can use. ['rover', 'base', 'nav', 'sp3', 'clk', 'erp', 'dcb', 'ionex'].
-            recursion (bool, optional): Recursively search for files. Defaults to False.
-
-        Raises:
-            ValueError: Unidentified key.
-
-        Returns:
-            dict[str, list[str]]: Return a dict of files.
-
-        Examples:
-            >>> from moncenterlib.gnss.postprocessing import RtkLibPost
-            >>> rtk_post = RtkLibPost()
-            >>> paths = {'rover': '/path/to/rover', 'base': '/path/to/base', 'nav': '/path/to/nav'}
-            >>> rtk_post.scan_dirs(paths, True)
-            {
-                'rover': ['file1.rnx', 'file2.rnx'],
-                'base': ['file1.rnx', 'file2.rnx'],
-                'nav': ['file1.rnx', 'file2.rnx']
-            }
-        """
-
-        self.logger.info("Scanning directories...")
-        type_files = ['rover', 'base', 'nav', 'sp3', 'clk', 'erp', 'dcb', 'ionex']
-        for k in input_rnx.keys():
-            if k not in type_files:
-                raise ValueError(f"Unidentified key {k}")
-
-        scan_dirs = dict()
-        for key, directory in input_rnx.items():
-            list_files = mcl_tools.get_files_from_dir(directory, recursion)
-            scan_dirs[key] = list_files
-        return scan_dirs
+        def def_dict(): return {
+            'stdout': [],
+            'stderr': []
+        }
+        self.std_log = defaultdict(def_dict)
+        self.output_files = defaultdict(list)
 
     @typechecked
     def _get_start_date_from_sp3(self, file: str) -> str:
@@ -328,7 +294,83 @@ class RtkLibPost:
         return date
 
     @typechecked
-    def confing2dict(self, path2conf: str) -> dict:
+    def __make_cmd(self, input_rnx: dict[str, str], output_dir: str, timeint: int, temp_file) -> list[str]:
+        cmd = [mcl_tools.get_path2bin("rnx2rtkp")]
+
+        cmd += ["-ti", str(timeint)]
+        cmd += ["-k", temp_file.name]
+
+        cmd += [input_rnx.get("rover", "")]
+        cmd += [input_rnx.get("base", "")]
+        cmd += [input_rnx.get("nav", "")]
+        cmd += [input_rnx.get("sp3", "")]
+        cmd += [input_rnx.get("clk", "")]
+        cmd += [input_rnx.get("ionex", "")]
+
+        cmd = [i for i in cmd if i != ""]
+
+        path_end = os.path.join(output_dir, os.path.basename(input_rnx.get("rover", ""))) + ".pos"
+        cmd += ["-o", path_end]
+
+        return cmd
+
+    @typechecked
+    def __start_process(self, cmd: list[str], wait_process: bool = False):
+        filename = cmd[-1]
+        self.__process[filename] = subprocess.Popen(
+            cmd,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+
+        def read_output(stream, filename):
+            for line in stream:
+                self.std_log[filename]['stdout'] += [line.strip()]
+
+        def read_error(stream, filename):
+            for line in stream:
+                self.std_log[filename]['stderr'] += [line.strip()]
+
+        stdout_thread = threading.Thread(target=read_output, args=(self.__process[filename].stdout, filename))
+        stderr_thread = threading.Thread(target=read_error, args=(self.__process[filename].stderr, filename))
+
+        stdout_thread.start()
+        stderr_thread.start()
+
+        if wait_process:
+            self.__process[filename].wait()
+
+    def get_default_config(self) -> dict:
+        """
+        Return variable __default_config. __default_config isn't editable.
+        In the future, you will manually configure this config and send it to the start method.
+        See documentation RTKLIB (manual_2.4.2, page 34-49), how to configuration.
+        Also you can see in example code how to configure.
+
+        Returns:
+            dict: default config for rnx2rtkp of RTKLib
+
+        Examples:
+            >>> from moncenterlib.gnss.postprocessing import RtkLibPost
+            >>> rtk_post = RtkLibPost()
+            >>> rtk_post.get_default_config()
+            {
+                'pos1-posmode': '0',
+                'pos1-frequency':  '2',
+                'pos1-soltype':  '0',
+                'pos1-elmask':  '15',
+                'pos1-snrmask_r':  'off',
+                'pos1-snrmask_b':  'off',
+                ...
+            }
+        """
+        return self.__default_config.copy()
+
+    @typechecked
+    def config2dict(self, path2conf: str) -> dict[str, str]:
         """This method is used to convert file configuration to dictionary.
 
         Args:
@@ -339,6 +381,15 @@ class RtkLibPost:
 
         Returns:
             dict: Return dictionary of configuration.
+
+        Examples:
+            >>> from moncenterlib.gnss.postprocessing import RtkLibPost
+            >>> rtk_post = RtkLibPost()
+            >>> config = rtk_post.config2dict('/path/to/config.conf')
+            {
+                "param1": "val1",
+                "param2": "val2"
+            }
         """
 
         if not os.path.isfile(path2conf):
@@ -356,65 +407,103 @@ class RtkLibPost:
         return config_dict
 
     @typechecked
-    def start(self, input_rnx: dict[str, str | list[str]], output: str, config: dict[str, str],
-              timeint: int = 0, recursion: bool = False,
-              show_info_rtklib: bool = True) -> dict[str, list]:
-        """The method starts the postprocessing.
+    def dict2config(self,
+                    config: dict[str, str],
+                    path_file: str | tempfile._TemporaryFileWrapper,
+                    input_rnx: dict[str, str | list] = {}):
+        """Saves the dictionary with the RtkLibPost configuration to a file.
+        The file can be used in rnx2rtkp CLI or rtkpost GUI.
 
         Args:
-            input_rnx (dict[str, str  |  list[str]]): The dictionary where keys are a type of file and
-                values are a list of path to the files or path to directory or path to one file.
-            output (str): The path to the directory where the files will be saved.
-            config (dict[str, str]): Dictionary with configuration.
-                You can get the configuration by calling the get_default_config() method.
-            timeint (int, optional): Time interval. Defaults to 0.
-            recursion (bool, optional): If you put a path to dir in arg input_rnx, recursively search for files.
-                Defaults to False.
-            show_info_rtklib (bool, optional): This flag indicates whether to display the output of the rnx2rtkp program.
-                True to display. False is not displayed. Defaults to True.
+            config (dict[str, str]): Config for rnx2rtkp of RTKLibPost.
+            path_file (str | tempfile._TemporaryFileWrapper): The path where the configuration file will be created.
+                You can use it in rnx2rtkp CLI or rtkpost GUI.
+            input_rnx (dict[str, str  |  list], optional): The dictionary where keys are a type of file and
+                values are a path to one file. Defaults to {}.
+
+        Exaples:
+            >>> from moncenterlib.gnss.postprocessing import RtkLibPost
+            >>> rtk_post = RtkLibPost()
+            >>> paths = {"rover": "path/to/rover_file", "satant": "path/to/satant_file"}
+            >>> config = rtk_post.get_default_config()
+            >>> rtk_post.dict2config(config, "path/to/config.conf", input_rnx=paths)
+        """
+        self.logger.info("Starting make configuration")
+
+        path_config_file = None
+
+        # This type of variable is used in start_multi_processing and start_single_processing
+        if isinstance(path_file, tempfile._TemporaryFileWrapper):
+            path_config_file = path_file.name
+        elif isinstance(path_file, str):
+            path_config_file = path_file
+
+        with open(path_config_file, 'w', encoding="utf-8") as config_file:
+            config["file-eopfile"] = input_rnx.get("erp", "")
+            config["file-dcbfile"] = input_rnx.get("dcb", "")
+            config['file-blqfile'] = input_rnx.get("otl", "")
+            config['file-satantfile'] = input_rnx.get("satant", "")
+            config['file-rcvantfile'] = input_rnx.get("rcvant", "")
+
+            for key, val in config.items():
+                config_file.write(key + '=' + val + '\n')
+
+    @typechecked
+    def match_files(self,
+                    input_rnx: dict[str, str],
+                    recursion: bool = True) -> tuple[dict, dict]:
+        """This method allows you to automatically match the input files. The input is provided with data types and
+            paths to the directory where these files are stored.
+            Each file is scanned and the measurement start date is read.
+            By this date, the files are being compared.
+            This allows you to automate further post-processing of a large number of files.
+
+        Args:
+            input_rnx (dict[str, str]): The dictionary where keys are a type of file and values are
+                a path to the directory where files are stored.
+            recursion (bool, optional): Recursively search for files. Defaults to True.
 
         Raises:
-            ValueError: Output directory does not exist.
-            ValueError: Config file does not exist.
+            ValueError: Does not support a type of file
+            ValueError: Invalid file path
 
         Returns:
-            dict[str, list]: The dictionary contains 3 keys. done, no_exists, no_match.
-            The done key stores a list of files that have been successfully created.
-            The no_exists key stores a list of files that have not been created.
-            The no_match key stores a list of no match files.
+            tuple[dict, dict]: A tuple has two elements.
+                The first is the matched files, the second is the files for which the files could not be matched.
 
         Examples:
             >>> from moncenterlib.gnss.postprocessing import RtkLibPost
             >>> rtk_post = RtkLibPost()
-            >>> paths = {'rover': '/path/to/rover', 'base': '/path/to/base', 'nav': '/path/to/nav'}
-            >>> config = rtk_post.get_default_config()
-            >>> rtk_post.start(paths, '/path/to/output', config, erp_from_config=False, timeint=1, recursion=False, show_info_rtklib=True)
-            {
-                "done": ["path2pos1", "path2pos2"],
-                "error": ["path2pos3", "path2pos4"],
-                "no_match": [{"base": "path2file1"}, {"erp": "path2file2"}]
-            }
+            >>> paths = {"rover": "path/to/rover_directory", "nav": "path/to/nav_directory", "satant": "path/to/satant_directory"}
+            >>> match_files, no_match = rtk_post.match_files(paths, True)
         """
 
-        # - fcb - в rtklib это не робит
-        # - sbas - пока забываем про это
+        # check correct input
+        for type_file, path_file in input_rnx.items():
+            if type_file == "fcb" or type_file == "sbas":
+                self.logger.error("Does not support %s", type_file)
+                raise ValueError(f"Does not support {type_file}")
 
-        if not os.path.isdir(output):
-            self.logger.error("Output directory does not exist")
-            raise ValueError("Output directory does not exist")
+            if type_file == "otl" or type_file == "satant" or type_file == "rcvant":
+                if os.path.isfile(path_file) is False:
+                    self.logger.error("Invalid file path: %s", path_file)
+                    raise ValueError(f"Invalid file path: {path_file}")
+                else:
+                    continue
 
-        inputs = dict()
-        for k, v in input_rnx.items():
-            if isinstance(v, str) and os.path.isfile(v):
-                inputs[k] = [v]
-            elif isinstance(v, str) and os.path.isdir(v):
-                inputs = self.scan_dirs(input_rnx, recursion)
-            elif isinstance(v, list):
-                inputs = input_rnx
+            if isinstance(path_file, str) is False or os.path.isdir(path_file) is False:
+                self.logger.error("Invalid file path: %s", path_file)
+                raise ValueError(f"Invalid file path: {path_file}")
+
+        input_files = defaultdict(list)
+        for type_file, dir in input_rnx.items():
+            if type_file == "otl" or type_file == "satant" or type_file == "rcvant":
+                continue
+            input_files[type_file] = mcl_tools.get_files_from_dir(dir, recursion)
 
         self.logger.info("Starting match files")
         match_list = defaultdict(dict)
-        for file in inputs.get('rover', []):
+        for file in input_files.get('rover', []):
             try:
                 date = mcl_gnss_tools.get_start_date_from_obs(file)
             except Exception as e:
@@ -426,7 +515,7 @@ class RtkLibPost:
             else:
                 match_list[date]["rovers"] = [file]
 
-        for file in inputs.get('base', []):
+        for file in input_files.get('base', []):
             try:
                 date = mcl_gnss_tools.get_start_date_from_obs(file)
             except Exception as e:
@@ -435,7 +524,7 @@ class RtkLibPost:
                 continue
             match_list[date]["base"] = file
 
-        for file in inputs.get('nav', []):
+        for file in input_files.get('nav', []):
             try:
                 date = mcl_gnss_tools.get_start_date_from_nav(file)
             except Exception as e:
@@ -444,7 +533,7 @@ class RtkLibPost:
                 continue
             match_list[date]["nav"] = file
 
-        for file in inputs.get('sp3', []):
+        for file in input_files.get('sp3', []):
             try:
                 date = self._get_start_date_from_sp3(file)
             except Exception as e:
@@ -453,7 +542,7 @@ class RtkLibPost:
                 continue
             match_list[date]["sp3"] = file
 
-        for file in inputs.get('clk', []):
+        for file in input_files.get('clk', []):
             try:
                 date = self._get_start_date_from_clk(file)
             except Exception as e:
@@ -462,7 +551,16 @@ class RtkLibPost:
                 continue
             match_list[date]["clk"] = file
 
-        for file in inputs.get('erp', []):
+        for file in input_files.get('ionex', []):
+            try:
+                date = self._get_start_date_from_ionex(file)
+            except Exception as e:
+                self.logger.error("Can't get date from ionex file %s", file)
+                self.logger.error(e)
+                continue
+            match_list[date]["ionex"] = file
+
+        for file in input_files.get('erp', []):
             try:
                 dates = self._get_dates_from_erp(file)
             except Exception as e:
@@ -472,7 +570,7 @@ class RtkLibPost:
             for date in dates:
                 match_list[date]["erp"] = file
 
-        for file in inputs.get('dcb', []):
+        for file in input_files.get('dcb', []):
             try:
                 date = self._get_start_date_from_dcb(file)
             except Exception as e:
@@ -481,60 +579,235 @@ class RtkLibPost:
                 continue
             match_list[date]["dcb"] = file
 
-        for file in inputs.get('ionex', []):
-            try:
-                date = self._get_start_date_from_ionex(file)
-            except Exception as e:
-                self.logger.error("Can't get date from ionex file %s", file)
-                self.logger.error(e)
+        # add additional files
+        for date, match in match_list.items():
+            if input_rnx.get("otl", "") != "":
+                match["otl"] = input_rnx.get("otl", "")
+            if input_rnx.get("satant", "") != "":
+                match["satant"] = input_rnx.get("satant", "")
+            if input_rnx.get("rcvant", "") != "":
+                match["rcvant"] = input_rnx.get("rcvant", "")
+
+        # clearing incomplete lists
+        no_match = dict()
+        finally_match = dict()
+        for date, match in match_list.items():
+            if len(match) != len(input_rnx):
+                no_match[date] = match
                 continue
-            match_list[date]["ionex"] = file
+            finally_match[date] = match
 
-        pos_paths = []
-        no_match = []
+        return finally_match, no_match
+
+    def start_multi_processing(self,
+                               match_list: dict[str, dict[str, str | list]],
+                               output_dir: str,
+                               config: dict[str, str],
+                               timeint: int = 0,
+                               workers: int = 1):
+        """The method starts the postprocessing. The method allows you to postprocess a large number of files.
+        The generated dictionary with the matched files is taken from the 'match_files' method.
+        This method is non-blocking. You can use an endless loop to wait for the process to complete.
+        See the usage example.
+
+        Args:
+            match_list (dict[str, dict[str, str  |  list]]): Match files from the 'match_files' method.
+            output_dir (str): The path to the directory where the files will be saved.
+            config (dict[str, str]): Config for rnx2rtkp of RTKLibPost.
+            timeint (int, optional): Time interval. Defaults to 0.
+            workers (int, optional): The number of parallel processes.
+                It reduces the processing time for multiple files. Defaults to 1.
+
+        Examples:
+            >>> from moncenterlib.gnss.postprocessing import RtkLibPost
+            >>> rtk_post = RtkLibPost()
+            >>> paths = {"rover": "path/to/rover_directory", "nav": "path/to/nav_directory", "satant": "path/to/satant_file"}
+            >>> match_files, no_match = rtk_post.match_files(paths, True)
+            >>> config = rtk_post.get_default_config()
+            >>> rtk_post.start_multi_processing(match_files, "path/to/output_directory", config, timeint=1, workers=2)
+            >>> # wait process and get status
+            >>> while True:
+            ...     time.sleep(1)
+            ...     status = rtk_post.get_last_status()
+            ...     print(status)
+            ...     states = [s['isStop'] for s in status.values()]
+            ...     if all(states):
+            ...         break
+            >>> print(rtk_post.output_files)
+        """
+
+        self.logger.info("Start MultiProcessing")
+        if not os.path.isdir(output_dir):
+            self.logger.error("Output directory does not exist")
+            raise ValueError("Output directory does not exist")
+
+        self.__create_vars()
+
+        semaphore = threading.Semaphore(workers)
+        q = queue.Queue()
+
+        for match in match_list.values():
+            for rover in match.get('rovers', []):
+                match_temp = match.copy()
+                match_temp.pop("rovers")
+                match_temp["rover"] = rover
+                q.put(match_temp)
+
+        def worker(q: queue.Queue):
+            while not q.empty():
+                input_rnx: dict = q.get()
+
+                with (tempfile.NamedTemporaryFile() as temp_file,
+                      semaphore):
+                    # make configuration
+                    self.dict2config(config, temp_file, input_rnx)
+
+                    # make command
+                    cmd = self.__make_cmd(input_rnx, output_dir, timeint, temp_file)
+
+                    self.logger.info("Run postprocessing %s", input_rnx.get("rover", ""))
+                    self.__start_process(cmd, True)
+
+                q.task_done()
+
+        for _ in range(workers):
+            thread = threading.Thread(target=worker, args=(q,))
+            thread.start()
+
+    @typechecked
+    def start_single_processing(self,
+                                input_rnx: dict[str, str],
+                                output_dir: str,
+                                config: dict[str, str],
+                                timeint: int = 0,
+                                wait_process: bool = True
+                                ):
+        """The method starts the postprocessing. This method can process single files. This method is non-blocking.
+        You can use an endless loop to wait for the process to complete. See the usage example.
+
+        Args:
+            input_rnx (dict[str, str]): The dictionary where keys are a type of file and values are
+                a path to the file.
+            output_dir (str): The path to the directory where the files will be saved.
+            config (dict[str, str]): Config for rnx2rtkp of RTKLibPost.
+            timeint (int, optional): Time interval. Defaults to 0.
+            wait_process (bool, optional): Wait for the method to be rejected. Or run it as a parallel process.
+                Defaults to False.
+
+        Raises:
+            ValueError: Output directory does not exist.
+            ValueError: Rover path is not set.
+            ValueError: Path to file 'path/to/file' does not exist.
+
+        Examples:
+            >>> from moncenterlib.gnss.postprocessing import RtkLibPost
+            >>> rtk_post = RtkLibPost()
+            >>> paths = {"rover": "path/to/rover_file", "nav": "path/to/nav_file", "satant": "path/to/satant_file"}
+            >>> config = rtk_post.get_default_config()
+            >>> rtk_post.start_single_processing(paths, "path/to/output_directory", config, timeint=1, wait_process=True)
+            >>> print(rtk_post.output_files)
+        """
+
+        # - fcb - в rtklib это не робит
+        # - sbas - пока забываем про это
+
+        if input_rnx.get("rover", "") == "":
+            self.logger.error("Rover path is not set")
+            raise ValueError("Rover path is not set")
+
+        if not os.path.isdir(output_dir):
+            self.logger.error("Output directory does not exist")
+            raise ValueError("Output directory does not exist")
+
+        for path_file in input_rnx.values():
+            if not os.path.isfile(path_file):
+                self.logger.error("Path to file %s does not exist", path_file)
+                raise ValueError(f"Path to file '{path_file}' does not exist")
+
+        self.__create_vars()
+
         with tempfile.NamedTemporaryFile() as temp_file:
-            for path_files in match_list.values():
-                if len(path_files) != len(input_rnx):
-                    no_match.append(path_files)
-                    continue
+            # make configuration
+            self.dict2config(config, temp_file, input_rnx)
 
-                # make configuration
-                self.logger.info("Starting make configuration")
-                with open(temp_file.name, 'w', encoding="utf-8") as config_temp_file:
+            # make command
+            cmd = self.__make_cmd(input_rnx, output_dir, timeint, temp_file)
 
-                    config["file-eopfile"] = path_files.get("erp", "")
-                    config["file-dcbfile"] = path_files.get("dcb", "")
+            self.logger.info("Run postprocessing %s", input_rnx.get("rover", ""))
+            self.__start_process(cmd, wait_process)
 
-                    for key, val in config.items():
-                        config_temp_file.write(key + '=' + val + '\n')
+    @typechecked
+    def get_last_status(self) -> dict[str, dict]:
+        """Returns the last line of processing status information.
 
-                # make command
-                for rvr in path_files.get("rovers", []):
-                    cmd = [mcl_tools.get_path2bin("rnx2rtkp")]
+        Returns:
+            dict[str, str | bool]: The dictionary contains 3 keys. stderr, stdout, isStop.
+            The stderr key stores the last line of error information.
+            The stdout key stores the last line of information.
+            The isStop key stores a boolean value. True if the process has stopped, False otherwise.
 
-                    cmd += ["-ti", str(timeint)]
-                    cmd += ["-k", temp_file.name]
+        Examples:
+            >>> post = RtkLibPost()
+            >>> post.start_single_processing(...)
+            >>> While True:
+            >>>     status = post.get_last_status()
+            >>>     if status["isStop"]:
+            >>>         break
+            >>>     time.sleep(1)
+            >>>     print(status)
+            {
+                "isStop": True,
+                "stdout": "some info",
+                "stderr": ""
+            }
 
-                    cmd += [rvr]
-                    cmd += [path_files.get("base", "")]
-                    cmd += [path_files.get("nav", "")]
-                    cmd += [path_files.get("sp3", "")]
-                    cmd += [path_files.get("clk", "")]
-                    cmd += [path_files.get("ionex", "")]
+        """
 
-                    cmd = [i for i in cmd if i != ""]
+        output_status = defaultdict(dict)
 
-                    path_end = os.path.join(output, os.path.basename(rvr)) + ".pos"
-                    cmd += ["-o", path_end]
+        for file, std in self.std_log.items():
+            stdout = ''
+            stderr = ''
 
-                    pos_paths.append(path_end)
+            isStop = False
+            if self.__process[file] is not None and self.__process[file].poll() is not None:
+                isStop = True
 
-                    self.logger.info("Run postprocessing %s", rvr)
-                    if show_info_rtklib:
-                        subprocess.run(cmd, check=False, stdout=subprocess.DEVNULL)
-                    else:
-                        subprocess.run(cmd, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if std["stdout"] != []:
+                stdout = std["stdout"][-2]
+            if std["stderr"] != []:
+                stderr = std["stderr"][-2]
 
-        output_dict = mcl_tools.files_check(pos_paths)
-        output_dict["no_match"] = no_match
-        return output_dict
+            output_status[file] = {"stdout": stdout,
+                                   "stderr": stderr,
+                                   "isStop": isStop
+                                   }
+
+        return output_status
+
+    @typechecked
+    def get_full_status(self) -> dict[str, dict[str, list]]:
+        """Returns the full lines of processing status information.
+
+        Returns:
+            dict[str, dict[str, list]]: The dictionary contains 2 keys. stderr, stdout.
+            The stderr key stores the list lines of error information.
+            The stdout key stores the list lines of information.
+
+        Examples:
+            >>> post = RtkLibConvib()
+            >>> post.start_single_processing(...)
+            >>> print(post.get_full_status())
+            {
+                "/home/file1": {
+                    "stdout": ["Status: Running", "bla bla"],
+                    "stderr": ["Error: File not found", "bum bum"]
+                }
+                "/home/file2": {
+                    "stdout": ["ok"],
+                    "stderr": []
+                }
+            }
+
+        """
+        return self.std_log
