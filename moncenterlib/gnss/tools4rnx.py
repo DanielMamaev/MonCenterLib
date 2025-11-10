@@ -48,6 +48,7 @@ class RtkLibConvbin:
             'rinex_v': '3.04',
             'start_time': '',
             'end_time': '',
+            'start_time_rtcm': '',
             'interval': '0',
             'freq': '3',
             'system': 'G,R,E,J,S,C,I',
@@ -98,17 +99,16 @@ class RtkLibConvbin:
     def __create_vars(self):
         self.__process = defaultdict(None)
 
-        def def_dict(): return {
-            'stdout': [],
-            'stderr': []
-        }
+        def def_dict():
+            return {'stdout': [], 'stderr': []}
         self.std_log = defaultdict(def_dict)
         self.output_files = defaultdict(list)
 
     def __check_config(self, config: dict):
         format_raw = ["rtcm2", "rtcm3", "nov", "oem3", "ubx", "ss2",
                       "hemis", "stq", "javad", "nvs", "binex", "rt17", "sbf", "rinex"]
-        rinex_v = ["3.04", "3.03", "3.02", "3.01", "3.00", "2.12", "2.11", "2.10"]
+        rinex_v = ["3.04", "3.03", "3.02", "3.01",
+                   "3.00", "2.12", "2.11", "2.10"]
         output_type = ["o", "n", "g", "h", "q", "l", "b", "i", "s"]
         other_type = ['od', 'os', 'oi', 'ot', 'ol', 'halfc']
         full_sys = ['G', 'R', 'E', 'J', 'S', 'C', 'I']
@@ -123,8 +123,10 @@ class RtkLibConvbin:
                 raise TypeError(f"Config. Key '{key}' must be str.")
 
             if not isinstance(val, str):
-                self.logger.error("Config. Value '%s' of key '%s' must be str.", val, key)
-                raise TypeError(f"Config. Value '{val}' of key '{key}' must be str.")
+                self.logger.error(
+                    "Config. Value '%s' of key '%s' must be str.", val, key)
+                raise TypeError(
+                    f"Config. Value '{val}' of key '{key}' must be str.")
 
         for key in self.__default_config.keys():
             if key not in config:
@@ -132,16 +134,21 @@ class RtkLibConvbin:
                 raise Exception(f"Config. Not found key '{key}'.")
 
         if config['format'] not in format_raw:
-            self.logger.error("Config. Key: format. Unknown format '%s'.", config['format'])
-            raise ValueError(f"Config. Key: format. Unknown format '{config['format']}'.")
+            self.logger.error(
+                "Config. Key: format. Unknown format '%s'.", config['format'])
+            raise ValueError(
+                f"Config. Key: format. Unknown format '{config['format']}'.")
 
         if config['rinex_v'] not in rinex_v:
-            self.logger.error("Config. Key: rinex_v. Unknown rinex version '%s'.", config['rinex_v'])
-            raise ValueError(f"Config. Key: rinex_v. Unknown rinex version '{config['rinex_v']}'.")
+            self.logger.error(
+                "Config. Key: rinex_v. Unknown rinex version '%s'.", config['rinex_v'])
+            raise ValueError(
+                f"Config. Key: rinex_v. Unknown rinex version '{config['rinex_v']}'.")
 
         if config['start_time'] != '':
             try:
-                datetime.datetime.strptime(config['start_time'], "%Y/%m/%d %H:%M:%S")
+                datetime.datetime.strptime(
+                    config['start_time'], "%Y/%m/%d %H:%M:%S")
             except ValueError:
                 self.logger.error(
                     "Config. Key: start_time. Incorrect data format %s, should be YYYY/MM/DD HH:MM:SS.", config['start_time'])
@@ -149,20 +156,33 @@ class RtkLibConvbin:
                     f"Config. Key: start_time. Incorrect data format {config['start_time']}, should be YYYY/MM/DD HH:MM:SS.")
         if config['end_time'] != '':
             try:
-                datetime.datetime.strptime(config['end_time'], "%Y/%m/%d %H:%M:%S")
+                datetime.datetime.strptime(
+                    config['end_time'], "%Y/%m/%d %H:%M:%S")
             except ValueError:
                 self.logger.error(
                     "Config. Key: end_time. Incorrect data format %s, should be YYYY/MM/DD HH:MM:SS.", config['end_time'])
                 raise ValueError(
                     f"Config. Key: end_time. Incorrect data format {config['end_time']}, should be YYYY/MM/DD HH:MM:SS.")
+        if config['start_time_rtcm'] != '':
+            try:
+                datetime.datetime.strptime(config['start_time_rtcm'], "%Y/%m/%d %H:%M:%S")
+            except ValueError:
+                self.logger.error(
+                    "Config. Key: start_time_rtcm. Incorrect data format %s, should be YYYY/MM/DD HH:MM:SS.", config['start_time_rtcm'])
+                raise ValueError(
+                    f"Config. Key: start_time_rtcm. Incorrect data format {config['start_time_rtcm']}, should be YYYY/MM/DD HH:MM:SS.")
 
         if float(config['interval']) < 0:
-            self.logger.error("Config. Key: interval. Interval %s must be >= 0.", config['interval'])
-            raise ValueError(f"Config. Key: interval. Interval {config['interval']} must be >= 0.")
+            self.logger.error(
+                "Config. Key: interval. Interval %s must be >= 0.", config['interval'])
+            raise ValueError(
+                f"Config. Key: interval. Interval {config['interval']} must be >= 0.")
 
         if not (0 <= int(config['freq']) <= 127):
-            self.logger.error("Config. Key: freq. Freq %s must be 0 <= freq <= 127.", config['freq'])
-            raise ValueError(f"Config. Key: freq. Freq {config['freq']} must be 0 <= freq <= 127.")
+            self.logger.error(
+                "Config. Key: freq. Freq %s must be 0 <= freq <= 127.", config['freq'])
+            raise ValueError(
+                f"Config. Key: freq. Freq {config['freq']} must be 0 <= freq <= 127.")
 
         systems = config['system'].split(",")
         for s in systems:
@@ -181,7 +201,7 @@ class RtkLibConvbin:
                 raise ValueError(f"Config. Key: {f'other_{t}'}. Unknown value '{config[f'other_{t}']}'.")
 
     def __make_config4convbin(self, filename: str, output_dir: str, config: dict, output_filename: str = ""):
-        output_files = dict()
+        output_files = {}
         cmd = []
 
         cmd += [get_path2bin("convbin")]
@@ -190,10 +210,16 @@ class RtkLibConvbin:
         cmd += ["-v", config['rinex_v']]
 
         if not config['start_time'] == '':
-            cmd += ["-ts", config['start_time']]
+            d, t = config['start_time'].split(" ")
+            cmd += ["-ts", d, t]
 
         if not config['end_time'] == '':
-            cmd += ["-te", config['end_time']]
+            d, t = config['end_time'].split(" ")
+            cmd += ["-te", d, t]
+
+        if not config['start_time_rtcm'] == '':
+            d, t = config['start_time_rtcm'].split(" ")
+            cmd += ["-tr", d, t]
 
         cmd += ["-ti", config['interval']]
         cmd += ["-f", config['freq']]
@@ -216,8 +242,10 @@ class RtkLibConvbin:
                     temp_path = os.path.join(output_dir, f"{namef}.{t}")
                     output_files[t] = os.path.join(output_dir, f"{namef}.{t}")
                 else:
-                    temp_path = os.path.join(output_dir, output_filename + f".{t}")
-                    output_files[t] = os.path.join(output_dir, output_filename + f"{namef.replace('*', '')}.{t}")
+                    temp_path = os.path.join(
+                        output_dir, output_filename + f".{t}")
+                    output_files[t] = os.path.join(
+                        output_dir, output_filename + f"{namef.replace('*', '')}.{t}")
                 cmd += [f"-{t}", temp_path]
 
         other_type = ['od', 'os', 'oi', 'ot', 'ol', 'halfc']
@@ -232,10 +260,12 @@ class RtkLibConvbin:
         cmd += ["-ht", config['marker_type']]
 
         cmd += ["-ho", f"{config['about_name']}/{config['about_agency']}"]
-        cmd += ["-hr", f"{config['receiver_number']}/{config['receiver_type']}/{config['receiver_version']}"]
+        cmd += ["-hr",
+                f"{config['receiver_number']}/{config['receiver_type']}/{config['receiver_version']}"]
         cmd += ["-ha", f"{config['antenna_number']}/{config['antenna_type']}"]
         cmd += ["-hp", f"{config['approx_position_x']}/{config['approx_position_y']}/{config['approx_position_z']}"]
-        cmd += ["-hd", f"{config['antenna_delta_h']}/{config['antenna_delta_e']}/{config['antenna_delta_n']}"]
+        cmd += ["-hd",
+                f"{config['antenna_delta_h']}/{config['antenna_delta_e']}/{config['antenna_delta_n']}"]
 
         cmd += [filename]
 
@@ -260,8 +290,10 @@ class RtkLibConvbin:
             for line in stream:
                 self.std_log[filename]['stderr'] += [line.strip()]
 
-        stdout_thread = threading.Thread(target=read_output, args=(self.__process[filename].stdout, filename))
-        stderr_thread = threading.Thread(target=read_error, args=(self.__process[filename].stderr, filename))
+        stdout_thread = threading.Thread(target=read_output, args=(
+            self.__process[filename].stdout, filename))
+        stderr_thread = threading.Thread(target=read_error, args=(
+            self.__process[filename].stderr, filename))
 
         stdout_thread.start()
         stderr_thread.start()
@@ -339,7 +371,8 @@ class RtkLibConvbin:
         self.__check_config(config)
         self.__create_vars()
 
-        cmd, output_files = self.__make_config4convbin(input_dir, output_dir, config, output_filename)
+        cmd, output_files = self.__make_config4convbin(
+            input_dir, output_dir, config, output_filename)
         for type_file, filename in output_files.items():
             self.output_files[type_file].append(filename)
 
@@ -419,7 +452,8 @@ class RtkLibConvbin:
 
         for file in input_files:
             self.logger.info("Set config for %s", file)
-            cmd, output_files = self.__make_config4convbin(file, output, config)
+            cmd, output_files = self.__make_config4convbin(
+                file, output, config)
 
             for type_file, filename in output_files.items():
                 self.output_files[type_file].append(filename)
