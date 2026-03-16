@@ -105,7 +105,7 @@ class CDDISClient:
             list_dates = [datetime.strptime(date, "%Y-%m-%d") for date in query]
 
         self.logger.info('Connect to CDDIS FTP.')
-        with FTP_TLS('gdc.cddis.eosdis.nasa.gov', timeout=300) as ftps:
+        with FTP_TLS('gdc.cddis.eosdis.nasa.gov', timeout=60) as ftps:
             ftps.login(user='anonymous', passwd='anonymous')
             ftps.prot_p()
             ftps.set_pasv(True)
@@ -299,7 +299,7 @@ class CDDISClient:
             raise ValueError("Type of variable of type should be str or list.")
 
         self.logger.info('Connect to CDDIS FTP.')
-        with FTP_TLS('gdc.cddis.eosdis.nasa.gov', timeout=300) as ftps:
+        with FTP_TLS('gdc.cddis.eosdis.nasa.gov', timeout=60) as ftps:
             ftps.login(user='anonymous', passwd='anonymous')
             ftps.prot_p()
             ftps.set_pasv(True)
@@ -403,7 +403,7 @@ class CDDISClient:
     def _week_products(self, type_prod: str, output_dir: str, query: dict | list, unpack=True) -> dict:
         """
         Args:
-            type_prod (str): Type of product. (sp3, clk_5m, clk_30s, erp).
+            type_prod (str): Type of product. (sp3, sp3_glo, clk_5m, clk_30s, erp).
             output_dir (str): The path where the files should be saved.
             query (dict | list): A request containing a start date and an end date.
                 Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD
@@ -441,7 +441,7 @@ class CDDISClient:
             list_dates = [datetime.strptime(date, "%Y-%m-%d") for date in query]
 
         self.logger.info('Connect to CDDIS FTP.')
-        with FTP_TLS('gdc.cddis.eosdis.nasa.gov', timeout=300) as ftps:
+        with FTP_TLS('gdc.cddis.eosdis.nasa.gov', timeout=60) as ftps:
             ftps.login(user='anonymous', passwd='anonymous')
             ftps.prot_p()
             ftps.set_pasv(True)
@@ -462,6 +462,9 @@ class CDDISClient:
                 if type_prod == "sp3":
                     temp_name_file_old = f"igs{gps_week}{gps_day}.sp3.Z"
                     temp_name_file_new = f"IGS0OPSFIN_{year}{num_day}0000_01D_15M_ORB.SP3.gz"
+                elif type_prod == "sp3_glo":
+                    dir_on_ftp = f"/glonass/products/{gps_week}/"
+                    temp_name_file_old = f"igl{gps_week}{gps_day}.sp3.Z"
                 elif type_prod == "erp":
                     temp_name_file_old = f"igs{gps_week}7.erp.Z"
                     start_of_week = GPSTime(gps_week).to_datetime()
@@ -556,7 +559,7 @@ class CDDISClient:
         return output_dict
 
     @typechecked
-    def get_precise_orbits(self, output_dir: str, query: dict | list, unpack=True) -> dict:
+    def get_precise_orbits(self, output_dir: str, query: dict | list, glonass: bool = False, unpack=True) -> dict:
         """A method for downloading files of final precise orbits (SP3).
         See more here: https://cddis.nasa.gov/Data_and_Derived_Products/GNSS/orbit_products.html
 
@@ -565,6 +568,7 @@ class CDDISClient:
             query (dict | list): A request may containing a start date and an end date.
                 Example: {"start": "2020-12-30", "end": "2021-12-30"}. Format date = YYYY-MM-DD.
                 Also you can use list of dates. Example: ["2020-12-30", "2021-12-31"]
+            glonass (bool): If True download GLONASS precise orbits. Defaut to False.
             unpack (bool, optional): Deleting an archive after unpacking. Defaults to True.
 
         Returns:
@@ -585,6 +589,8 @@ class CDDISClient:
                 "no_found_dates": []
             }
         """
+        if glonass:
+            return self._week_products("sp3_glo", output_dir, query, unpack)
         return self._week_products("sp3", output_dir, query, unpack)
 
     @typechecked
