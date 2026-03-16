@@ -22,7 +22,7 @@ class RGSClient:
     """
     """
     @typechecked
-    def __init__(self, api_token: str, ssl: bool = True, logger: bool | Logger | None = None) -> None:
+    def __init__(self, ssl: bool = True, logger: bool | Logger | None = None) -> None:
         """
         Args:
             api_token (str): API token from personal account of rgs-centre.
@@ -43,9 +43,7 @@ class RGSClient:
 
         self.path = 'https://rgs.cgkipd.ru/api'
 
-        if api_token == "":
-            raise ValueError("API token is empty")
-        self.api_token = api_token
+        self.api_token = "qdZsTWSBRlTXvgZRsyesXgst5l09iUJUnt2jGa7bEXwLa3RwXqfaI6Qa079O"
 
         self.logger = logger
 
