@@ -319,13 +319,7 @@ class CDDISClient:
                         dir_on_ftp = f"gnss/data/daily/{year}/{num_day}/{year_short}{query_temp['type'].lower()}/"
                         name_file = ""
                         if query["rinex_v"] == "2":
-                            name_file = self._search_daily_30s_data_v2(
-                                ftps,
-                                query_temp,
-                                num_day,
-                                year_short,
-                                dir_on_ftp
-                            )
+                            name_file = self._search_daily_30s_data_v2(ftps, query_temp, num_day, year_short, dir_on_ftp)
                             if name_file == "":
                                 no_found_dates.append(date.strftime("%Y-%m-%d"))
                                 continue
@@ -335,13 +329,15 @@ class CDDISClient:
                                 no_found_dates.append(date.strftime("%Y-%m-%d"))
                                 continue
                         elif query["rinex_v"] == "auto":
-                            name_file = self._search_daily_30s_data_v2(
-                                ftps, query_temp, num_day, year_short, dir_on_ftp)
+                            name_file = self._search_daily_30s_data_v2(ftps, query_temp, num_day, year_short, dir_on_ftp)
                             if name_file == "":
                                 name_file = self._search_daily_30s_data_v3(ftps, query_temp, num_day, year, dir_on_ftp)
-                                if name_file == "":
-                                    no_found_dates.append(date.strftime("%Y-%m-%d"))
-                                    continue
+                            if name_file == "":
+                                dir_on_ftp = f"gnss/data/daily/{year}/{num_day}/{year_short}d/"
+                                name_file = self._search_daily_30s_data_v3(ftps, query, num_day, year, dir_on_ftp)
+                            if name_file == "":
+                                no_found_dates.append(date.strftime("%Y-%m-%d"))
+                                continue
                         else:
                             raise ValueError("Unknow rinex version.")
 
