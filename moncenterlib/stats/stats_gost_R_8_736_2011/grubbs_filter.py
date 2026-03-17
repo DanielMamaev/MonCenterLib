@@ -2,7 +2,7 @@
 from math import sqrt
 from scipy.stats import t
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import GrubbsCheck, GrubbsResult
-from moncenterlib.stats.stats_gost_R_8_736_2011.functions import calc_basic_stats
+from moncenterlib.stats.stats_gost_R_8_736_2011.basic_stats import calc_basic_stats
 
 
 def _grubbs_critical_value(n, alpha=0.05) -> float:

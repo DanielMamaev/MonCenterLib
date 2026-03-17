@@ -1,7 +1,7 @@
 from math import sqrt, exp, pi
 from scipy.stats import chi2
 
-from moncenterlib.stats.stats_gost_R_8_736_2011.functions import calc_basic_stats
+from moncenterlib.stats.stats_gost_R_8_736_2011.basic_stats import calc_basic_stats
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import PearsonInterval, PearsonNormalityResult
 
 def _recommended_interval_count(n: int) -> int:

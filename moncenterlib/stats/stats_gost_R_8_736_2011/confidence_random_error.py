@@ -1,6 +1,6 @@
 from scipy.stats import t
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import RandomErrorConfidenceResult
-from moncenterlib.stats.stats_gost_R_8_736_2011.functions import calc_basic_stats
+from moncenterlib.stats.stats_gost_R_8_736_2011.basic_stats import calc_basic_stats
 
 
 def _student_t_value(p_conf: float, n: int) -> float:

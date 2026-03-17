@@ -1,7 +1,7 @@
 from math import sqrt, erf, log
 from moncenterlib.stats.stats_gost_R_8_736_2011.tables import TABLE_G3
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import MisesSmirnovNormalityResult, MisesSmirnovRow
-from moncenterlib.stats.stats_gost_R_8_736_2011.functions import calc_basic_stats
+from moncenterlib.stats.stats_gost_R_8_736_2011.basic_stats import calc_basic_stats
 
 
 def _normal_cdf(x: float, mean: float, std: float) -> float:

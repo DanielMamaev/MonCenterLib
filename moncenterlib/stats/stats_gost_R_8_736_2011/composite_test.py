@@ -3,7 +3,7 @@ from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import (
     CompositeCriterion2Result,
     CompositeNormalityResult)
 from moncenterlib.stats.stats_gost_R_8_736_2011.tables import TABLE_B1, TABLE_B2, TABLE_B3
-from moncenterlib.stats.stats_gost_R_8_736_2011.functions import calc_basic_stats
+from moncenterlib.stats.stats_gost_R_8_736_2011.basic_stats import calc_basic_stats
 
 def _get_b1_limits(n: int, q_percent: int) -> tuple[float, float]:
     """

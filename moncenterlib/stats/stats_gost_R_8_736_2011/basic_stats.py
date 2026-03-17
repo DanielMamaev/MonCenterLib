@@ -3,7 +3,10 @@ text
 """
 
 from math import sqrt
+
+
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import BasicStats
+
 
 def calc_basic_stats(values: list) -> BasicStats:
     """
@@ -41,5 +44,3 @@ def calc_basic_stats(values: list) -> BasicStats:
     S_biased = sqrt(sum((x - x_mean) ** 2 for x in values) / n)
 
     return BasicStats(n=n, x_mean=x_mean, S=S, S_x_mean=S_x_mean, S_biased=S_biased)
-
-
