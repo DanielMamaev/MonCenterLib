@@ -274,7 +274,7 @@ class SystematicErrorResult:
         - p_conf - доверительная вероятность
         - k - коэффициент композиции
         - theta_sum - итоговая граница НСП без учета знака
-        - method - способ расчета: 'sum' или 'rss'
+        - method - способ расчета: 'none', 'sum' или 'rss'
         - components - список компонентов
     """
     m: int

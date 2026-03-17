@@ -75,7 +75,10 @@ def _calculate(values: list, config: dict):
     result_object.append(result_systematic_error)
 
     # Подготовка параметров для шага 9
-    if result_systematic_error.method == "sum":
+    if result_systematic_error.method == "none":
+        theta_mode = "plain"
+        theta_k = None
+    elif result_systematic_error.method == "sum":
         theta_mode = "plain"
         theta_k = None
     elif result_systematic_error.method == "rss":
@@ -317,21 +320,27 @@ def _build_protocol_text(result: dict) -> str:
 
     lines.append("Шаг 8. Доверительные границы неисключенной систематической погрешности")
     lines.append("-" * 78)
-    lines.append(f"m = {_fmt(_safe_getattr(systematic_error, 'm'))}")
-    lines.append(f"p_conf = {_fmt(_safe_getattr(systematic_error, 'p_conf'))}")
-    lines.append(f"k = {_fmt(_safe_getattr(systematic_error, 'k'))}")
-    lines.append(f"theta_sum = {_fmt(_safe_getattr(systematic_error, 'theta_sum'))}")
-    lines.append(f"method = {_fmt(_safe_getattr(systematic_error, 'method'))}")
-    lines.append("Компоненты НСП:")
+    if systematic_error.method == "none":
+        lines.append("Систематические погрешности отсутствуют или были учтены ранее.")
+        lines.append(f"m = {systematic_error.m}")
+        lines.append(f"theta_sum = {_fmt(systematic_error.theta_sum)}")
+        lines.append("")
+    else:
+        lines.append(f"m = {_fmt(_safe_getattr(systematic_error, 'm'))}")
+        lines.append(f"p_conf = {_fmt(_safe_getattr(systematic_error, 'p_conf'))}")
+        lines.append(f"k = {_fmt(_safe_getattr(systematic_error, 'k'))}")
+        lines.append(f"theta_sum = {_fmt(_safe_getattr(systematic_error, 'theta_sum'))}")
+        lines.append(f"method = {_fmt(_safe_getattr(systematic_error, 'method'))}")
+        lines.append("Компоненты НСП:")
 
-    components = _safe_getattr(systematic_error, "components", [])
-    for i, comp in enumerate(components, start=1):
-        lines.append(f"  {i}. {_safe_getattr(comp, 'name')}")
-        lines.append(f"     theta = {_fmt(_safe_getattr(comp, 'theta'))}")
-        lines.append(f"     influence_coefficient = {_fmt(_safe_getattr(comp, 'influence_coefficient'))}")
-        lines.append(f"     effective_theta = {_fmt(_safe_getattr(comp, 'effective_theta'))}")
+        components = _safe_getattr(systematic_error, "components", [])
+        for i, comp in enumerate(components, start=1):
+            lines.append(f"  {i}. {_safe_getattr(comp, 'name')}")
+            lines.append(f"     theta = {_fmt(_safe_getattr(comp, 'theta'))}")
+            lines.append(f"     influence_coefficient = {_fmt(_safe_getattr(comp, 'influence_coefficient'))}")
+            lines.append(f"     effective_theta = {_fmt(_safe_getattr(comp, 'effective_theta'))}")
 
-    lines.append("")
+        lines.append("")
 
     lines.append("Шаг 9. Доверительные границы погрешности результата измерения")
     lines.append("-" * 78)

@@ -63,7 +63,6 @@ def systematic_error_confidence(
             для поддерживаемых случаев выбирается автоматически.
 
     Raises:
-        ValueError: если список components пуст
         ValueError: если число компонентов меньше 1
         ValueError: если p_conf не в интервале (0, 1)
         ValueError: если k_value <= 0
@@ -71,8 +70,16 @@ def systematic_error_confidence(
     Returns:
         SystematicErrorResult: итог расчета НСП
     """
+    # НСП отсутствует или была полностью учтена ранее
     if not components:
-        raise ValueError("Список components не должен быть пустым")
+        return SystematicErrorResult(
+            m=0,
+            p_conf=float(p_conf),
+            k=1.0,
+            theta_sum=0.0,
+            method="none",
+            components=[],
+        )
 
     if not (0 < p_conf < 1):
         raise ValueError("p_conf должно быть в интервале (0, 1)")
