@@ -31,6 +31,7 @@ class Anubis:
     See more about G-Nut/Anubis here: https://gnutsoftware.com/software/anubis
     This class can processing one or more files.
     See code usage examples in the examples folder.
+    Current version 2.3
     """
     @typechecked
     def __init__(self, logger: bool | Logger | None = None) -> None:
@@ -124,7 +125,9 @@ class Anubis:
     @typechecked
     def start(self, input_data: dict | tuple,
               recursion: bool = False,
-              output_dir_xtr: str | None = None) -> tuple[dict[str, dict[str, float | int | str | dict]], dict[str, list[str]]]:
+              output_dir_xtr: str | None = None,
+              version: str = "2.3"
+              ) -> tuple[dict[str, dict[str, float | int | str | dict]], dict[str, list[str]]]:
         """
         This method starts the process of calculating the quality and quantity of multi-GNSS data.
         The method allows you to upload one or more files for calculation.
@@ -136,6 +139,7 @@ class Anubis:
                 As well as the dictionary obtained from the scan_dirs method.
             recursion (bool, optional): Recursively search for files. Defaults to False.
             output_dir_xtr (str | None, optional): The directory where the anubis xtr output files will be saved. Defaults to None.
+            version (str): Select version. Available: 2.3, 3.10.
 
         Raises:
             ValueError: Please, remove spaces in path.
@@ -157,6 +161,11 @@ class Anubis:
                           }
             }
         """
+        available_ver = ["2.3", "3.10"]
+        if version not in available_ver:
+            self.logger.error("Available version: 2.3, 3.10.")
+            raise Exception("Available version: 2.3, 3.10.")
+        
         match_list = {}
         no_match_list = {}
         output_list = defaultdict(dict)
@@ -190,17 +199,19 @@ class Anubis:
                     self.logger.error("Please, remove spaces in path %s.", match[1])
                     continue
 
-                cmd = [mcl_tools.get_path2bin("anubis")]
+                cmd = [mcl_tools.get_path2bin(f"anubis_{version}")]
 
                 # создание временного файла конфига
                 with tempfile.NamedTemporaryFile() as temp_file:
                     self.logger.info('Create config')
-                    self._create_config(match, temp_file.name, output_dir_xtr)
+                    self._create_config(match, temp_file.name, output_dir_xtr, version)
 
                     cmd += ["-x", temp_file.name]
 
                     self.logger.info('Start Anubis')
-                    subprocess.run(cmd, stderr=subprocess.DEVNULL, check=False)
+                    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
+                    self.logger.info("Вывод из консоли: %s", result.stdout)
+                    self.logger.info("Вывод ошибки из консоли: %s", result.stderr)
 
                 # parsing file
                 output_file_xtr = ""
@@ -218,7 +229,7 @@ class Anubis:
         return dict(output_list), no_match_list
 
     @typechecked
-    def _create_config(self, match: list, temp_file: str, output_files_xtr: str | None) -> None:
+    def _create_config(self, match: list, temp_file: str, output_files_xtr: str | None, version: str) -> None:
         """A method for creating a configuration file for Anubis.
 
         Args:
@@ -228,27 +239,34 @@ class Anubis:
         """
         conf = ET.Element('config')
         param = {
-            'sec_sum': "1",
-            'sec_hdr': "0",
-            'sec_obs': "1",
-            'sec_gap': "1",
-            'sec_bnd': "1",
-            'sec_pre': "1",
-            'sec_mpx': "1",
-            'sec_snr': "1",
-            'sec_est': "0",
-            'sec_ele': "0",
-            'sec_sat': "0"
+            'sec_sum': "2",
+            'sec_hdr': "2",
+            'sec_obs': "2",
+            'sec_gap': "2",
+            'sec_bnd': "2",
+            'sec_pre': "2",
+            'sec_mpx': "2",
+            'sec_snr': "2",
+            'sec_est': "2",
+            'sec_ele': "2",
+            'sec_sat': "2"
         }
         ET.SubElement(conf, 'qc', param)
 
-        inp = ET.SubElement(conf, 'inputs')
+        if version == "2.3":
+            inp = ET.SubElement(conf, 'inputs')
+        elif version == "3.10":
+            inp = ET.SubElement(conf, 'inp')
+            
         inp_o = ET.SubElement(inp, 'rinexo')
         inp_o.text = match[0]
         inp_n = ET.SubElement(inp, 'rinexn')
         inp_n.text = match[1]
 
-        o = ET.SubElement(conf, 'outputs')
+        if version == "2.3":
+            o = ET.SubElement(conf, 'outputs')
+        elif version == "3.10":
+            o = ET.SubElement(conf, 'out')
         xtr = ET.SubElement(o, 'xtr')
         if output_files_xtr is None:
             xtr.text = f'{match[0]}.xtr'
@@ -302,7 +320,6 @@ class Anubis:
                 flag_gnssum = True
 
                 meta_data["miss_epoch"] = dict()
-                meta_data["code_multi"] = dict()
                 meta_data["n_slip"] = dict()
                 count = 0
                 while True:
@@ -319,16 +336,6 @@ class Anubis:
                         self.logger.warning("Parameter =TOTSUM. Skip %s.", path2file, exc_info=True)
                         flag_data_error = True
                         break
-
-                    try:
-                        meta_data["code_multi"][name_sys + "MP1"] = float(row_split[18])
-                    except ValueError:
-                        meta_data["code_multi"][name_sys + "MP1"] = row_split[18]
-
-                    try:
-                        meta_data["code_multi"][name_sys + "MP2"] = float(row_split[19])
-                    except ValueError:
-                        meta_data["code_multi"][name_sys + "MP2"] = row_split[19]
                     count += 1
 
                 if flag_data_error:
@@ -374,6 +381,30 @@ class Anubis:
                     except Exception:
                         pass
                     count += 1
+            
+            elif '#GNSMxx' in row:
+                meta_data["code_multi"] = dict()
+                count = 0
+                while True:
+                    try:
+                        row_data = data[indx+1+count]
+                    except Exception:
+                        break
+
+                    if row_data == '\n':
+                        break
+                    
+                    row_data = row_data.split(' ')
+                    row_split = list(filter(lambda i: i != '', row_data))
+                    name_sys = row_split[0].replace("=", "")
+                    try:
+                        meta_data["code_multi"][name_sys] = float(row_split[3])
+                    except Exception:
+                        pass
+                    count += 1
+
+
+
 
         if flag_data_error:
             self.logger.error("Incorrect data in file %s.", path2file)
