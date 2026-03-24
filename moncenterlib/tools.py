@@ -19,7 +19,8 @@ def get_path2bin(name_bin) -> str:
 
     paths = {
         "x86_64": {
-            "anubis": str(path_base.joinpath("gnss/bin/x86_64/anubis_2.3_x86_64_linux")),
+            "anubis_2.3": str(path_base.joinpath("gnss/bin/x86_64/anubis_2.3_x86_64_linux")),
+            "anubis_3.10": str(path_base.joinpath("gnss/bin/x86_64/anubis_3.10_x86_64_linux")),
             "str2str": str(path_base.joinpath("gnss/bin/x86_64/str2str_2.4.3-34_x86_64_linux")),
             "convbin": str(path_base.joinpath("gnss/bin/x86_64/convbin_2.4.3-34_x86_64_linux")),
             "rnx2rtkp": str(path_base.joinpath("gnss/bin/x86_64/rnx2rtkp_2.4.3-34_x86_64_linux"))
