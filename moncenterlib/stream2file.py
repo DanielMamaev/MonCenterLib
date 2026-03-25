@@ -276,7 +276,7 @@ class Stream2File:
 
         cmd += ["-out", f'file://{name_file}']
 
-        cmd += ["-r", timeout_time, "-s", reconnect_interval]
+        cmd += ["-r", f'{timeout_time}', "-s", f'{reconnect_interval}']
 
         if param.get("on_start", "") != "":
             temp_file_on_start = tempfile.NamedTemporaryFile()
