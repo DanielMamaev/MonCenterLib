@@ -223,7 +223,7 @@ class Stream2File:
         return str(output_file)
 
     @typechecked
-    def start(self, name_con: str, name_file: str) -> None:
+    def start(self, name_con: str, name_file: str, timeout_time: int = 50000, reconnect_interval: int = 60000) -> None:
         """
         This method is used to start a connection.
         This method is blocking. It uses an infinite loop internally.
@@ -234,6 +234,8 @@ class Stream2File:
         Args:
             name_con (str): Name of the connection.
             name_file (str): Path to the output file.
+            timeout_time (int): Timeout time (ms).
+            reconnect_interval (int): Reconnect interval (ms).
 
         Returns:
             str: Path to output file.
@@ -273,6 +275,8 @@ class Stream2File:
                     f'ntrip://{param["user"]}:{param["passwd"]}@{param["addr"]}:{param["port"]}/{param["mntpnt"]}']
 
         cmd += ["-out", f'file://{name_file}']
+
+        cmd += ["-r", timeout_time, "-s", reconnect_interval]
 
         if param.get("on_start", "") != "":
             temp_file_on_start = tempfile.NamedTemporaryFile()
