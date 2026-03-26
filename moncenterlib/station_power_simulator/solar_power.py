@@ -11,6 +11,7 @@ from openmeteopy.hourly import HourlyHistorical
 from openmeteopy.daily import DailyHistorical
 from openmeteopy.options import HistoricalOptions
 import pvlib
+from typeguard import typechecked
 
 
 class SolarPanelPower:
@@ -21,6 +22,7 @@ class SolarPanelPower:
     using historical meteorological data and solar geometry calculations.
     """
 
+    @typechecked
     def __init__(self, config: dict):
         """
         Initialize the solar panel power calculator.
@@ -73,7 +75,8 @@ class SolarPanelPower:
 
         self.df = pd.DataFrame()
 
-    def _get_timezone(self):
+    @typechecked
+    def _get_timezone(self) -> str:
         tf = TimezoneFinder()
         if self.config.get("timezone", "") == "":
             tz = tf.timezone_at(lat=self.config["latitude"], lng=self.config["longitude"])
@@ -85,7 +88,8 @@ class SolarPanelPower:
 
         return tz
 
-    def _get_meteo_data(self, tz):
+    @typechecked
+    def _get_meteo_data(self, tz: str) -> pd.DataFrame:
 
         options = HistoricalOptions(self.config["latitude"],
                                     self.config["longitude"],
@@ -124,6 +128,7 @@ class SolarPanelPower:
 
         return self.df
 
+    @typechecked
     def _calc_albedo_series(
         self,
         snow_fresh_albedo: float = 0.75,
@@ -178,6 +183,7 @@ class SolarPanelPower:
 
         return pd.Series(albedo_values, index=df.index, name="albedo")
 
+    @typechecked
     def calculate(self):
         """
         Calculate hourly solar panel power generation.
@@ -260,6 +266,7 @@ class SolarPanelPower:
 
         self.df["power"] = pv_power_W.round(1)
 
+    @typechecked
     def get_default_config(self) -> dict:
         """
         Return the default configuration for the solar panel calculator.
@@ -275,7 +282,8 @@ class SolarPanelPower:
         """
         return self.__default_config
 
-    def get_hourly_power(self):
+    @typechecked
+    def get_hourly_power(self) -> pd.DataFrame:
         """
         Return the calculated hourly power generation time series.
 
@@ -299,7 +307,8 @@ class SolarPanelPower:
             raise Exception("Запустите сначала метод calculate")
         return self.df
 
-    def _calc_metrics(self, df: pd.DataFrame):
+    @typechecked
+    def _calc_metrics(self, df: pd.DataFrame) -> tuple[pd.DataFrame, str]:
         str_output = ""
         data_list = []
 
@@ -376,7 +385,8 @@ class SolarPanelPower:
         df_output = pd.DataFrame(data_list)
         return df_output, str_output
 
-    def _monthly_range(self):
+    @typechecked
+    def _monthly_range(self) -> tuple[pd.DataFrame, str]:
         if self.df is None or self.df.empty:
             raise Exception("Запустите сначала метод calculate")
 
@@ -402,7 +412,8 @@ class SolarPanelPower:
         df_output = df_output.sort_values(["year", "month"]).reset_index(drop=True)
         return df_output, protocol_output
 
-    def _seasonal_range(self):
+    @typechecked
+    def _seasonal_range(self) -> tuple[pd.DataFrame, str]:
         if self.df is None or self.df.empty:
             raise Exception("Запустите сначала метод calculate")
 
@@ -459,11 +470,13 @@ class SolarPanelPower:
 
         return df_output, protocol_output
 
-    def _save_protocol(self, str_protocol, path_protocol):
+    @typechecked
+    def _save_protocol(self, str_protocol: str, path_protocol: str) -> None:
         with open(path_protocol, "w", encoding="utf-8") as f:
             f.write(str_protocol)
 
-    def get_all_period_metrics(self, path_protocol=""):
+    @typechecked
+    def get_all_period_metrics(self, path_protocol: str = "") -> pd.DataFrame:
         """
         Calculate solar generation statistics for the entire simulation period.
 
@@ -494,7 +507,8 @@ class SolarPanelPower:
 
         return df
 
-    def get_monthly_metrics(self, path_protocol=""):
+    @typechecked
+    def get_monthly_metrics(self, path_protocol: str = "") -> pd.DataFrame:
         """
         Calculate solar generation statistics for each month.
 
@@ -523,7 +537,8 @@ class SolarPanelPower:
 
         return df
 
-    def get_seasonal_metrics(self, path_protocol=""):
+    @typechecked
+    def get_seasonal_metrics(self, path_protocol: str = "") -> pd.DataFrame:
         """
         Calculate solar generation statistics grouped by seasons.
 

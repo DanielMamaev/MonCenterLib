@@ -6,6 +6,7 @@ The module evaluates whether a set of energy sources
 optionally including battery storage simulation.
 """
 import pandas as pd
+from typeguard import typechecked
 from moncenterlib.station_power_simulator.solar_power import SolarPanelPower
 from moncenterlib.station_power_simulator.wind_turbine_power import WindTurbinePower
 
@@ -18,11 +19,15 @@ class PowerBalanceAnalyzer:
     (solar panels, wind turbines, etc.) can support a constant load,
     optionally including battery storage simulation.
     """
-    def _save_protocol(self, str_protocol, path_protocol):
+
+    @typechecked
+    def _save_protocol(self, str_protocol: str, path_protocol: str):
         with open(path_protocol, "w", encoding="utf-8") as f:
             f.write(str_protocol)
 
+
     @staticmethod
+    @typechecked
     def combine_power(sources: list[SolarPanelPower | WindTurbinePower]) -> pd.DataFrame:
         """
         Combine power generation from multiple energy sources.
@@ -74,11 +79,12 @@ class PowerBalanceAnalyzer:
         df_total["power"] = df_total.sum(axis=1)
         return df_total[["power"]]
 
+    @typechecked
     def calc_power_balance(
         self,
         input_df: pd.DataFrame,
         load_power_w: float,
-        path_protocol=""
+        path_protocol: str = ""
     ) -> tuple[pd.DataFrame, dict]:
         """
         Evaluate whether generation covers a constant load.
@@ -163,6 +169,7 @@ class PowerBalanceAnalyzer:
 
         return df, metrics
 
+    @typechecked
     def calc_power_balance_with_battery(
         self,
         input_df: pd.DataFrame,

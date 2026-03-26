@@ -4,6 +4,7 @@ Wind turbine power generation simulator.
 The module estimates hourly electrical power output of a wind turbine
 using historical weather data and turbine performance parameters.
 """
+from typeguard import typechecked
 import pandas as pd
 import numpy as np
 from timezonefinder import TimezoneFinder
@@ -19,7 +20,8 @@ class WindTurbinePower:
     The class estimates hourly electrical power output of a wind turbine
     using historical weather data and turbine performance parameters.
     """
-    def __init__(self, config: dict):
+    @typechecked
+    def __init__(self, config: dict) -> None:
         """
         Initialize the wind turbine power calculator.
 
@@ -69,7 +71,8 @@ class WindTurbinePower:
 
         self.config = config
 
-    def get_hourly_power(self):
+    @typechecked
+    def get_hourly_power(self) -> pd.DataFrame:
         """
         Return the calculated hourly wind turbine power time series.
 
@@ -88,6 +91,7 @@ class WindTurbinePower:
             raise Exception("Запустите сначала метод calculate")
         return self.df
 
+    @typechecked
     def calculate(self):
         """
         Calculate hourly wind turbine power generation.
@@ -169,6 +173,7 @@ class WindTurbinePower:
         self.df = self.df.set_index("time")
         self.df.index = self.df.index.tz_localize(tz)
 
+    @typechecked
     def get_default_config(self) -> dict:
         """
         Return the default configuration for the wind turbine calculator.
@@ -183,7 +188,8 @@ class WindTurbinePower:
         """
         return self.__default_config
 
-    def _calc_metrics(self, df: pd.DataFrame):
+    @typechecked
+    def _calc_metrics(self, df: pd.DataFrame) -> tuple[pd.DataFrame, str]:
         str_output = ""
         data_list = []
 
@@ -217,7 +223,8 @@ class WindTurbinePower:
         df_output["end_period"] = pd.to_datetime(df_output["end_period"])
         return df_output, str_output
 
-    def _monthly_range(self, step=1):
+    @typechecked
+    def _monthly_range(self, step: int = 1) -> tuple[pd.DataFrame, str]:
         if self.df is None or self.df.empty:
             raise Exception("Запустите сначала метод calculate")
 
@@ -260,7 +267,8 @@ class WindTurbinePower:
 
         return df_output, protocol_output
 
-    def _seasonal_range(self):
+    @typechecked
+    def _seasonal_range(self) -> tuple[pd.DataFrame, str]:
         if self.df is None or self.df.empty:
             raise Exception("Запустите сначала метод calculate")
 
@@ -316,11 +324,13 @@ class WindTurbinePower:
 
         return df_output, protocol_output
 
-    def _save_protocol(self, str_protocol, path_protocol):
+    @typechecked
+    def _save_protocol(self, str_protocol: str, path_protocol: str):
         with open(path_protocol, 'w', encoding="utf-8") as f:
             f.write(str_protocol)
 
-    def get_all_period_metrics(self, path_protocol=""):
+    @typechecked
+    def get_all_period_metrics(self, path_protocol: str = "") -> pd.DataFrame:
         """
         Calculate wind turbine statistics for the entire simulation period.
 
@@ -345,7 +355,8 @@ class WindTurbinePower:
 
         return df
 
-    def get_monthly_metrics(self, step=1, path_protocol=""):
+    @typechecked
+    def get_monthly_metrics(self, step: int = 1, path_protocol: str = "") -> pd.DataFrame:
         """
         Calculate wind turbine statistics aggregated by monthly periods.
 
@@ -373,7 +384,8 @@ class WindTurbinePower:
 
         return df
 
-    def get_seasonal_metrics(self, path_protocol=""):
+    @typechecked
+    def get_seasonal_metrics(self, path_protocol: str = "") -> pd.DataFrame:
         """
         Calculate wind turbine statistics grouped by seasons.
 
@@ -400,6 +412,7 @@ class WindTurbinePower:
             self._save_protocol(str_protocol, path_protocol)
         return df
 
+    @typechecked
     def _get_stats(self, df: pd.DataFrame, wind_col: str, power_col: str) -> tuple[dict, str]:
         if df is None or df.empty:
             raise Exception("Запустите сначала метод calculate")
