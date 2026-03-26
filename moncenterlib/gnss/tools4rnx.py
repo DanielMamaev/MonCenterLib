@@ -511,9 +511,9 @@ class RtkLibConvbin:
             if self.__process[file] is not None and self.__process[file].poll() is not None:
                 isStop = True
 
-            if std["stdout"] != []:
+            if len(std["stdout"]) >= 1:
                 stdout = std["stdout"][-1]
-            if std["stderr"] != []:
+            if len(std["stderr"]) >= 1:
                 stderr = std["stderr"][-1]
 
             output_status[file] = {"stdout": stdout,

@@ -773,9 +773,9 @@ class RtkLibPost:
             if self.__process[file] is not None and self.__process[file].poll() is not None:
                 isStop = True
 
-            if std["stdout"] != []:
+            if len(std["stdout"]) >= 2:
                 stdout = std["stdout"][-2]
-            if std["stderr"] != []:
+            if len(std["stderr"]) >= 2:
                 stderr = std["stderr"][-2]
 
             output_status[file] = {"stdout": stdout,
