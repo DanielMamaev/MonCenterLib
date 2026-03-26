@@ -1,8 +1,10 @@
 from scipy.stats import t
+from typeguard import typechecked
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import RandomErrorConfidenceResult
 from moncenterlib.stats.stats_gost_R_8_736_2011.basic_stats import calc_basic_stats
 
 
+@typechecked
 def _student_t_value(p_conf: float, n: int) -> float:
     """
     Приложение Д. Коэффициент Стьюдента t
@@ -29,7 +31,7 @@ def _student_t_value(p_conf: float, n: int) -> float:
     # P(|T| <= t) = p_conf
     return float(t.ppf((1.0 + p_conf) / 2.0, df=df))
 
-
+@typechecked
 def confidence_random_error(
     values: list,
     p_conf: float = 0.95,

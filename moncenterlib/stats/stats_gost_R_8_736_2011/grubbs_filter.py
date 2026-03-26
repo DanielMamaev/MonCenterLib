@@ -1,10 +1,11 @@
 
 from math import sqrt
 from scipy.stats import t
+from typeguard import typechecked
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import GrubbsCheck, GrubbsResult
 from moncenterlib.stats.stats_gost_R_8_736_2011.basic_stats import calc_basic_stats
 
-
+@typechecked
 def _grubbs_critical_value(n, alpha=0.05) -> float:
     """
     Вычисление критического значения через распределение Стьюдента.
@@ -32,7 +33,7 @@ def _grubbs_critical_value(n, alpha=0.05) -> float:
     t_value = t.ppf(1 - alpha / (2 * n), df=n - 2)
     return ((n - 1) / sqrt(n)) * sqrt(t_value**2 / (n - 2 + t_value**2))
 
-
+@typechecked
 def grubbs_filter(values: list, alpha: float = 0.05) -> GrubbsResult:
     """
     Пункт 6. Исключение грубых погрешностей.

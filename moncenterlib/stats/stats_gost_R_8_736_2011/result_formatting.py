@@ -1,11 +1,13 @@
 from decimal import Decimal, ROUND_HALF_UP
 from math import floor, log10, isfinite
 
+from typeguard import typechecked
+
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import (
     RoundedMeasurementResult,
 )
 
-
+@typechecked
 def _round_half_up(value: float, decimal_places: int) -> float:
     """
     Округление по правилу >= 5 вверх.
@@ -15,7 +17,7 @@ def _round_half_up(value: float, decimal_places: int) -> float:
     d = Decimal(str(value)).quantize(q, rounding=ROUND_HALF_UP)
     return float(d)
 
-
+@typechecked
 def _significant_exponent(value: float) -> int:
     """
     Возвращает порядок числа:
@@ -28,7 +30,7 @@ def _significant_exponent(value: float) -> int:
         raise ValueError("value должно быть > 0")
     return int(floor(log10(value)))
 
-
+@typechecked
 def _first_significant_digit(value: float) -> int:
     """
     Первая значащая цифра положительного числа.
@@ -40,7 +42,7 @@ def _first_significant_digit(value: float) -> int:
     scaled = value / (10 ** exp)
     return int(floor(scaled))
 
-
+@typechecked
 def _error_significant_digits(
     delta: float,
     precise_measurement: bool = False,
@@ -66,7 +68,7 @@ def _error_significant_digits(
 
     return 1
 
-
+@typechecked
 def round_to_significant_digits(value: float, sig_digits: int) -> float:
     """
     Округляет число до sig_digits значащих цифр.
@@ -87,7 +89,7 @@ def round_to_significant_digits(value: float, sig_digits: int) -> float:
     rounded = _round_half_up(value, decimal_places)
     return sign * rounded
 
-
+@typechecked
 def _decimal_places_from_error(delta_rounded: float) -> int:
     """
     Определяет, до какого разряда надо округлять x,
@@ -114,7 +116,7 @@ def _decimal_places_from_error(delta_rounded: float) -> int:
     # 0.12 -> exp=-1, нужно 2 знака
     return -exp
 
-
+@typechecked
 def _last_place_decimal_places(delta_raw: float, sig_digits: int) -> int:
     """
     Более надежно определяет разряд последней сохраняемой цифры Δ
@@ -128,7 +130,7 @@ def _last_place_decimal_places(delta_raw: float, sig_digits: int) -> int:
     exp = _significant_exponent(delta_raw)
     return sig_digits - exp - 1
 
-
+@typechecked
 def _format_number(value: float, decimal_places: int) -> str:
     """
     Форматирует число с фиксированным количеством знаков после запятой,
@@ -141,7 +143,7 @@ def _format_number(value: float, decimal_places: int) -> str:
 
     return f"{int(value):d}"
 
-
+@typechecked
 def format_measurement_result(
     x: float,
     delta: float,
@@ -202,6 +204,7 @@ def format_measurement_result(
         notation=notation,
     )
 
+@typechecked
 def format_measurement_components(
     x: float,
     s_x_mean: float,

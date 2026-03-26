@@ -3,11 +3,11 @@ text
 """
 
 from math import sqrt
-
+from typeguard import typechecked
 
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import BasicStats
 
-
+@typechecked
 def calc_basic_stats(values: list) -> BasicStats:
     """
     Пункт 5. Оценка измеряемой величины и среднее квадратическое отклонение.

@@ -1,9 +1,11 @@
 from math import sqrt, exp, pi
 from scipy.stats import chi2
+from typeguard import typechecked
 
 from moncenterlib.stats.stats_gost_R_8_736_2011.basic_stats import calc_basic_stats
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import PearsonInterval, PearsonNormalityResult
 
+@typechecked
 def _recommended_interval_count(n: int) -> int:
     """
     7. Доверительные границы случайной погрешности
@@ -37,7 +39,7 @@ def _recommended_interval_count(n: int) -> int:
         return 17
     raise ValueError("Для критерия Пирсона по ГОСТ ожидается n >= 40")
 
-
+@typechecked
 def _normal_pdf(y: float) -> float:
     """
     7. Доверительные границы случайной погрешности
@@ -57,7 +59,7 @@ def _normal_pdf(y: float) -> float:
     """
     return (1.0 / sqrt(2.0 * pi)) * exp(-(y ** 2) / 2.0)
 
-
+@typechecked
 def pearson_chi_square_normality(
     values: list,
     alpha: float = 0.05,

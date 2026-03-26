@@ -1,11 +1,13 @@
 from math import sqrt
 
+from typeguard import typechecked
+
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import (
     RandomErrorConfidenceResult,
     TotalErrorResult,
 )
 
-
+@typechecked
 def _systematic_std(
     theta: float,
     theta_mode: str,
@@ -38,7 +40,7 @@ def _systematic_std(
 
     raise ValueError("theta_mode должно быть 'plain' или 'confidence'")
 
-
+@typechecked
 def total_error_confidence(
     random_result: RandomErrorConfidenceResult,
     theta_systematic: float = 0.0,

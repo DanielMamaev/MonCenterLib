@@ -1,9 +1,11 @@
 from math import sqrt
+from typeguard import typechecked
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import (
     SystematicComponent,
     SystematicErrorResult,
 )
 
+@typechecked
 def _default_k_value(p_conf: float, m: int) -> float:
     """
     8.4 Коэффициент k для композиции НСП.
@@ -40,6 +42,7 @@ def _default_k_value(p_conf: float, m: int) -> float:
         "Автоматически поддерживаются только P=0.95 и P=0.99."
     )
 
+@typechecked
 def systematic_error_confidence(
     components: list[SystematicComponent],
     p_conf: float = 0.95,

@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any
+from typeguard import typechecked
 from moncenterlib.stats.stats_gost_R_8_736_2011.basic_stats import calc_basic_stats
 from moncenterlib.stats.stats_gost_R_8_736_2011.grubbs_filter import grubbs_filter
 from moncenterlib.stats.stats_gost_R_8_736_2011.composite_test import check_normality_composite
@@ -10,6 +11,7 @@ from moncenterlib.stats.stats_gost_R_8_736_2011.systematic_error import systemat
 from moncenterlib.stats.stats_gost_R_8_736_2011.total_error import total_error_confidence
 from moncenterlib.stats.stats_gost_R_8_736_2011.result_formatting import format_measurement_result
 
+@typechecked
 def _calculate(values: list, config: dict):
     result_object = []
 
@@ -113,10 +115,11 @@ def _calculate(values: list, config: dict):
         "all_steps": result_object,
     }
 
+@typechecked
 def _bool_text(value: bool) -> str:
     return "Да" if value else "Нет"
 
-
+@typechecked
 def _fmt(value: Any, digits: int = 6) -> str:
     if isinstance(value, bool):
         return _bool_text(value)
@@ -126,11 +129,11 @@ def _fmt(value: Any, digits: int = 6) -> str:
         return "None"
     return str(value)
 
-
+@typechecked
 def _safe_getattr(obj: Any, attr: str, default=None):
     return getattr(obj, attr, default)
 
-
+@typechecked
 def _build_protocol_text(result: dict) -> str:
     """
     Формирует подробный текстовый протокол по всем шагам обработки результатов измерений.
@@ -371,7 +374,7 @@ def _build_protocol_text(result: dict) -> str:
 
     return "\n".join(lines)
 
-
+@typechecked
 def _save_protocol_txt(result: dict, filepath: str | Path) -> Path:
     """
     Сохраняет протокол в txt-файл.
@@ -381,7 +384,7 @@ def _save_protocol_txt(result: dict, filepath: str | Path) -> Path:
     filepath.write_text(text, encoding="utf-8")
     return filepath
 
-
+@typechecked
 def calculate_and_save_protocol(values: list, config: dict, filepath: str | Path):
     """
     Выполняет полный расчет по ГОСТ Р 8.736-2011 и сохраняет протокол в txt-файл.

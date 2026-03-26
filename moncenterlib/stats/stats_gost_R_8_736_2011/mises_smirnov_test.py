@@ -1,9 +1,11 @@
 from math import sqrt, erf, log
+from typeguard import typechecked
 from moncenterlib.stats.stats_gost_R_8_736_2011.tables import TABLE_G3
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import MisesSmirnovNormalityResult, MisesSmirnovRow
 from moncenterlib.stats.stats_gost_R_8_736_2011.basic_stats import calc_basic_stats
 
 
+@typechecked
 def _normal_cdf(x: float, mean: float, std: float) -> float:
     """
     Нормальная функция распределения F(x) для N(mean, std^2).
@@ -11,7 +13,7 @@ def _normal_cdf(x: float, mean: float, std: float) -> float:
     z = (x - mean) / (std * sqrt(2.0))
     return 0.5 * (1.0 + erf(z))
 
-
+@typechecked
 def _get_g3_value(x: float) -> float:
     """
     Получить значение a(x) по таблице Г.3.
@@ -39,7 +41,7 @@ def _get_g3_value(x: float) -> float:
     k = (x - x1) / (x2 - x1)
     return y1 + k * (y2 - y1)
 
-
+@typechecked
 def mises_smirnov_omega2_normality(
     values: list,
     alpha: float = 0.1,

@@ -1,3 +1,4 @@
+from typeguard import typechecked
 from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import (
     CompositeCriterion1Result,
     CompositeCriterion2Result,
@@ -5,6 +6,7 @@ from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import (
 from moncenterlib.stats.stats_gost_R_8_736_2011.tables import TABLE_B1, TABLE_B2, TABLE_B3
 from moncenterlib.stats.stats_gost_R_8_736_2011.basic_stats import calc_basic_stats
 
+@typechecked
 def _get_b1_limits(n: int, q_percent: int) -> tuple[float, float]:
     """
     7. Доверительные границы случайной погрешности
@@ -61,7 +63,7 @@ def _get_b1_limits(n: int, q_percent: int) -> tuple[float, float]:
 
     raise RuntimeError("Не удалось интерполировать значения TABLE_B1")
 
-
+@typechecked
 def _get_b2_params(n: int, q_percent: int) -> tuple[int, float]:
     """
     7. Доверительные границы случайной погрешности
@@ -99,7 +101,7 @@ def _get_b2_params(n: int, q_percent: int) -> tuple[int, float]:
 
     raise ValueError(f"Для n={n} нет данных в TABLE_B2")
 
-
+@typechecked
 def _criterion_b1(values: list[float], q_percent: int = 5) -> CompositeCriterion1Result:
     """
     7. Доверительные границы случайной погрешности
@@ -145,7 +147,7 @@ def _criterion_b1(values: list[float], q_percent: int = 5) -> CompositeCriterion
 
     return CompositeCriterion1Result(d=d, d_low=d_low, d_high=d_high, passed=passed)
 
-
+@typechecked
 def _criterion_b2(values: list[float], q_percent: int = 5) -> CompositeCriterion2Result:
     """
     7. Доверительные границы случайной погрешности
@@ -198,7 +200,7 @@ def _criterion_b2(values: list[float], q_percent: int = 5) -> CompositeCriterion
         passed=passed,
     )
 
-
+@typechecked
 def check_normality_composite(values: list, q1_percent: int = 5, q2_percent: int = 5) -> CompositeNormalityResult:
     """
     7. Доверительные границы случайной погрешности
