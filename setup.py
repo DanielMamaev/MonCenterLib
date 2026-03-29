@@ -42,5 +42,5 @@ if __name__ == '__main__':
             'Documentation': 'https://moncenterlib.readthedocs.io/',
             'Source': 'https://github.com/DanielMamaev/MonCenterLib',
         },
-        python_requires='>=3.10'
+        python_requires='>=3.12'
     )
