@@ -12,6 +12,10 @@ from typeguard import typechecked
 from moncenterlib.tools import create_simple_logger
 
 class Bernese52:
+    """
+    Helper class for preparing Bernese 5.2 input files from GNSS station
+    metadata.
+    """
 
     @typechecked
     def __init__(self, list_stations: dict[str, dict], logger: bool | Logger | None = None):

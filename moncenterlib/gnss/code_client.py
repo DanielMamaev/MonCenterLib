@@ -16,6 +16,14 @@ from moncenterlib.tools import create_simple_logger
 
 
 class CODEClient:
+    """
+    Client for downloading precise CODE (Center for Orbit Determination in Europe) products for GNSS processing.
+
+    The class downloads files from the AIUB/CODE archive:
+    ``http://ftp.aiub.unibe.ch/CODE``.
+    Supported product types are ``ION``, ``ERP``, ``SP3``, ``CLK``,
+    ``CLK_05S``, ``DCB_P1C1``, and ``DCB_P1P2``.
+    """
     @typechecked
     def __init__(self, logger: bool | Logger | None = None):
         """
