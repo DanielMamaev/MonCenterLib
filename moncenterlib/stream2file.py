@@ -5,8 +5,8 @@ from pathlib import Path
 import subprocess
 import tempfile
 import time
-import moncenterlib.tools as mcl_tools
 from typeguard import typechecked
+import moncenterlib.tools as mcl_tools
 
 
 class Stream2File:
@@ -31,9 +31,8 @@ class Stream2File:
                 Defaults to None.
         """
         self.logger = logger
-
-        if self.logger in [None, False]:
-            self.logger = mcl_tools.create_simple_logger("Stream2File", logger)
+        if logger in [None, False]:
+            self.logger: Logger = mcl_tools.create_simple_logger("Stream2File", logger)
 
         self.connections = {}
 
@@ -177,23 +176,22 @@ class Stream2File:
         self.logger.info("Getting status of connection %s.", name)
         self._check_name_in_connections(name)
 
-        if not os.path.isfile(self.connections[name]["temp_file"].name):
-            raise FileNotFoundError("File to get status doesn't exist.")
-
         status = {
             "time": "",
             "byte": "",
             "bps": "",
             "connect": ""
         }
-
-        with open(self.connections[name]["temp_file"].name, "r", encoding="utf-8") as f:
-            line = f.read().split()
-            if line != []:
-                status["time"] = f"{line[0]} {line[1]}"
-                status["byte"] = line[2]
-                status["bps"] = line[3]
-                status["connect"] = line[4:]
+        try:
+            with open(self.connections[name]["temp_file"].name, "r", encoding="utf-8") as f:
+                line = f.read().split()
+                if line != []:
+                    status["time"] = f"{line[0]} {line[1]}"
+                    status["byte"] = line[2]
+                    status["bps"] = line[3]
+                    status["connect"] = " ".join(line[4:])
+        except:
+            pass
         return status
 
     @typechecked

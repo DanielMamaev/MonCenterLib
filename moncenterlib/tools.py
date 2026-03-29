@@ -46,7 +46,7 @@ class NoLoggingFilter(logging.Filter):
         return self.flag
 
 
-def create_simple_logger(name: str, disable_output: bool) -> Logger:
+def create_simple_logger(name: str, disable_output: bool | Logger | None) -> Logger:
     logger = logging.getLogger(name)
     if disable_output is False:
         logger.filters = [NoLoggingFilter(False)]

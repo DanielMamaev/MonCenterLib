@@ -13,10 +13,10 @@ Learn more about the specific class.
 
 
 from collections import defaultdict
+import copy
 from datetime import datetime, timedelta
 import os
 from logging import Logger
-from pprint import pprint
 import queue
 import subprocess
 import tempfile
@@ -25,7 +25,6 @@ from typeguard import typechecked
 from gps_time import GPSTime
 import moncenterlib.tools as mcl_tools
 import moncenterlib.gnss.tools as mcl_gnss_tools
-import moncenterlib.tools as mcl_tools
 
 
 class RtkLibPost:
@@ -67,9 +66,8 @@ class RtkLibPost:
         """
 
         self.logger = logger
-
-        if self.logger in [None, False]:
-            self.logger = mcl_tools.create_simple_logger("RtkLibPost", logger)
+        if logger in [None, False]:
+            self.logger: Logger = mcl_tools.create_simple_logger("RtkLibPost", logger)
 
         self.__default_config = {
             'pos1-posmode': '0',
@@ -197,12 +195,13 @@ class RtkLibPost:
     def __create_vars(self):
         self.__process = defaultdict(None)
 
-        def def_dict(): return {
-            'stdout': [],
-            'stderr': []
-        }
+        def def_dict():
+            return {
+                'stdout': [],
+                'stderr': []
+            }
         self.std_log = defaultdict(def_dict)
-        self.output_files = defaultdict(list)
+        self.output_files = []
 
     @typechecked
     def _get_start_date_from_sp3(self, file: str) -> str:
@@ -294,7 +293,7 @@ class RtkLibPost:
         return date
 
     @typechecked
-    def __make_cmd(self, input_rnx: dict[str, str], output_dir: str, timeint: int, temp_file) -> list[str]:
+    def __make_cmd(self, input_rnx: dict[str, str], output_dir: str, timeint: int, temp_file) -> tuple[list[str], str]:
         cmd = [mcl_tools.get_path2bin("rnx2rtkp")]
 
         cmd += ["-ti", str(timeint)]
@@ -312,7 +311,7 @@ class RtkLibPost:
         path_end = os.path.join(output_dir, os.path.basename(input_rnx.get("rover", ""))) + ".pos"
         cmd += ["-o", path_end]
 
-        return cmd
+        return cmd, path_end
 
     @typechecked
     def __start_process(self, cmd: list[str], wait_process: bool = False):
@@ -410,7 +409,7 @@ class RtkLibPost:
     def dict2config(self,
                     config: dict[str, str],
                     path_file: str | tempfile._TemporaryFileWrapper,
-                    input_rnx: dict[str, str | list] = {}):
+                    input_rnx: dict[str, str] = {"": ""}):
         """Saves the dictionary with the RtkLibPost configuration to a file.
         The file can be used in rnx2rtkp CLI or rtkpost GUI.
 
@@ -431,6 +430,8 @@ class RtkLibPost:
         self.logger.info("Starting make configuration")
 
         path_config_file = None
+
+        config = copy.deepcopy(config)
 
         # This type of variable is used in start_multi_processing and start_single_processing
         if isinstance(path_file, tempfile._TemporaryFileWrapper):
@@ -496,10 +497,10 @@ class RtkLibPost:
                 raise ValueError(f"Invalid file path: {path_file}")
 
         input_files = defaultdict(list)
-        for type_file, dir in input_rnx.items():
-            if type_file == "otl" or type_file == "satant" or type_file == "rcvant":
+        for type_file, directory in input_rnx.items():
+            if type_file in ('otl', 'satant', 'rcvant'):
                 continue
-            input_files[type_file] = mcl_tools.get_files_from_dir(dir, recursion)
+            input_files[type_file] = mcl_tools.get_files_from_dir(directory, recursion)
 
         self.logger.info("Starting match files")
         match_list = defaultdict(dict)
@@ -589,8 +590,8 @@ class RtkLibPost:
                 match["rcvant"] = input_rnx.get("rcvant", "")
 
         # clearing incomplete lists
-        no_match = dict()
-        finally_match = dict()
+        no_match = {}
+        finally_match = {}
         for date, match in match_list.items():
             if len(match) != len(input_rnx):
                 no_match[date] = match
@@ -657,16 +658,16 @@ class RtkLibPost:
             while not q.empty():
                 input_rnx: dict = q.get()
 
-                with (tempfile.NamedTemporaryFile() as temp_file,
-                      semaphore):
-                    # make configuration
-                    self.dict2config(config, temp_file, input_rnx)
+                with semaphore:
+                    with tempfile.NamedTemporaryFile() as temp_file:
+                        # make configuration
+                        self.dict2config(config, temp_file, input_rnx)
 
-                    # make command
-                    cmd = self.__make_cmd(input_rnx, output_dir, timeint, temp_file)
-
-                    self.logger.info("Run postprocessing %s", input_rnx.get("rover", ""))
-                    self.__start_process(cmd, True)
+                        # make command
+                        cmd, output_path = self.__make_cmd(input_rnx, output_dir, timeint, temp_file)
+                        self.output_files.append(output_path)
+                        self.logger.info("Run postprocessing %s", input_rnx.get("rover", ""))
+                        self.__start_process(cmd, True)
 
                 q.task_done()
 
@@ -731,8 +732,8 @@ class RtkLibPost:
             self.dict2config(config, temp_file, input_rnx)
 
             # make command
-            cmd = self.__make_cmd(input_rnx, output_dir, timeint, temp_file)
-
+            cmd, output_path = self.__make_cmd(input_rnx, output_dir, timeint, temp_file)
+            self.output_files.append(output_path)
             self.logger.info("Run postprocessing %s", input_rnx.get("rover", ""))
             self.__start_process(cmd, wait_process)
 
@@ -769,9 +770,9 @@ class RtkLibPost:
             stdout = ''
             stderr = ''
 
-            isStop = False
+            is_stop = False
             if self.__process[file] is not None and self.__process[file].poll() is not None:
-                isStop = True
+                is_stop = True
 
             if len(std["stdout"]) >= 2:
                 stdout = std["stdout"][-2]
@@ -780,7 +781,7 @@ class RtkLibPost:
 
             output_status[file] = {"stdout": stdout,
                                    "stderr": stderr,
-                                   "isStop": isStop
+                                   "isStop": is_stop
                                    }
 
         return output_status

@@ -87,9 +87,8 @@ class RtkLibConvbin:
         }
 
         self.logger = logger
-
-        if self.logger in [None, False]:
-            self.logger = create_simple_logger("RtkLibConvbin", logger)
+        if logger in [None, False]:
+            self.logger: Logger = create_simple_logger("RtkLibConvbin", logger)
 
         self.workers = workers
         self.semaphore = threading.Semaphore(self.workers)
