@@ -40,7 +40,23 @@ The MonCenterLib library needs to be supplemented with the following modules:
 |     |quality_check|Anubis|This module is designed for monitoring the quality and quantity of multi-GNSS data.See more about G-Nut/Anubis here: https://gnutsoftware.com/software/anubis |Ready|
 |     |cddis_client|CDDISClient|This module is designed to download one or more GNSS files from the CDDIS archive https://cddis.nasa.gov/ |Ready|
 |     |rgs_client|RGSClient|This module allows you to download various GNSS files from the service https://rgs-centre.ru |Ready|
+|     |code_client|CODEClient|Client for downloading precise CODE products for GNSS processing. The class downloads files from the AIUB/CODE archive http://ftp.aiub.unibe.ch/CODE. |Ready|
+|     |bernese_tools|Bernese52|Helper class for preparing Bernese 5.2 input files from GNSS station metadata. |Ready|
 |     |gnss_time_series|parse_pos_file|This function for parsing .pos file. The method returns header, name of columns and time series.|Ready|
+|station_power_simulator|solar_power|SolarPanelPower|Solar panel power generation simulator. The class estimates hourly electrical power produced by a solar panel using historical meteorological data and solar geometry calculations. |Ready|
+|     |wind_turbine_power|WindTurbinePower |Wind turbine power generation simulator. The class estimates hourly electrical power output of a wind turbine using historical weather data and turbine performance parameters. |Ready|
+|     |power_balance|PowerBalanceAnalyzer | Energy balance simulator for autonomous stations. The class evaluates whether a set of energy sources (solar panels, wind turbines, etc.) can support a constant load, optionally including battery storage simulation. |Ready|
+|stats.stats_gost_R_8_736_2011|basic_stats |calc_basic_stats |Clause 5. Estimation of the measured value and the standard deviation. |Ready |
+|     |grubbs_filter |grubbs_filter |Clause 6. Detection and elimination of gross errors. |Ready |
+|     |composite_test |check_normality_composite |Clause 7. Confidence limits for random error. 7.3 For 15 < n <= 50 measurement results |Ready |
+|     |pearson_test |pearson_chi_square_normality |Clause 7. Confidence limits for random error. 7.4 For n > 50 measurement results |Ready |
+|     |mises_smirnov_test |mises_smirnov_omega2_normality |Clause 7. Confidence limits for random error. 7.4 For n > 50 measurement results |Ready |
+|     |confidence_random_error |confidence_random_error |Clause 7. Confidence limits for random error. 7.5 Confidence limits for the random error of the measured value.|Ready|
+|     |systematic_error |systematic_error_confidence |Clause 8. Confidence limits for the unexcluded systematic error. |Ready |
+|     |total_error |total_error_confidence |Clause 9. Confidence limits for the error in the estimate of the measured value. |Ready |
+|     |result_formatting |format_measurement_result |Clause 10. Presentation of results. 10.3 and Appendix E. |Ready |
+|     | |format_measurement_components |Clause 10. Presentation of results. 10.4 |Ready |
+|     |calc_save |calculate_and_save_protocol |Performs the full calculation in accordance with GOST R 8.736-2011 and saves the report to a text file. |Ready |
 |other| vim | |  Video inclinometer|Soon |
 |     | vms | |Vertical movement sensor |Soon |
 |analysis|  | | |Soon |
@@ -76,9 +92,14 @@ python -m pip install .
 
 ## Documentation and usage example
 * See documentation [here](https://moncenterlib.readthedocs.io/)
-* See examples code [here](examples/README.md)
+* See examples code [here](examples/)
 
 ## Release History
+* 1.1.0
+    * Added new modules in the `gnss` package, including tools for downloading CODE products and preparing Bernese 5.2 input files.
+    * Added new packages for station power simulation and statistical processing according to GOST R 8.736-2011.
+    * Fixed bugs and improved stability in existing modules.
+    * Updated and expanded example code and notebooks.
 * 1.0.4
     * fix parse_pos_file method in gnss_time_series module
     * Added the ability to run multiple parallel processes. Module tools4rnx, class RtkLibConvbin
