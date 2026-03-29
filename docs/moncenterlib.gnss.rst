@@ -1,55 +1,21 @@
 moncenterlib.gnss package
 =========================
 
+Submodules
+----------
 
-moncenterlib.gnss.cddis\_client module
---------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: moncenterlib.gnss.cddis_client
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-moncenterlib.gnss.gnss\_time\_series module
--------------------------------------------
-
-.. automodule:: moncenterlib.gnss.gnss_time_series
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-moncenterlib.gnss.postprocessing module
----------------------------------------
-
-.. automodule:: moncenterlib.gnss.postprocessing
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-moncenterlib.gnss.quality\_check module
----------------------------------------
-
-.. automodule:: moncenterlib.gnss.quality_check
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-moncenterlib.gnss.rgs\_client module
-------------------------------------
-
-.. automodule:: moncenterlib.gnss.rgs_client
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-moncenterlib.gnss.tools4rnx module
-----------------------------------
-
-.. automodule:: moncenterlib.gnss.tools4rnx
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   moncenterlib.gnss.bernese_tools
+   moncenterlib.gnss.cddis_client
+   moncenterlib.gnss.code_client
+   moncenterlib.gnss.gnss_time_series
+   moncenterlib.gnss.postprocessing
+   moncenterlib.gnss.quality_check
+   moncenterlib.gnss.rgs_client
+   moncenterlib.gnss.tools
+   moncenterlib.gnss.tools4rnx
 
 Module contents
 ---------------

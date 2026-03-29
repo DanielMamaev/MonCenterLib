@@ -8,16 +8,18 @@ Subpackages
    :maxdepth: 4
 
    moncenterlib.gnss
+   moncenterlib.station_power_simulator
+   moncenterlib.stats
+   moncenterlib.tests
 
+Submodules
+----------
 
-moncenterlib.stream2file module
--------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: moncenterlib.stream2file
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
+   moncenterlib.stream2file
+   moncenterlib.tools
 
 Module contents
 ---------------
