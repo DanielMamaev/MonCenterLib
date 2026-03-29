@@ -20,3 +20,4 @@ coverage.txt
 .venv
 test_scripts
 .codex
+_build
