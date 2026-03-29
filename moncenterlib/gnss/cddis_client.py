@@ -34,8 +34,8 @@ class CDDISClient:
         """
         self.logger = logger
 
-        if self.logger in [None, False]:
-            self.logger = create_simple_logger("CDDISCLient", logger)
+        if logger in [None, False]:
+            self.logger: Logger = create_simple_logger("CDDISCLient", logger)
 
     @typechecked
     def _generate_list_dates(self, start_day: datetime, end_day: datetime) -> list[datetime]:
@@ -71,6 +71,7 @@ class CDDISClient:
             The done key stores a list of files that have been successfully created.
             The no_exists key stores a list of files that have not been created.
             The no_found_dates key stores a list of dates that have not been found.
+            The no_downloads key stores a list of files that have not been download.
 
         Examples:
             >>> cddiscli = CDDISClient()
@@ -91,6 +92,7 @@ class CDDISClient:
         list_dates = []
         output_file_list = []
         no_found_dates = []
+        no_downloads = []
 
         if isinstance(query, dict):
             if not query.get("start", None) or not query.get("end", None):
@@ -145,6 +147,7 @@ class CDDISClient:
                     ftps.retrbinary(f"RETR {dir_on_ftp}{nav_gzip}", open(output_file_gz, 'wb').write)
                 except Exception as e:
                     self.logger.error('Something happened to download %s. %s', nav_gzip, e)
+                    no_downloads.append(nav_gzip)
                     continue
 
                 if unpack:
@@ -169,6 +172,7 @@ class CDDISClient:
 
         output_dict = files_check(output_file_list)
         output_dict["no_found_dates"] = no_found_dates
+        output_dict["no_downloads"] = no_downloads
         return output_dict
 
     @typechecked
@@ -242,6 +246,7 @@ class CDDISClient:
             The done key stores a list of files that have been successfully created.
             The no_exists key stores a list of files that have not been created.
             The no_found_dates key stores a list of dates that have not been found.
+            The no_downloads key stores a list of files that have not been download.
 
         Examples:
             >>> cddiscli = CDDISClient()
@@ -268,6 +273,7 @@ class CDDISClient:
         list_dates = []
         output_file_list = []
         no_found_dates = []
+        no_downloads = []
 
         if isinstance(query["dates"], dict):
             if (not query["dates"].get("start", None) or not query["dates"].get("end", None)):
@@ -347,6 +353,7 @@ class CDDISClient:
                             ftps.retrbinary(f"RETR {dir_on_ftp}{name_file}", open(output_file_zip, 'wb').write)
                         except Exception as e:
                             self.logger.error('Something happened to download %s. %s', output_file_zip, e)
+                            no_downloads.append(name_file)
                             continue
 
                         if unpack:
@@ -393,6 +400,7 @@ class CDDISClient:
 
         output_dict = files_check(output_file_list)
         output_dict["no_found_dates"] = no_found_dates
+        output_dict["no_downloads"] = no_downloads
         return output_dict
 
     @typechecked
@@ -416,6 +424,7 @@ class CDDISClient:
             The done key stores a list of files that have been successfully created.
             The no_exists key stores a list of files that have not been created.
             The no_found_dates key stores a list of dates that have not been found.
+            The no_downloads key stores a list of files that have not been download.
         """
         if not os.path.isdir(output_dir):
             raise ValueError("Path to output_dir is strange.")
@@ -423,6 +432,7 @@ class CDDISClient:
         list_dates = []
         output_file_list = []
         no_found_dates = []
+        no_downloads = []
 
         if isinstance(query, dict):
             if not query.get("start", None) or not query.get("end", None):
@@ -505,6 +515,7 @@ class CDDISClient:
                     ftps.retrbinary(f"RETR {dir_on_ftp}{name_file}", open(output_file_zip, 'wb').write)
                 except Exception as e:
                     self.logger.error('Something happened to download %s. %s', output_file_zip, e)
+                    no_downloads.append(name_file)
                     continue
 
                 if unpack:
@@ -552,6 +563,7 @@ class CDDISClient:
 
         output_dict = files_check(output_file_list)
         output_dict["no_found_dates"] = no_found_dates
+        output_dict["no_downloads"] = no_downloads
         return output_dict
 
     @typechecked
