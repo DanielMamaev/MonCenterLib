@@ -4,3 +4,4 @@ requests==2.31.0
 timezonefinder==8.2.1
 openmeteopy @ git+https://github.com/m0rp43us/openmeteopy.git@beta-1
 pvlib==0.15.0
+unlzw3==0.2.3
