@@ -4,12 +4,14 @@ from dataclasses import dataclass
 @dataclass
 class BasicStats:
     """
-    5. Оценка измеряемой величины и среднее квадратическое отклонение.
-        - n - количество результатов измерений
-        - x_mean - среднее арифметческое значение
-        - S - Среднее квадратическое отклонение S 
-        - S_x_mean - среднее квадратическое отклонение среднего арифметического
-        - S_biased - смещенное среднее квадратическое отклонение S* 
+    Clause 5. Estimate of the measured value and standard deviation.
+
+    Attributes:
+        n (int): Number of measurement results.
+        x_mean (float): Arithmetic mean value.
+        S (float): Standard deviation ``S``.
+        S_x_mean (float): Standard deviation of the arithmetic mean.
+        S_biased (float): Biased standard deviation ``S*``.
     """
     n: int
     x_mean: float
@@ -21,15 +23,17 @@ class BasicStats:
 @dataclass
 class GrubbsCheck:
     """
-    6. Исключение грубых погрешностей.
-        - n - количество результатов измерений
-        - x_mean - среднее арифметческое значение
-        - S - среднее квадратическое отклонение S
-        - x_min - минимальный результат измерений
-        - x_max - максимальный результат измерений
-        - g_min - вычисленный критерий Граббса для минимального результата измерения
-        - g_max - вычисленный критерий Граббса для максимального результата измерения
-        - g_crit - теоретический критерий Граббса
+    Clause 6. Detection and elimination of gross errors.
+
+    Attributes:
+        n (int): Number of measurement results.
+        x_mean (float): Arithmetic mean value.
+        S (float): Standard deviation ``S``.
+        x_min (float): Minimum measurement result.
+        x_max (float): Maximum measurement result.
+        g_min (float): Computed Grubbs criterion for the minimum value.
+        g_max (float): Computed Grubbs criterion for the maximum value.
+        g_crit (float): Theoretical Grubbs criterion.
     """
     n: int
     x_mean: float
@@ -44,10 +48,12 @@ class GrubbsCheck:
 @dataclass
 class GrubbsResult:
     """
-    6. Исключение грубых погрешностей.
-        - cleaned_values - список отфильтрованных результатов измерений
-        - removed - список удаленных результатов измерений
-        - checks - список результатов каждой итерации проверки по критерию Граббса.
+    Clause 6. Detection and elimination of gross errors.
+
+    Attributes:
+        cleaned_values (list): Filtered measurement results.
+        removed (list): Removed measurement results.
+        checks (list[GrubbsCheck]): Results for each Grubbs test iteration.
     """
     cleaned_values: list
     removed: list
@@ -57,13 +63,16 @@ class GrubbsResult:
 @dataclass
 class CompositeCriterion1Result:
     """
-    7. Доверительные границы случайной погрешности.
-    7.3 При числе результатов измерений 15 < n <= 50.
-    Критерий 1, приложение Б.
-        - d - отношение d~
-        - d_low - нижний квантиль распределения
-        - d_high - верхний квантиль распределения
-        - passed - результат проверки критерия: True, если критерий выполнен, иначе False
+    Clause 7. Confidence limits for random error.
+
+    Clause 7.3 applies for ``15 < n <= 50``.
+    Criterion 1, Appendix B.
+
+    Attributes:
+        d (float): Computed ratio ``d~``.
+        d_low (float): Lower quantile of the distribution.
+        d_high (float): Upper quantile of the distribution.
+        passed (bool): ``True`` if the criterion is satisfied.
     """
     d: float
     d_low: float
@@ -74,15 +83,18 @@ class CompositeCriterion1Result:
 @dataclass
 class CompositeCriterion2Result:
     """
-    7. Доверительные границы случайной погрешности.
-    7.3 При числе результатов измерений 15 < n <= 50.
-    Критерий 2, приложение Б.
-        - threshold - пороговое значение z_p/2 * S
-        - exceed_count - количество |x_i - x_mean|, которые превысили порог threshold
-        - allowed_exceed_count - значение m разностей из таблицы Б.2
-        - p_value_table - значение вероятности из таблицы Б.2
-        - z_value - верхний квантиль распределения нормированной функции Лапласа, таблица Б.3
-        - passed - результат проверки критерия: True, если критерий выполнен, иначе False
+    Clause 7. Confidence limits for random error.
+
+    Clause 7.3 applies for ``15 < n <= 50``.
+    Criterion 2, Appendix B.
+
+    Attributes:
+        threshold (float): Threshold value ``z_p/2 * S``.
+        exceed_count (int): Number of values ``abs(x_i - x_mean)`` above the threshold.
+        allowed_exceed_count (int): Allowed count ``m`` from Table B.2.
+        p_value_table (float): Probability value from Table B.2.
+        z_value (float): Upper quantile from Table B.3.
+        passed (bool): ``True`` if the criterion is satisfied.
     """
     threshold: float
     exceed_count: int
@@ -95,16 +107,19 @@ class CompositeCriterion2Result:
 @dataclass
 class CompositeNormalityResult:
     """
-    7. Доверительные границы случайной погрешности.
-    7.3 При числе результатов измерений 15 < n <= 50.
-    Результат проверки гипотезы о нормальности распределения результатов измерений.
-        - n - количество результатов измерений
-        - x_mean - среднее арифметическое значение
-        - S - среднее квадратическое отклонение S
-        - S_biased - ссмещенное среднее квадратическое отклонение S*
-        - criterion_1 - результат проверки по критерию 1 приложения Б
-        - criterion_2 - результат проверки по критерию 2 приложения Б
-        - passed - булев признак того, что оба критерия выполнены
+    Clause 7. Confidence limits for random error.
+
+    Clause 7.3 applies for ``15 < n <= 50``.
+    Result of the normality hypothesis test for measurement results.
+
+    Attributes:
+        n (int): Number of measurement results.
+        x_mean (float): Arithmetic mean value.
+        S (float): Standard deviation ``S``.
+        S_biased (float): Biased standard deviation ``S*``.
+        criterion_1 (CompositeCriterion1Result): Result of Criterion 1 from Appendix B.
+        criterion_2 (CompositeCriterion2Result): Result of Criterion 2 from Appendix B.
+        passed (bool): ``True`` if both criteria are satisfied.
     """
     n: int
     x_mean: float
@@ -118,16 +133,19 @@ class CompositeNormalityResult:
 @dataclass
 class PearsonInterval:
     """
-    7. Доверительные границы случайной погрешности.
-    7.4 При числе результатов измерений n > 50.
-        - index - номер интервала i
-        - left - левая граница интервала
-        - right - правая граница интервала
-        - center - середина интервала x_i0
-        - observed - число  результатов  измерений, попавших  в  каждый интервал, ~n_i
-        - expected - число результатов измерений, которое должно было бы нахо­диться в интервале, n_i
-        - y - вероятность попадания результатов измерений в i-й интервал
-        - contribution - вычисленное значение К. Пирсона
+    Clause 7. Confidence limits for random error.
+
+    Clause 7.4 applies for ``n > 50``.
+
+    Attributes:
+        index (int): Interval index ``i``.
+        left (float): Left interval boundary.
+        right (float): Right interval boundary.
+        center (float): Interval center ``x_i0``.
+        observed (int): Observed count of measurements in the interval.
+        expected (float): Expected count of measurements in the interval.
+        y (float): Probability of falling into interval ``i``.
+        contribution (float): Computed Pearson criterion contribution.
     """
     index: int
     left: float
@@ -142,21 +160,24 @@ class PearsonInterval:
 @dataclass
 class PearsonNormalityResult:
     """
-    7. Доверительные границы случайной погрешности.
-    7.4 При числе результатов измерений n > 50.
-    Результат проверки гипотезы о нормальности распределения результатов измерений.
-        - n - количество результатов измерений
-        - r - число интервалов группировки
-        - h - ширина интервала группировки
-        - x_mean - среднее арифметическое значение
-        - S - среднее квадратическое отклонение S
-        - chi2_value - вычисленное значение критерия Пирсона
-        - df - число степеней свободы
-        - alpha - уровень значимости
-        - chi2_low - нижняя критическая граница для критерия chi^2
-        - chi2_high - верхняя критическая граница для критерия chi^2
-        - passed - булев признак того, что гипотеза о нормальности не отвергается
-        - intervals - список интервалов группировки и параметров расчета критерия Пирсона
+    Clause 7. Confidence limits for random error.
+
+    Clause 7.4 applies for ``n > 50``.
+    Result of the Pearson normality hypothesis test.
+
+    Attributes:
+        n (int): Number of measurement results.
+        r (int): Number of grouping intervals.
+        h (float): Grouping interval width.
+        x_mean (float): Arithmetic mean value.
+        S (float): Standard deviation ``S``.
+        chi2_value (float): Computed Pearson criterion value.
+        df (int): Degrees of freedom.
+        alpha (float): Significance level.
+        chi2_low (float): Lower critical bound for ``chi^2``.
+        chi2_high (float): Upper critical bound for ``chi^2``.
+        passed (bool): ``True`` if the normality hypothesis is not rejected.
+        intervals (list[PearsonInterval]): Grouping intervals and Pearson parameters.
     """
     n: int
     r: int
@@ -175,16 +196,18 @@ class PearsonNormalityResult:
 @dataclass
 class MisesSmirnovRow:
     """
-    Приложение Г. Промежуточные значения для расчета критерия ω².
-        - j - номер упорядоченного результата измерения
-        - x_j - значение результата измерения
-        - a_j - коэффициент (2j - 1) / (2n)
-        - F_xj - значение теоретической функции нормального распределения F(x_j)
-        - ln_F_xj - ln(F(x_j))
-        - one_minus_a_j - 1 - a_j
-        - one_minus_F_xj - 1 - F(x_j)
-        - ln_one_minus_F_xj - ln(1 - F(x_j))
-        - term - слагаемое под суммой в формуле (Г.1)
+    Appendix G. Intermediate values for the ``omega^2`` criterion.
+
+    Attributes:
+        j (int): Index of the ordered measurement result.
+        x_j (float): Measurement result value.
+        a_j (float): Coefficient ``(2j - 1) / (2n)``.
+        F_xj (float): Theoretical normal distribution value ``F(x_j)``.
+        ln_F_xj (float): ``ln(F(x_j))``.
+        one_minus_a_j (float): Value ``1 - a_j``.
+        one_minus_F_xj (float): Value ``1 - F(x_j)``.
+        ln_one_minus_F_xj (float): ``ln(1 - F(x_j))``.
+        term (float): Summand in formula ``(G.1)``.
     """
     j: int
     x_j: float
@@ -199,16 +222,18 @@ class MisesSmirnovRow:
 @dataclass
 class MisesSmirnovNormalityResult:
     """
-    Приложение Г. Результат проверки нормальности по критерию ω².
-        - n - число результатов измерений
-        - x_mean - среднее арифметическое
-        - S - среднее квадратическое отклонение результатов измерений
-        - n_omega2 - вычисленное значение статистики nΩ²
-        - a_value - значение функции a(x) из таблицы Г.3
-        - alpha - уровень значимости
-        - threshold = 1 - alpha
-        - passed - True, если гипотеза о нормальности не отвергается
-        - rows - промежуточные строки расчета
+    Appendix G. Result of the ``omega^2`` normality test.
+
+    Attributes:
+        n (int): Number of measurement results.
+        x_mean (float): Arithmetic mean.
+        S (float): Standard deviation of the measurement results.
+        n_omega2 (float): Computed statistic ``nOmega^2``.
+        a_value (float): Function value ``a(x)`` from Table G.3.
+        alpha (float): Significance level.
+        threshold (float): Threshold equal to ``1 - alpha``.
+        passed (bool): ``True`` if the normality hypothesis is not rejected.
+        rows (list[MisesSmirnovRow]): Intermediate calculation rows.
     """
     n: int
     x_mean: float
@@ -224,15 +249,17 @@ class MisesSmirnovNormalityResult:
 @dataclass
 class RandomErrorConfidenceResult:
     """
-    7.5 Доверительные границы случайной погрешности
-        - n - количество результатов измерений
-        - p_conf - доверительная вероятность P
-        - df - число степеней свободы n - 1
-        - x_mean - среднее арифметическое значение
-        - S - среднее квадратическое отклонение S
-        - S_x_mean - среднее квадратическое отклонение среднего арифметического
-        - t_value - коэффициент Стьюдента
-        - delta - доверительная граница случайной погрешности без учета знака
+    Clause 7.5. Confidence limits for the random error.
+
+    Attributes:
+        n (int): Number of measurement results.
+        p_conf (float): Confidence probability ``P``.
+        df (int): Degrees of freedom ``n - 1``.
+        x_mean (float): Arithmetic mean value.
+        S (float): Standard deviation ``S``.
+        S_x_mean (float): Standard deviation of the arithmetic mean.
+        t_value (float): Student coefficient.
+        delta (float): Confidence limit of the random error without sign.
     """
     n: int
     p_conf: float
@@ -246,15 +273,17 @@ class RandomErrorConfidenceResult:
 @dataclass
 class SystematicComponent:
     """
-    8. Доверительные границы неисключенной систематической погрешности.
+    Clause 8. Confidence limits for the unexcluded systematic error.
 
-    Один компонент НСП.
-        - name - имя компонента
-        - theta - граница компонента НСП без учета знака
-        - influence_coefficient - коэффициент влияния dX/dY.
-          Если не задан, считается равным 1.
-        - effective_theta - приведенная граница компонента:
-          |influence_coefficient| * |theta|
+    One systematic error component.
+
+    Attributes:
+        name (str): Component name.
+        theta (float): Unsigned limit of the component.
+        influence_coefficient (float): Influence coefficient ``dX/dY``.
+            If not specified, it is assumed to be ``1``.
+        effective_theta (float): Effective component limit equal to
+            ``abs(influence_coefficient) * abs(theta)``.
     """
     name: str
     theta: float
@@ -268,14 +297,15 @@ class SystematicComponent:
 @dataclass
 class SystematicErrorResult:
     """
-    8. Доверительные границы неисключенной систематической погрешности.
+    Clause 8. Confidence limits for the unexcluded systematic error.
 
-        - m - число составляющих НСП
-        - p_conf - доверительная вероятность
-        - k - коэффициент композиции
-        - theta_sum - итоговая граница НСП без учета знака
-        - method - способ расчета: 'none', 'sum' или 'rss'
-        - components - список компонентов
+    Attributes:
+        m (int): Number of systematic components.
+        p_conf (float): Confidence probability.
+        k (float): Composition coefficient.
+        theta_sum (float): Final unsigned systematic error limit.
+        method (str): Calculation method: ``none``, ``sum``, or ``rss``.
+        components (list[SystematicComponent]): List of components.
     """
     m: int
     p_conf: float
@@ -288,21 +318,22 @@ class SystematicErrorResult:
 @dataclass
 class TotalErrorResult:
     """
-    9. Доверительные границы погрешности оценки измеряемой величины.
+    Clause 9. Confidence limits for the error in the estimate of the measured value.
 
-        - p_conf - доверительная вероятность
-        - x_mean - оценка измеряемой величины
-        - delta_random - доверительная граница случайной погрешности
-        - theta_systematic - граница НСП
-        - s_x_mean - СКО среднего арифметического
-        - s_theta - СКО НСП
-        - s_total - суммарное СКО оценки измеряемой величины
-        - k_total - коэффициент K из формулы (12)
-        - delta_total - итоговая доверительная граница погрешности
-        - theta_mode - способ интерпретации НСП:
-          'plain' -> формула (14)
-          'confidence' -> формула (15)
-        - theta_k - коэффициент k шага 8, нужен только для режима 'confidence'
+    Attributes:
+        p_conf (float): Confidence probability.
+        x_mean (float): Estimate of the measured value.
+        delta_random (float): Confidence limit of the random error.
+        theta_systematic (float): Systematic error limit.
+        s_x_mean (float): Standard deviation of the arithmetic mean.
+        s_theta (float): Standard deviation of the systematic error.
+        s_total (float): Total standard deviation of the estimate.
+        k_total (float): Coefficient ``K`` from formula ``(12)``.
+        delta_total (float): Final confidence limit of the total error.
+        theta_mode (str): Systematic error interpretation mode:
+            ``plain`` for formula ``(14)``, or ``confidence`` for formula ``(15)``.
+        theta_k (float | None): Coefficient ``k`` from Clause 8, used only in
+            ``confidence`` mode.
     """
     p_conf: float
     x_mean: float
@@ -319,17 +350,19 @@ class TotalErrorResult:
 @dataclass
 class RoundedMeasurementResult:
     """
-    10. Форма записи оценки измеряемой величины.
-    Приложение Е. Правила округления.
+    Clause 10. Presentation of the estimate of the measured value.
 
-        - x_raw - исходная оценка измеряемой величины
-        - delta_raw - исходная погрешность без учета знака
-        - p_conf - доверительная вероятность
-        - x_rounded - округленная оценка измеряемой величины
-        - delta_rounded - округленная погрешность
-        - delta_significant_digits - число значащих цифр, сохраненных в погрешности
-        - decimal_places - число знаков после запятой для окончательной записи
-        - notation - готовая запись результата вида "x ± Δ, P=..."
+    Appendix E. Rounding rules.
+
+    Attributes:
+        x_raw (float): Original estimate of the measured value.
+        delta_raw (float): Original unsigned error.
+        p_conf (float): Confidence probability.
+        x_rounded (float): Rounded estimate of the measured value.
+        delta_rounded (float): Rounded error.
+        delta_significant_digits (int): Number of significant digits retained in the error.
+        decimal_places (int): Number of decimal places in the final notation.
+        notation (str): Final formatted result, for example ``x ± Delta, P=...``.
     """
     x_raw: float
     delta_raw: float

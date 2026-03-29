@@ -199,8 +199,7 @@ class SolarPanelPower:
         to the configured timezone.
 
         Raises:
-            ValueError: If configuration parameters are invalid or required
-            meteorological data cannot be retrieved.
+            ValueError: If configuration parameters are invalid or required meteorological data cannot be retrieved.
 
         Example:
             >>> solar_power = SolarPanelPower(config)
@@ -296,7 +295,7 @@ class SolarPanelPower:
 
         Raises:
             Exception: If the method `calculate()` has not been executed yet
-            and the internal DataFrame is empty.
+                and the internal DataFrame is empty.
 
         Example:
             >>> wind = WindTurbinePower(config)
@@ -494,7 +493,7 @@ class SolarPanelPower:
 
         Raises:
             Exception: If `calculate()` has not been executed and no data
-            is available.
+                is available.
 
         Example:
             >>> solar_power.calculate()

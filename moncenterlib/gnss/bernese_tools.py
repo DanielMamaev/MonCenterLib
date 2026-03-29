@@ -70,7 +70,7 @@ class Bernese52:
 
         Returns:
             str: Multiline string containing station names, marker numbers,
-                and XYZ coordinates.
+            and XYZ coordinates.
 
         Examples:
             >>> print(bernese.make_bql_input())
@@ -89,7 +89,7 @@ class Bernese52:
 
         Returns:
             str: Multiline string containing station index, station name,
-                marker number, and tectonic plate code in PLD table format.
+            marker number, and tectonic plate code in PLD table format.
 
         Examples:
             >>> print(bernese.make_PLD_info())
@@ -110,7 +110,7 @@ class Bernese52:
 
         Returns:
             str: Multiline string containing station names, marker numbers,
-                fixed table code `001`, and wildcard station identifiers.
+            fixed table code `001`, and wildcard station identifiers.
 
         Examples:
             >>> print(bernese.make_sta_tab_001_info())
@@ -128,8 +128,8 @@ class Bernese52:
 
         Returns:
             str: Multiline string containing station name, marker number,
-                receiver type, antenna type, placeholder dates, and antenna
-                offsets formatted for table 002.
+            receiver type, antenna type, placeholder dates, and antenna
+            offsets formatted for table 002.
 
         Examples:
             >>> print(bernese.make_sta_tab_002_info())
@@ -149,7 +149,7 @@ class Bernese52:
 
         Returns:
             str: Multiline string containing station names, marker numbers,
-                and the fixed cluster identifier `1`.
+            and the fixed cluster identifier `1`.
 
         Examples:
             >>> print(bernese.make_clu_info())
@@ -167,7 +167,7 @@ class Bernese52:
 
         Returns:
             str: Multiline string containing station names, marker numbers,
-                station abbreviations, and generated two-letter codes.
+            station abbreviations, and generated two-letter codes.
 
         Examples:
             >>> print(bernese.make_ABB_info())
@@ -196,7 +196,7 @@ class Bernese52:
 
         Returns:
             str: Formatted text for missing receiver entries. Returns an empty
-                string if all receiver types are already present.
+            string if all receiver types are already present.
 
         Examples:
             >>> print(bernese.make_receiver_info("/path/to/RECEIVER."))
@@ -234,7 +234,7 @@ class Bernese52:
 
         Returns:
             str: Multiline coordinate table with header, station names, marker
-                numbers, XYZ coordinates, and the selected reference system.
+            numbers, XYZ coordinates, and the selected reference system.
         """
 
         output = f"{ref_system}: coordinate list                                           23-AUG-22 08:30\n" \
@@ -330,7 +330,7 @@ class Bernese52:
 
         Returns:
             pd.DataFrame: DataFrame with parsed coordinate records sorted by
-                `Date` and `ID`.
+            `Date` and `ID`.
 
         Examples:
             >>> df = bernese.parse_RNX2SNX_CRD("/path/to/rnx2snx_output")

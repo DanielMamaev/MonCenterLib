@@ -213,9 +213,12 @@ def format_measurement_components(
     p_conf: float | None = None,
 ) -> str:
     """
-    10.4 Форма записи для дальнейшей обработки результатов:
-        x; S_x_mean; n; Theta
-    При необходимости дополнительно указывают P.
+    Clause 10.4. Formatting for further processing of results.
+
+    Output format:
+        ``x; S_x_mean; n; Theta``
+
+    If necessary, the confidence probability ``P`` is also included.
     """
     if n < 1:
         raise ValueError("n должно быть >= 1")

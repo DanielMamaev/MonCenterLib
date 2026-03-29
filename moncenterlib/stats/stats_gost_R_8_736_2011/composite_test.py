@@ -221,8 +221,8 @@ def check_normality_composite(values: list, q1_percent: int = 5, q2_percent: int
 
     Returns:
         CompositeNormalityResult: Итог проверки нормальности, содержащий
-            основные статистики, результаты критериев Б.1 и Б.2 и общий
-            признак `passed`. См. описание класса CompositeNormalityResult.
+        основные статистики, результаты критериев Б.1 и Б.2 и общий
+        признак `passed`. См. описание класса CompositeNormalityResult.
 
     Example:
         >>> result = check_normality_composite(list(range(1, 17)))

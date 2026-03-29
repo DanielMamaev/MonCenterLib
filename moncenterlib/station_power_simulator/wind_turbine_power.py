@@ -81,7 +81,7 @@ class WindTurbinePower:
 
         Raises:
             Exception: If `calculate()` has not been executed and
-            the internal DataFrame is empty.
+                the internal DataFrame is empty.
 
         Example:
             >>> wind.calculate()
@@ -365,9 +365,8 @@ class WindTurbinePower:
 
         Args:
             step (int, optional): Number of months per aggregation period.
-                For example:
-                    1 → monthly statistics
-                    3 → quarterly statistics
+                For example, ``1`` means monthly statistics and ``3`` means
+                quarterly statistics.
             path_protocol (str, optional): Path to a file where the textual
                 report will be saved.
 

@@ -86,8 +86,8 @@ def pearson_chi_square_normality(
 
     Returns:
         PearsonNormalityResult: Итог проверки по критерию Пирсона,
-            содержащий статистику хи-квадрат, критическое значение,
-            степени свободы, интервалы и признак `passed`.
+        содержащий статистику хи-квадрат, критическое значение,
+        степени свободы, интервалы и признак `passed`.
 
     Example:
         >>> result = pearson_chi_square_normality(list(range(1, 52)))

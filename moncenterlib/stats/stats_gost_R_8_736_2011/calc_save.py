@@ -400,7 +400,7 @@ def calculate_and_save_protocol(values: list, config: dict, filepath: str | Path
 
     Returns:
         dict: словарь с результатами всех этапов расчета. Одновременно сохраняет
-            текстовый протокол по указанному пути.
+        текстовый протокол по указанному пути.
 
     Example:
         >>> from moncenterlib.stats.stats_gost_R_8_736_2011.dataclasses import SystematicComponent

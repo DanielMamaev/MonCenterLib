@@ -30,30 +30,38 @@ import moncenterlib.gnss.tools as mcl_gnss_tools
 class RtkLibPost:
     """
     This class is based on the RTKLib software package.
-    RTKLIB contains a post processing analysis AP RTKPOST. RTKPOST inputs the standard RINEX 2.10, 2.11,
-    2.12, 3.00, 3.01, 3.02 (draft) observation data and navigation message files (GPS, GLONASS, Galileo, QZSS,
-    BeiDou and SBAS) and can computes the positioning solutions by various positioning modes including
-    Single‐point, DGPS/DGNSS, Kinematic, Static, PPP‐Kinematic and PPP‐Static.
+
+    RTKLIB contains the post-processing analysis application RTKPOST.
+    RTKPOST accepts standard RINEX 2.10, 2.11, 2.12, 3.00, 3.01, and 3.02
+    (draft) observation data and navigation message files for GPS, GLONASS,
+    Galileo, QZSS, BeiDou, and SBAS. It can compute positioning solutions in
+    various modes including single-point, DGPS/DGNSS, kinematic, static,
+    PPP-kinematic, and PPP-static.
+
     See more about RTKLIB here: https://rtklib.com/
-    This class can postprocessing one or more files.
+
+    This class can post-process one or more files.
     See code usage examples in the examples folder.
 
     Available file types:
-    {
-        "rover": "",
-        "base": "",
-        "nav": "",
-        "sp3": "",
-        "clk": "",
-        "ionex": "",
-        "erp": "",
-        "dcb": "",
-        "fcb": "",
-        "sbas": "",
-        "otl": "",
-        "satant": "",
-        "rcvant": ""
-    }
+
+    .. code-block:: python
+
+        {
+            "rover": "",
+            "base": "",
+            "nav": "",
+            "sp3": "",
+            "clk": "",
+            "ionex": "",
+            "erp": "",
+            "dcb": "",
+            "fcb": "",
+            "sbas": "",
+            "otl": "",
+            "satant": "",
+            "rcvant": ""
+        }
     """
     @typechecked
     def __init__(self, logger: bool | Logger | None = None):

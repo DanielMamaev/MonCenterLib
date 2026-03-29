@@ -49,29 +49,29 @@ def systematic_error_confidence(
     k_value: float | None = None,
 ) -> SystematicErrorResult:
     """
-    8. Доверительные границы неисключенной систематической погрешности.
+    Clause 8. Confidence limits for the unexcluded systematic error.
 
-    Реализация пп. 8.2-8.5 ГОСТ Р 8.736-2011.
+    Implementation of Clauses 8.2-8.5 of GOST R 8.736-2011.
 
-    Логика:
-    - если m < 3, используется линейная сумма модулей компонент;
-    - если m >= 3, используется композиция равномерно распределенных НСП:
-      theta_sum = k * sqrt(sum(theta_i^2));
-    - влияние входных величин учитывается через influence_coefficient.
+    Logic:
+    - if ``m < 3``, the linear sum of component magnitudes is used;
+    - if ``m >= 3``, the composition of uniformly distributed systematic
+      components is used: ``theta_sum = k * sqrt(sum(theta_i^2))``;
+    - the effect of input quantities is handled through
+      ``influence_coefficient``.
 
     Args:
-        components (list[SystematicComponent]): список компонент НСП
-        p_conf (float, optional): доверительная вероятность. Обычно 0.95.
-        k_value (float | None, optional): коэффициент k. Если не задан,
-            для поддерживаемых случаев выбирается автоматически.
+        components (list[SystematicComponent]): List of systematic error components.
+        p_conf (float, optional): Confidence probability. Usually ``0.95``.
+        k_value (float | None, optional): Coefficient ``k``. If omitted, it is
+            selected automatically for supported cases.
 
     Raises:
-        ValueError: если число компонентов меньше 1
-        ValueError: если p_conf не в интервале (0, 1)
-        ValueError: если k_value <= 0
+        ValueError: If ``p_conf`` is not in the interval ``(0, 1)``.
+        ValueError: If ``k_value <= 0``.
 
     Returns:
-        SystematicErrorResult: итог расчета НСП
+        SystematicErrorResult: Final systematic error result.
     """
     # НСП отсутствует или была полностью учтена ранее
     if not components:

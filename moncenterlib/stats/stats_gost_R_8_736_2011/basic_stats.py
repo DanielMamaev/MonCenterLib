@@ -20,7 +20,7 @@ def calc_basic_stats(values: list) -> BasicStats:
 
     Returns:
         BasicStats: Результат расчета основных статистических характеристик выборки.
-            См. описание класса BasicStats.
+        См. описание класса BasicStats.
     Example:
         >>> result = calc_basic_stats([1.2, 1.3, 1.4, 1.5])
         >>> result.x_mean

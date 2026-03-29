@@ -101,10 +101,8 @@ class PowerBalanceAnalyzer:
 
         Returns:
             tuple[pd.DataFrame, dict]:
-
-            - DataFrame: Hourly balance table containing generation,
-            load, deficit and surplus.
-            - dict: Summary metrics describing system performance.
+                - DataFrame: Hourly balance table containing generation, load, deficit, and surplus.
+                - dict: Summary metrics describing system performance.
 
         Example:
             >>> analyzer = PowerBalanceAnalyzer()
@@ -212,9 +210,9 @@ class PowerBalanceAnalyzer:
             tuple[pd.DataFrame, dict]:
 
             - DataFrame: Hourly simulation results including generation,
-            load, battery state-of-charge and system status.
+              load, battery state-of-charge, and system status.
             - dict: Summary metrics including battery usage statistics and
-            system shutdown events.
+              system shutdown events.
 
         Example:
             >>> analyzer = PowerBalanceAnalyzer()
