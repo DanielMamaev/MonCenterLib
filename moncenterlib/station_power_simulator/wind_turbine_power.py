@@ -8,9 +8,9 @@ from typeguard import typechecked
 import pandas as pd
 import numpy as np
 from timezonefinder import TimezoneFinder
-from openmeteopy import OpenMeteo
-from openmeteopy.hourly import HourlyHistorical
-from openmeteopy.options import HistoricalOptions
+from moncenterlib._vendor.openmeteopy import OpenMeteo
+from moncenterlib._vendor.openmeteopy.hourly import HourlyHistorical
+from moncenterlib._vendor.openmeteopy.options import HistoricalOptions
 
 
 class WindTurbinePower:
