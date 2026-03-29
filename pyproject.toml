@@ -3,3 +3,47 @@ max-line-length = 130
 
 [tool.autopep8]
 max_line_length = 130
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "moncenterlib"
+version = "1.1.0"
+description = "MonCenterLib is a python library for geodetic monitoring."
+readme = "README.md"
+requires-python = ">=3.12"
+
+authors = [
+    { name = "Daniel Mamaev", email = "moncenter@moncenter.ru" }
+]
+
+license = { text = "MIT" }
+
+keywords = ["python"]
+
+classifiers = [
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: POSIX :: Linux"
+]
+
+# 🔥 зависимости из requirements.txt
+dynamic = ["dependencies"]
+
+[project.urls]
+Documentation = "https://moncenterlib.readthedocs.io/"
+Source = "https://github.com/DanielMamaev/MonCenterLib"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.package-data]
+"moncenterlib.gnss" = [
+    "bin/aarch64/*",
+    "bin/x86_64/*",
+    "conf/*"
+]

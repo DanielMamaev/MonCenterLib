@@ -1,0 +1,4 @@
+include README.md
+include requirements.txt
+recursive-include moncenterlib/gnss/bin *
+recursive-include moncenterlib/gnss/conf *
