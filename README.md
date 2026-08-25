@@ -95,6 +95,8 @@ python -m pip install .
 * See examples code [here](examples/)
 
 ## Release History
+* 1.1.1
+    * fix func. get_path2bin.
 * 1.1.0
     * Added new modules in the `gnss` package, including tools for downloading CODE products and preparing Bernese 5.2 input files.
     * Added new packages for station power simulation and statistical processing according to GOST R 8.736-2011.
