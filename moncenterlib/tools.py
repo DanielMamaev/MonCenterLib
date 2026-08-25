@@ -26,12 +26,19 @@ def get_path2bin(name_bin) -> str:
             "rnx2rtkp": str(path_base.joinpath("gnss/bin/x86_64/rnx2rtkp_2.4.3-34_x86_64_linux"))
         },
         "aarch64": {
-            "anubis": str(path_base.joinpath("gnss/bin/aarch64/anubis_2.3_aarch64_linux")),
+            "anubis_2.3": str(path_base.joinpath("gnss/bin/aarch64/anubis_2.3_aarch64_linux")),
             "str2str": str(path_base.joinpath("gnss/bin/aarch64/str2str_2.4.3-34_aarch64_linux")),
             "convbin": str(path_base.joinpath("gnss/bin/aarch64/convbin_2.4.3-34_aarch64_linux")),
             "rnx2rtkp": str(path_base.joinpath("gnss/bin/aarch64/rnx2rtkp_2.4.3-34_aarch64_linux"))
         }
     }
+
+    if name_bin not in paths[bit_info]:
+        available = ", ".join(paths[bit_info].keys())
+        raise ValueError(
+            f"Unknown binary '{name_bin}' for architecture '{bit_info}'. "
+            f"Available: {available}"
+        )
 
     path2bin = paths[bit_info][name_bin]
     return path2bin

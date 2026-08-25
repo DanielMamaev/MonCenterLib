@@ -165,7 +165,7 @@ class Anubis:
         if version not in available_ver:
             self.logger.error("Available version: 2.3, 3.10.")
             raise Exception("Available version: 2.3, 3.10.")
-        
+
         match_list = {}
         no_match_list = {}
         output_list = defaultdict(dict)
@@ -257,7 +257,7 @@ class Anubis:
             inp = ET.SubElement(conf, 'inputs')
         elif version == "3.10":
             inp = ET.SubElement(conf, 'inp')
-            
+
         inp_o = ET.SubElement(inp, 'rinexo')
         inp_o.text = match[0]
         inp_n = ET.SubElement(inp, 'rinexn')
@@ -381,7 +381,7 @@ class Anubis:
                     except Exception:
                         pass
                     count += 1
-            
+
             elif '#GNSMxx' in row:
                 meta_data["code_multi"] = dict()
                 count = 0
@@ -393,7 +393,7 @@ class Anubis:
 
                     if row_data == '\n':
                         break
-                    
+
                     row_data = row_data.split(' ')
                     row_split = list(filter(lambda i: i != '', row_data))
                     name_sys = row_split[0].replace("=", "")
@@ -402,9 +402,6 @@ class Anubis:
                     except Exception:
                         pass
                     count += 1
-
-
-
 
         if flag_data_error:
             self.logger.error("Incorrect data in file %s.", path2file)
